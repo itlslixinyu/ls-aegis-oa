@@ -2,7 +2,7 @@
 
 基于 LS·Aegis 统一身份、RBAC 和国密底座的业务平台，包含进销存、运维维修、报价及电子签章。PC、客户H5、工程师H5和Android测试入口共用既有后端。
 
-工程版本以 [VERSION](VERSION) 为准。新仓库候选名称为 `ls-aegis-oa`，名称与版本的实施/验证状态见[发行入口](Docs/releases/README.md)。
+工程版本以 [VERSION](VERSION) 为准。源码仓库为 [ls-aegis-oa](https://github.com/itlslixinyu/ls-aegis-oa)，名称与版本的实施/验证状态见[发行入口](Docs/releases/README.md)。
 
 | 工程 | 技术与职责 |
 |---|---|
