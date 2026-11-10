@@ -26,7 +26,7 @@ flowchart LR
 | 新服务器 | 根docker-compose.yml与根.env | prod配置，宿主目录持久化，网关提供HTTPS |
 | 已有本机完整部署 | 根Compose与docker-compose.local.yml | 复用既有external卷和原附件/密钥目录，保留本机profile语义 |
 
-本机覆盖要求Compose2.24.4+，不能直接用作新服务器模板。部署目录决定相对绑定路径；新克隆源码目录不自动具备原数据库、附件或真实配置。
+本机覆盖要求Compose2.24.4+，不能直接用作新服务器模板。部署目录决定相对绑定路径；新克隆源码目录不自动具备原数据库、附件或真实配置。本机覆盖通过LS_AEGIS_DATA_DIR和LS_AEGIS_LOG_DIR指定持久化目录；切换源码目录时可继续绑定原存储，无需搬迁附件或密钥。
 
 ## 网络与入口
 

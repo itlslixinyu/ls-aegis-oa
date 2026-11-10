@@ -42,8 +42,8 @@ services:
       - "127.0.0.1:8000:18000"
       - "127.0.0.1:25682:18000"
     volumes: !override
-      - ./docker/data/ls-aegis-server/data:/app/data
-      - ./docker/data/ls-aegis-server/logs:/app/logs
+      - ${LS_AEGIS_DATA_DIR:-./docker/data/ls-aegis-server/data}:/app/data
+      - ${LS_AEGIS_LOG_DIR:-./docker/data/ls-aegis-server/logs}:/app/logs
       - C:/Windows/Fonts/simhei.ttf:/app/fonts/simhei.ttf:ro
 
   ls-aegis-web:
