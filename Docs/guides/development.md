@@ -1,37 +1,40 @@
-# 开发与构建
+# 开发与构建架构
 
-适用源码开发与隔离构建。当前在用环境已由完整 Compose 承载，启动 Vite/本机后端前先检查端口，避免与容器冲突。
+## 工程与工具链
 
-要求 JDK 21、Maven、Node、pnpm 9；H5 使用 npm 和自己的 package-lock。工具版本以锁文件及构建配置为准。本机已有验证工具链可在 PowerShell 执行 `. ./scripts/quality/use-cleanup-toolchain.ps1`，该入口依赖不随Git发布的 `.local/toolchains`，新机器需自行准备工具。
+| 工程 | 工具 | 产物 |
+|---|---|---|
+| ls-aegis-server | JDK21、Maven | Spring Boot应用JAR |
+| ls-aegis-web | Node22、pnpm9、Vite | PC静态资源 |
+| ls-aegis-h5 | Node、npm、Vite | 客户和工程师两套静态资源 |
+| android-demo | JDK21、Gradle Wrapper、Android SDK35 | 客户和工程师APK |
 
-从仓库根执行：
+PC以pnpm-lock.yaml锁定依赖，H5以package-lock.json锁定依赖。不同工程的锁文件和包管理器分别维护，不能混用。后端由父POM统一管理模块和依赖版本。
 
-```powershell
+## 构建链
+
+```text
+Maven父工程 → 基础与业务模块 → boot打包 → JAR → 后端运行镜像
+PC源码 → 类型检查 → Vite构建 → 静态资源 → Nginx镜像
+H5源码 → customer / engineer路由选择 → 分端资源 → 各端Nginx镜像
+Android双模块 → Gradle打包 → 各端APK
+```
+
+主要构建入口：
+
+```bash
+mvn -f ls-aegis-server/pom.xml -pl ls-aegis-boot -am package
 pnpm --dir ls-aegis-web install --frozen-lockfile
-npm --prefix ls-aegis-h5 ci
-mvn -f ls-aegis-server/pom.xml -pl ls-aegis-boot -am package -DskipTests
 pnpm --dir ls-aegis-web build
+npm --prefix ls-aegis-h5 ci
 npm --prefix ls-aegis-h5 run build:customer
 npm --prefix ls-aegis-h5 run build:engineer
 ```
 
-`-DskipTests` 跳过测试；打包成功不是单测或业务验收。PC build 包含类型检查，两端H5必须分别构建。
+生产Dockerfile采用源码多阶段构建，不依赖开发机的JAR、node_modules或dist。Android构建与服务端镜像分离。
 
-开发需要 MySQL/Redis、真实本机配置和已初始化的库。`docker/dev-up.ps1` 使用开发 Compose；本机后端入口为 `docker/dev-run-server.ps1`。不要将开发依赖配置与已有完整部署混起。前端开发命令分别是 `pnpm --dir ls-aegis-web dev`、`npm --prefix ls-aegis-h5 run dev:customer`、`npm --prefix ls-aegis-h5 run dev:engineer`。
+## 配置分层
 
-标准端口：PC 5173、客户5174、工程师5175、API8000。数据库与密钥配置模板和实际文件分开，不将真实 `.env` 提交。Android 构建入口见[专用说明](../../android-demo/README.md)。
+源码保存默认配置和环境模板；后端通过profile与环境变量注入运行参数，前端通过Vite模式确定公开配置和代理入口。密码、私钥和其他服务端秘密不进入前端环境变量。
 
-修改规范按[平台约束](../architecture/platform.md)，验证按[分层检查](../testing/verification.md)。
-
-## 测试JVM配置
-
-Windows开发建议使用Node 22和pnpm 9。可选脚本 `use-cleanup-toolchain.ps1` 只在已有本地工具目录时使用；新机器先安装所需工具，不依赖他人的.local目录。
-
-若测试环境限制Mockito动态自附加，可使用Byte Buddy启动期Agent；只配置测试JVM，不改变生产JVM。依赖已由Maven解析时，可从仓库根执行：
-
-```powershell
-$testAgentJar = Join-Path $env:USERPROFILE '.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.19/byte-buddy-agent-1.14.19.jar'
-mvn -f ls-aegis-server/pom.xml -pl ls-aegis-boot -am package "-DargLine=-Xmx512m -javaagent:`"$testAgentJar`""
-```
-
-Agent版本以当前测试依赖为准；依赖未下载时先按Maven正常解析。启动期Agent机制见[Byte Buddy官方说明](https://github.com/raphw/byte-buddy/blob/master/byte-buddy-agent/src/main/java/net/bytebuddy/agent/ByteBuddyAgent.java)。
+开发依赖由docker目录中的开发Compose提供，应用可在宿主机运行。完整容器部署与宿主开发共用默认入口时会发生端口占用，应选择一种应用运行方式。服务编排和存储关系见[部署架构](../operations/deployment.md)。

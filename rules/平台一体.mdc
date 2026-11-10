@@ -5,7 +5,7 @@ alwaysApply: true
 
 # 平台一体
 
-当前为 ITLS V2.2（工程版本以根 VERSION 为准）。仓库里只有「一个平台」（LS・Aegis / ITLS），不是多个子系统拼装。
+当前为 LS·Aegis OA 管理平台（工程版本以根 VERSION 为准）。仓库里只有「一个平台」（LS・Aegis / ITLS），不是多个子系统拼装。
 
 ## 四统一
 
@@ -20,7 +20,7 @@ alwaysApply: true
 
 `psi` / `eoms` / `sign` / `quote` 仅为 `ls-aegis-biz-*` 功能域，由 `ls-aegis-boot` 挂载。Maven 多模块可保留作代码边界。
 
-V2.0 已下线代码生成和应用管理（原 `/open/app`）；不重新实现其页面、菜单或后端接口。系统登录客户端配置仍属于统一认证，继续保留。
+代码生成和应用管理已下线（原 `/open/app`）；不重新实现其页面、菜单或后端接口。系统登录客户端配置仍属于统一认证，继续保留。
 
 ## 禁止
 

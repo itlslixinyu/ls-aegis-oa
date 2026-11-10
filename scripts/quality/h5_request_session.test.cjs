@@ -83,7 +83,7 @@ test('silent business expiry and public customer-code expiry do not clear curren
   const f = fixture()
   await assert.rejects(f.request.get('/eoms/h5/repair/list', { skipErrorToast: true, adapter: response(10007) }))
   assert.equal(f.store.h5Token, 'customer-a')
-  await assert.rejects(f.request.get('/eoms/h5/auth/token', { headers: { isToken: false }, adapter: response(10007) }))
+  await assert.rejects(f.request.get('/eoms/h5/auth/login', { headers: { isToken: false }, adapter: response(10007) }))
   assert.equal(f.store.h5Token, 'customer-a')
   assert.equal(f.store.engineerToken, 'engineer-a')
   assert.equal(f.timers.length, 0)
@@ -118,9 +118,9 @@ function loginFixture(login, getInfo) {
   }
   f.navigations = []
   const names = ['ref', 'reactive', 'onMounted', 'useRouter', 'showSuccessToast', 'showFailToast', 'login', 'getInfo',
-    'getCodeImg', 'encryptTransport', 'loadGmPublicKey', 'useUserStore', 'useSystemStore', 'setTimeout']
+    'getCodeImg', 'encryptTransport', 'loadGmPublicKey', 'useUserStore', 'useSystemStore', 'setTimeout', 'window']
   const values = [vue.ref, vue.reactive, () => {}, () => ({ replace: p => f.navigations.push(p) }), () => {}, () => {},
-    login, () => getInfo(f), async () => ({}), async p => p, async () => {}, () => f.store, () => ({}), fn => f.timers.push(fn)]
+    login, () => getInfo(f), async () => ({}), async p => p, async () => {}, () => f.store, () => ({}), fn => f.timers.push(fn), { location: { replace: p => f.navigations.push(p) } }]
   f.page = new Function(...names, source + '\nreturn {onSubmit,form,loading}')(...values)
   return f
 }
@@ -140,15 +140,21 @@ test('old login getInfo failure cannot erase newer login', async () => {
   assert.equal(f.store.engineerToken, 'login-b')
 })
 
-test('normal login navigates but its delayed navigation cannot survive a replacement session', async () => {
+test('normal login navigates to the engineer workbench after identity is loaded', async () => {
   const f = loginFixture(async () => ({ data: { token: 'login-a' } }), async () => ({ data: { id: '123', username: 'fixture' } }))
   await f.page.onSubmit()
   assert.equal(f.store.engineerToken, 'login-a')
-  f.timers.forEach(fn => fn())
-  assert.deepEqual(f.navigations, ['/engineer/tasks'])
-  f.navigations.length = 0
-  f.store.setEngineerToken('login-b', {})
-  f.timers.forEach(fn => fn())
+  assert.deepEqual(f.navigations, ['/engineer/workbench'])
+  assert.equal(f.timers.length, 0)
+})
+
+test('stale login info cannot replace or navigate a newer engineer session', async () => {
+  const f = loginFixture(async () => ({ data: { token: 'login-a' } }), async f => {
+    f.store.setEngineerToken('login-b', {})
+    return { data: { id: '123', username: 'stale-user' } }
+  })
+  await f.page.onSubmit()
+  assert.equal(f.store.engineerToken, 'login-b')
   assert.deepEqual(f.navigations, [])
 })
 

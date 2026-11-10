@@ -1,4 +1,4 @@
-# LS・Aegis / ITLS 项目 Agent
+# LS·Aegis OA 管理平台 Agent
 
 本文件适用于整个仓库。默认用简体中文沟通。先查看 `git status --short`，保留已有未提交修改。用户要求优化时应落实可验证的改动，避免只生成建议；未明确要求时不提交、不推送、不升版本。
 
@@ -20,7 +20,7 @@
 - 按工作流从第一项逐功能真实测试、修复复测与断点恢复：读 `skills/itls-workflow-test/SKILL.md`，角色见 `agents/business-flow/AGENTS.md`；复用现有分阶段矩阵，不恢复已移除功能。
 - 代码检查与性能回归：读 `skills/itls-code-review/SKILL.md`；独立检查角色见 `agents/code-review/AGENTS.md`。
 - 逐模块及最终联合测试：读 `skills/itls-staged-test/SKILL.md`，角色见 `agents/staged-test/AGENTS.md`。用户已指定本机5173/8000为在用测试目标并授权必要操作；按运行号登记与业务补偿清理，不能将隔离建库脚本重定向到在用实例。
-- Android 双端规划、开发与验收：读 `skills/itls-android/SKILL.md`，工作流见 `Docs/android-apps/WORKFLOW.md`，实施角色见 `agents/android-apps/AGENTS.md`。Android 客户端与工程师端属于 EOMS 的原生移动入口，复用现有后端 API、客户邀请会话和平台 Sa-Token/RBAC，不新建后端或独立认证底座。
+- Android 双端规划、开发与验收：读 `skills/itls-android/SKILL.md`，架构见 `android-demo/README.md`，实施角色见 `agents/android-apps/AGENTS.md`。Android 客户端与工程师端属于 EOMS 的Android WebView入口，复用现有后端 API、客户邀请会话和平台 Sa-Token/RBAC，不新建后端或独立认证底座。
 - Skills 位于根 skills/，按本节任务路由显式读取，不依赖工具原生自动发现。Skills 是项目级可复用工作流；不同角色可以由同一个 Agent 执行，无需默认开启多个代理。
 
 ## 必须保留的业务约束

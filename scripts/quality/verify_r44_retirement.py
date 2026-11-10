@@ -1,7 +1,7 @@
-"""Exercise the fixed R44 nullable-column release on an owned disposable MySQL, never the in-use DB."""
+"""Exercise the fixed R44 retired-feature release on an owned disposable MySQL, never the in-use DB."""
 import argparse,hashlib,json,secrets,subprocess,time,re
 from pathlib import Path
-root=Path(__file__).resolve().parents[2];local=root/'.local/r44-migration-probe';local.mkdir(exist_ok=True)
+root=Path(__file__).resolve().parents[2];local=root/'.local/r44-migration-probe';local.mkdir(parents=True,exist_ok=True)
 statefile=local/'state.private.json'
 def docker(*args,timeout=120,check=True):
  r=subprocess.run(['docker',*map(str,args)],capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=timeout)
@@ -17,15 +17,17 @@ def loadsql(s,name,text):
  docker('exec',s['name'],'sh','-c','MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql --default-character-set=utf8mb4 -uroot < "$1"','sh','/tmp/'+name)
 def cli(s,db,action,jar,target=None):
  env=local/'cli.private.env';env.write_text('\n'.join(['DB_HOST='+s['name'],'DB_PORT=3306','DB_NAME='+db,'DB_USER=root','DB_PWD='+s['password']])+'\n',encoding='utf-8')
- args=['exec','--env-file',env,'ls-aegis-mcs-backend','java','-Dloader.main=com.ls.aegis.boot.tools.R44MigrationCli','-cp',jar,'org.springframework.boot.loader.launch.PropertiesLauncher',action,'--target',target or s['name']+':3306/'+db]
+ args=['exec','--env-file',env,a.backend,'java','-Dloader.main=com.ls.aegis.boot.tools.R44MigrationCli','-cp',jar,'org.springframework.boot.loader.launch.PropertiesLauncher',action,'--target',target or s['name']+':3306/'+db]
  if action=='apply':args.append('--acknowledge-write')
  return docker(*args,check=False)
-p=argparse.ArgumentParser();p.add_argument('phase',choices=['prepare','verify','cleanup']);p.add_argument('--jar',default='/tmp/r44-candidate-v24.jar');a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('phase',choices=['prepare','verify','cleanup']);p.add_argument('--jar',default='/app/app.jar');p.add_argument('--backend');p.add_argument('--network');a=p.parse_args()
+if a.phase=='prepare' and not a.network:p.error('prepare requires an explicit disposable --network')
+if a.phase=='verify' and not a.backend:p.error('verify requires an explicit disposable --backend runner')
 if a.phase=='prepare':
  assert not statefile.exists(),'Do not overwrite probe state'
  s={'name':'itls-r44-probe-'+secrets.token_hex(4),'password':secrets.token_urlsafe(24)};statefile.write_text(json.dumps(s))
  env=local/'mysql.private.env';env.write_text('MYSQL_ROOT_PASSWORD='+s['password']+'\nMYSQL_DATABASE=itls_r44_probe\n')
- docker('run','-d','--pull','never','--name',s['name'],'--network','ls-aegis-net','--label','itls.quality.run=R44-MIGRATION','--env-file',env,'mysql:8.0.42','--character-set-server=utf8mb4','--collation-server=utf8mb4_general_ci')
+ docker('run','-d','--pull','never','--name',s['name'],'--network',a.network,'--label','itls.quality.run=R44-MIGRATION','--env-file',env,'mysql:8.0.42','--character-set-server=utf8mb4','--collation-server=utf8mb4_general_ci')
  for _ in range(60):
   r=docker('exec',s['name'],'sh','-c','MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql --protocol=TCP -h127.0.0.1 -uroot -N -B -e "SELECT 1"',check=False)
   if r.returncode==0:break

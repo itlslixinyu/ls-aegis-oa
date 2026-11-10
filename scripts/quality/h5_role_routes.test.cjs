@@ -40,10 +40,9 @@ for (const role of ['customer', 'engineer']) {
   test(`${role}构建只保留本端页面，另一端已知入口重定向登录，通用404仍可用`, () => {
     const { router } = setup(role)
     const own = router.routes.filter(r => r.meta?.role === role && r.component)
-    assert.equal(own.length, 5)
     const expectedPaths = role === 'customer'
-      ? ['/customer/auth', '/customer/apply', '/customer/repairs', '/customer/profile', '/customer/repair/:id']
-      : ['/engineer/login', '/engineer/tasks', '/engineer/task/:id', '/engineer/record/:orderId', '/engineer/profile']
+      ? ['/customer/auth', '/customer/workbench', '/customer/apply', '/customer/repairs/all', '/customer/repairs/status/:status', '/customer/repairs', '/customer/profile', '/customer/repair/:id']
+      : ['/engineer/login', '/engineer/workbench', '/engineer/tasks/status/:status', '/engineer/tasks', '/engineer/task/:id', '/engineer/record/:orderId', '/engineer/profile']
     assert.deepEqual(Array.from(own, r => r.path).sort(), expectedPaths.sort())
     for (const route of own) {
       const publicPage = route.path === '/customer/auth' || route.path === '/engineer/login'

@@ -39,7 +39,7 @@ ls-aegis-oa/                 # 新仓库名；现有在用路径暂不搬迁
   skills/
   rules/
   Docs/
-    README.md               # 未来文档总索引
+    README.md               # 文档总索引
     guides/                 # 安装、开发、操作说明
     business/               # 已有模块与跨模块业务流程
     architecture/           # 分层、接口约定、权限、数据边界
@@ -86,7 +86,7 @@ ls-aegis-oa/                 # 新仓库名；现有在用路径暂不搬迁
 
 阶段 5 同步核对根 README/VERSION、PC/H5 package 与锁文件根元数据、Maven/application 产品元数据、Compose 自有镜像标签、打包/安装脚本和发行说明。Android 调试工程的现有版本与未来平台版本单列，若发布方案统一则同步 versionName/versionCode；不宣称 WebView 包已完成原生应用验收。
 
-不改第三方依赖版本、基座的法律/技术标识、已执行 changeset 内容或 ID、历史报告中的原版本。新项目 1.0.0 是一次明确的发布基线建立，不是对旧项目 2.2.0 文本进行全局替换。
+不改第三方依赖版本、基座的法律/技术标识、已执行 changeset 内容或 ID、历史报告中的原版本。产品命名以当前README为准，工程版本以VERSION为准；不能通过全局替换更改依赖、协议和迁移历史。
 
 ## 验收交付
 

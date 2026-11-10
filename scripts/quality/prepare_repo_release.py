@@ -44,8 +44,8 @@ def main():
         shutil.copy2(path,target)
         records.append({'path':name,'bytes':path.stat().st_size,'sha256':hashlib.sha256(path.read_bytes()).hexdigest()})
     assert any(item['path']=='android-demo/gradle/wrapper/gradle-wrapper.jar' for item in records)
-    provenance={'source_repository':'itlslixinyu/ls-aegis-mcs','source_head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT).decode().strip(),
-                'source_is_dirty':True,'product':'LS·Aegis OA 管理平台','version':(ROOT/'VERSION').read_text().strip(),
+    provenance={'source_repository':ROOT.name,'source_head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT).decode().strip(),
+                'source_is_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT).strip()),'product':'LS·Aegis OA 管理平台','version':(ROOT/'VERSION').read_text().strip(),
                 'candidate':str(destination),'files':records,'excluded_tracked_or_untracked':excluded,
                 'history_policy':'原仓库和历史保留原位；候选仅工作树文件，不包含.git，不宣称已经建立或发布新Git历史。',
                 'published':False}
