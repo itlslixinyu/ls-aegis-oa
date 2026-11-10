@@ -2,7 +2,7 @@
 
 基于 LS·Aegis 统一身份、RBAC 和国密底座的业务平台，包含进销存、运维维修、报价及电子签章。PC、客户H5、工程师H5和Android测试入口共用既有后端。
 
-工程版本以 [VERSION](VERSION) 为准。源码仓库为 [ls-aegis-oa](https://github.com/itlslixinyu/ls-aegis-oa)，名称与版本的实施/验证状态见[发行入口](Docs/releases/README.md)。
+工程版本以 [VERSION](VERSION) 为准。源码仓库为 [ls-aegis-oa](https://github.com/itlslixinyu/ls-aegis-oa)，名称与版本的实施/验证状态见[发行入口](Docs/releases/1.0.0.md)。
 
 | 工程 | 技术与职责 |
 |---|---|
@@ -28,7 +28,7 @@
 
 ## 当前本机完整部署
 
-从仓库根执行，要求已有配置、外部数据卷和Compose2.24.4+：
+已有数据部署必须从原运行目录执行，要求已有配置、外部数据卷和Compose2.24.4+；新克隆源码按部署指南配置，不能直接替代原数据目录：
 
 ```powershell
 docker compose -p ls-aegis --env-file docker/.env -f docker-compose.yml -f docker-compose.local.yml ps
@@ -44,4 +44,4 @@ PC：`http://localhost:5173`；客户：`http://localhost:5174/customer/auth`；
 
 ## 维护
 
-先读 [AGENTS.md](AGENTS.md)，按任务加载根 skills/ 的对应工作流；不假定编辑器会自动发现。新维护记录写入 [Docs/releases/maintenance.md](Docs/releases/maintenance.md)。旧报告入口 [Reports-README](Docs/Reports-README.md) 只用于追溯历史，不作为当前操作指南。
+先读 [AGENTS.md](AGENTS.md)，按任务加载根 skills/ 的对应工作流；不假定编辑器会自动发现。文档只维护当前使用说明和必要版本变更；开发日志与测试记录保存在本地 `.local/`，不随源码发布。

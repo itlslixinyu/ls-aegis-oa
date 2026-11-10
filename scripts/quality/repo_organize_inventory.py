@@ -19,14 +19,7 @@ DOC_EXT = {'.md', '.mdc', '.txt', '.docx', '.pdf'}
 OPAQUE_NAMES = {'.git', 'node_modules', 'target', 'dist', 'build', '.gradle',
                 '.vite', '.pnpm-store', 'coverage', 'dist-engineer', 'dist-ssr'}
 SECRET_EXT = {'.pem', '.key', '.crt', '.csr', '.p12', '.pfx', '.jks', '.keystore'}
-FINDINGS = {
-    'docker/nginx/README.md': ('待复核', '文档第10/11行使用服务名 web；实际 Compose 服务名 ls-aegis-web；两种配置的挂载行为亦不同'),
-    'docker/nginx/web/README.md': ('待复核', '末尾使用过时 Compose 服务名 web；目录是可选静态挂载说明，不等于整体无用'),
-    'scripts/README.md': ('待复核', '部署示例含特定服务器/IP/域名；新仓库需模板化并区分本机完整容器部署'),
-    'ls-aegis-server/README.md': ('待复核', '模块表缺少已存在的报价/EOMS/签章模块；升级说明需区分受限迁移与关闭 master 的实际部署'),
-    'ls-aegis-web/CHANGELOG.md': ('归档', '真实旧版发布历史，保留版本与日期；新产品1.0另建发行记录，不全局替换旧版本'),
-    'Docs/Reports-README.md': ('待复核', '混合当前说明和历史验收；阶段2建立章节级迁移映射，先保留唯一正式报告入口'),
-}
+FINDINGS = {}  # Findings must come from the current scan, not a previous maintenance run.
 
 
 def git(*args):
@@ -61,8 +54,6 @@ def inventory(out):
         target = name
         if category == '归档':
             target = '.local/archive/' + name
-            if name == 'ls-aegis-web/CHANGELOG.md':
-                target = 'Docs/archive/legacy/CHANGELOG-web.md (仅候选，先迁移文档规范)'
         elif category == '可删':
             target = '(candidate only; not deleted)'
         action = {'保留': '保留原位', '归档': '拟本地归档，先脱敏/核实引用',
@@ -183,15 +174,8 @@ def inventory(out):
         hashes[doc['sha256']].append(doc['path'])
     duplicates = [names for names in hashes.values() if len(names) > 1]
     write_json(out/'duplicate-documents.json', duplicates)
-    report = ROOT/'Docs/Reports-README.md'
-    headings = list(re.finditer(r'^## (\d+)\. (.+)$',report.read_text(encoding='utf-8'),re.M))
-    text = report.read_text(encoding='utf-8')
+    # No development-report document is required in a source checkout.
     sections = []
-    for index, heading in enumerate(headings):
-        start = text[:heading.start()].count('\n') + 1
-        stop = text[:headings[index+1].start()].count('\n') if index+1<len(headings) else len(text.splitlines())
-        sections.append(dict(section=heading[1],title=heading[2],start_line=start,end_line=stop,
-                             category='待复核',action='阶段2逐章区分历史证据与现行说明；本轮不迁移正文'))
     write_json(out/'report-sections.json',sections)
     write_json(out/'review-groups.json',dict(collections.Counter(row['source'].split('/')[1] if row['source'].startswith('.local/') and row['kind']=='directory' else '.local-private-files' if row['source'].startswith('.local/') else 'current-docs-and-config' for row in rows if row['category']=='待复核')))
     counts = dict(collections.Counter(row['category'] for row in rows))

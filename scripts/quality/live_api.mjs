@@ -1,4 +1,4 @@
-/** R27 in-use local API testing. See Reports-README §26 for scope and outcomes.
+/** R27 in-use local API testing. Execution results stay under .local; see Docs/testing/verification.md for scope.
  * Requires an explicitly provisioned own session in ignored .local; never discovers
  * browser sessions, resets existing passwords, disables CAPTCHA, or runs bootstrap SQL.
  * Every phase must be selected explicitly. This run is closed; do not replay blindly.

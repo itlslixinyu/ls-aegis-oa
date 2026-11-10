@@ -15,6 +15,6 @@
 
 验收矩阵唯一来源为[模块矩阵](../../skills/itls-staged-test/references/acceptance.md)、[业务断言](../../skills/itls-business-test/references/flows.md)和[标准范围](../../skills/itls-staged-test/references/standards.md)。这些是执行标准，不是认证或已通过声明。
 
-每条结果记录构建指纹、日期、环境、角色、前置、预期/实际、PASS/FAIL/BLOCKED/NOT_RUN及清理证据。库存、应收应付和实收按业务补偿核对，不删除审计日志“清场”。本轮实际结果见[维护记录](../releases/maintenance.md)，旧测试只见[历史原文](../archive/legacy-reports.md)。
+每条结果记录构建指纹、日期、环境、角色、前置、预期/实际、PASS/FAIL/BLOCKED/NOT_RUN及清理证据。库存、应收应付和实收按业务补偿核对，不删除审计日志“清场”。详细结果和证据保存在本地 `.local/<任务>/<run-id>/`，不提交逐轮执行日志；对外仅在版本说明中记录必要限制。
 
-摄像头、真实GPS、地图AK继续按用户指定跳过。模拟器、真机、外部服务和性能容量不能混写成已通过。发布候选的验证不自动替换在用2.2.0镜像或宣称正式生产已升级。
+摄像头、真实GPS、地图AK继续按用户指定跳过。模拟器、真机、外部服务和性能容量不能混写成已通过。源码验证不自动替换在用镜像；部署和目标环境验收应分别执行。

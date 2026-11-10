@@ -23,11 +23,11 @@ npm --prefix ls-aegis-h5 run build:engineer
 
 修改规范按[平台约束](../architecture/platform.md)，验证按[分层检查](../testing/verification.md)。
 
-## 本机验证工具链
+## 测试JVM配置
 
-本次Windows系统Node24构建曾出现0xC0000005进程退出，改用项目本地Node22.23.4后完整构建通过；没有对Node内部故障作确定归因。现有 `use-cleanup-toolchain.ps1` 在存在已校验的Node22指针时优先使用它，并让pnpm直接调用所选Node，避免旧本机包装脚本固定系统Node。新机器需自行准备JDK21、Node22及pnpm9；`.local`不随源码包发布。Linux Docker构建使用各Dockerfile声明的工具版本，单独记录结果。
+Windows开发建议使用Node 22和pnpm 9。可选脚本 `use-cleanup-toolchain.ps1` 只在已有本地工具目录时使用；新机器先安装所需工具，不依赖他人的.local目录。
 
-本机Mockito动态自附加出现不可靠行为，完整测试使用Byte Buddy启动期Agent，不跳过测试断言，不更改生产JVM策略。已安装本次依赖时可从仓库根执行：
+若测试环境限制Mockito动态自附加，可使用Byte Buddy启动期Agent；只配置测试JVM，不改变生产JVM。依赖已由Maven解析时，可从仓库根执行：
 
 ```powershell
 $testAgentJar = Join-Path $env:USERPROFILE '.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.19/byte-buddy-agent-1.14.19.jar'

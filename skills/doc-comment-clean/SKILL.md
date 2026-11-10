@@ -13,4 +13,4 @@ description: 核实ITLS过时普通注释与废弃TODO的事实依据并生成�
 
 conservative只允许有证据的LOW普通过时注释删除；对外接口文档、历史迁移说明和其他文件本轮不删除/移动。不能把业务代码改成注释规避模式边界。
 
-输出 `comments.csv`，逐项记录原位置、过时证据、分类、建议及实际动作，候选diff与源码改动遵守同一批次验证/回滚。正式报告仍汇总到Docs/releases/maintenance.md，不另造分册。
+输出 `comments.csv`，逐项记录原位置、过时证据、分类、建议及实际动作，候选diff与源码改动遵守同一批次验证/回滚。详细报告仅保存在本地.local/code-cleanup/<run-id>/，不提交开发日志。

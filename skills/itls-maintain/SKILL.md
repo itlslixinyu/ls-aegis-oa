@@ -17,4 +17,4 @@ PC 验证用 `pnpm typecheck` 或 `pnpm build`；H5 变更分别 `npm run build:
 
 保持 UI 与接口契约、国密与权限链一致；涉及库存、结算、报价转工单时同时使用业务测试 Skill。变更 SQL 时检查全量安装与升级路径，不能修改已执行 changeset 解决本地问题。
 
-交付说明改动、验证与未覆盖项，正式项目结论按仓库规则合并进 `Docs/releases/maintenance.md`。
+交付说明改动、验证与未覆盖项，详细记录保存在本地 `.local/maintain/<run-id>/`，Git只更新受影响的现行说明。

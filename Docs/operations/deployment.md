@@ -10,7 +10,7 @@
 
 ## 当前已有数据环境
 
-要求Compose2.24.4+；本机覆盖保留dev profile和既有账号，不作为公网生产加固结果。
+要求Compose2.24.4+；本机覆盖保留dev profile和既有账号，不作为公网生产加固结果。以下命令必须在原部署目录执行；新克隆的源码目录没有原.env和数据绑定，不能直接用它替换运行目录。
 
 ```powershell
 docker compose -p ls-aegis --env-file docker/.env -f docker-compose.yml -f docker-compose.local.yml ps
@@ -26,7 +26,9 @@ docker compose -p ls-aegis --env-file docker/.env -f docker-compose.yml -f docke
 
 端口仅绑定127.0.0.1，公网通过反向代理和HTTPS。根生产Compose MySQL为25606、Redis25679、API25682、PC25683、客户25684、工程师25685。默认媒体服务不在根生产栈，当前本机占位不等于GB28181已接入。
 
-全新空库唯一SQL为 ls-aegis-server/sql/init.sql。已有库不能重跑全量SQL；受限升级按[迁移R29](../../docker/ls-aegis-server/MIGRATION-R29.md)、[R31](../../docker/ls-aegis-server/MIGRATION-R31.md)、[R32](../../docker/ls-aegis-server/MIGRATION-R32.md)的适用范围执行；这些入口不是执行所有新增patch的通用升级器。当前主master关闭，新补丁需逐项核对，不能因文档整理自动执行。
+## 数据库升级
+
+全新空库唯一SQL为 ls-aegis-server/sql/init.sql。已有库不能重跑全量SQL；受限升级按[迁移R29](../../docker/ls-aegis-server/MIGRATION-R29.md)、[R31](../../docker/ls-aegis-server/MIGRATION-R31.md)、[R32](../../docker/ls-aegis-server/MIGRATION-R32.md)及[R43/R44](../../docker/ls-aegis-server/MIGRATION-R43-R44.md)的适用范围执行；这些入口不是执行所有新增patch的通用升级器。当前主master关闭，新补丁需逐项核对，不能因文档整理自动执行。
 
 ## 验证和运维
 

@@ -1,4 +1,4 @@
-/** R29 in-use local business-logic testing. See Reports-README §28 for scope and outcomes.
+/** R29 in-use local business-logic testing. Execution results stay under .local; see Docs/testing/verification.md for scope.
  * Requires an explicitly provisioned own session in ignored .local; never discovers
  * browser sessions, resets existing passwords, disables CAPTCHA, or runs bootstrap SQL.
  * Every phase is explicit; a closed ledger refuses replay. --joint uses fresh R30-JOINT business fixtures.

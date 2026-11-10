@@ -33,9 +33,9 @@ Windows 使用 `gradlew.bat`。仓库包含 Gradle 8.11.1 Wrapper JAR 和官方�
 - `customer-app/build/outputs/apk/debug/customer-app-debug.apk`
 - `engineer-app/build/outputs/apk/debug/engineer-app-debug.apk`
 
-## 当前 Windows 本机模拟器
+## Windows模拟器配置
 
-本机 SDK、Gradle 缓存、AVD、调试签名及截图位于仓库 `.local/android/`，不纳入 Git。已经准备 Android 35 / Google APIs x86_64、Pixel 5 配置的 `ITLS_API35`，使用现有 WHPX 加速。先确保统一 Compose 的 25684/25685 入口运行，再从仓库根设置当前进程环境并构建：
+SDK、Gradle缓存、AVD、调试签名及截图可放在仓库 `.local/android/`，不纳入Git。以下示例要求已安装Android 35 / Google APIs x86_64并创建名为 `ITLS_API35` 的AVD；具体路径按本机调整。先确保统一 Compose 的 25684/25685 入口运行，再从仓库根设置当前进程环境并构建：
 
 ```powershell
 . ./scripts/quality/use-cleanup-toolchain.ps1
@@ -48,7 +48,7 @@ $env:GRADLE_USER_HOME = Join-Path $androidLocal 'gradle-cache'
 ./android-demo/gradlew.bat -p android-demo --no-daemon --max-workers=2 :customer-app:assembleDebug :engineer-app:assembleDebug
 ```
 
-先用 `$env:ANDROID_HOME/platform-tools/adb.exe devices` 查看设备；专用模拟器 `emulator-5554` 已运行时直接复用，不要重复启动。未运行时执行：
+先用 `$env:ANDROID_HOME/platform-tools/adb.exe devices` 查看设备；目标模拟器已运行时直接复用，不要重复启动。未运行时执行：
 
 ```powershell
 Start-Process -FilePath "$env:ANDROID_HOME/emulator/emulator.exe" -ArgumentList @('-avd','ITLS_API35','-port','5554','-memory','2048','-cores','2','-gpu','software','-timezone','Asia/Shanghai','-no-snapshot','-no-boot-anim','-camera-back','none','-camera-front','none','-no-audio') -WindowStyle Hidden

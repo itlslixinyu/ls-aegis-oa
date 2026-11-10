@@ -4,7 +4,7 @@ set -euo pipefail
 if [[ $# -eq 1 && "$1" == "--help" ]]; then
   printf '%s\n' 'Usage: bash scripts/migrate-r44.sh validate|status|apply --target DB_HOST:DB_PORT/DB_NAME [--acknowledge-write]'
   printf '%s\n' 'Required: MIGRATION_IMAGE (existing local candidate), MIGRATION_NETWORK (existing DB network), MIGRATION_ENV_FILE (dedicated DB role only).'
-  printf '%s\n' 'Does not build/deploy/start dependencies or mount production files. See Docs/Reports-README.md section 36.'
+  printf '%s\n' 'Does not build/deploy/start dependencies or mount production files. See docker/ls-aegis-server/MIGRATION-R43-R44.md.'
   exit 0
 fi
 if [[ $# -lt 3 ]]; then echo '[ERROR] explicit action and --target required; use --help' >&2; exit 2; fi

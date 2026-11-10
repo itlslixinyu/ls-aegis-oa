@@ -38,7 +38,7 @@
 
 - `ls-aegis-server/sql/init.sql` 是全新安装唯一 SQL。已上线库新增 Liquibase patch 并登记 master；不改已执行 changeset 正文。种子变更同步源脚本和全量 SQL。
 - MySQL 使用 UTF-8 无 BOM、`utf8mb4_general_ci`；含中文 SQL 用文件复制后 `mysql --default-character-set=utf8mb4 < 文件`，不用 PowerShell 管道传 SQL。
-- 文档入口为 `Docs/README.md`，按 `rules/报告规范.mdc` 分层维护；实际维护结论追加 `Docs/releases/maintenance.md`，旧 `Docs/Reports-README.md` 仅兼容历史链接。私有台账/草稿放被忽略的 `.local/<任务>/<run-id>/`。Agent/Skill 仍为可执行工程规范。
+- 文档入口为 `Docs/README.md`，按 `rules/报告规范.mdc` 分层维护；只维护必要的现行说明和简明版本变更；开发日志、测试报告及私有台账/草稿放被忽略的 `.local/<任务>/<run-id>/`。Agent/Skill 仍为可执行工程规范。
 - 现有详细规则位于 `rules/`，按需读取「平台一体」「项目与Git规范」「SQL规范」「前端统一架构」「报告规范」及表格、按钮规则。
 - 修改前建立可复现基线；修改后执行对应检查。报告必须区分静态审查、单测、只读冒烟和真实业务闭环；缺账号或数据时标记阻塞，不能声称全业务已通过。
 - 不读取/输出真实密钥，不提交 `.env`、数据卷、证书、日志或测试账户 Token。不要把另一个 checkout 或现存容器当成可清理对象。

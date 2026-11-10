@@ -35,4 +35,4 @@ description: 规划、实现和验收 ITLS EOMS 客户与维修工程师原生 A
 - `EOMS-ANDROID-SEC-01`：跨应用会话、撤销、越权、附件访问、ID 与本地存储/日志。
 - `EOMS-ANDROID-UX-01`：弱网、超时、空/错状态、权限拒绝、小屏和系统字体放大。
 
-详情与阶段门禁见 `Docs/android-apps/WORKFLOW.md`。用户要求正式记录时，遵照根规则将结论并入 `Docs/releases/maintenance.md`。
+详情与阶段门禁见 `Docs/android-apps/WORKFLOW.md`。详细验收记录仅保存在本地 `.local/android/<run-id>/`，项目文档只更新有效的使用和构建说明。

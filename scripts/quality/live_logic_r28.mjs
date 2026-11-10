@@ -1,4 +1,4 @@
-/** R28 in-use local business-logic testing. See Reports-README §27 for scope and outcomes.
+/** R28 in-use local business-logic testing. Execution results stay under .local; see Docs/testing/verification.md for scope.
  * Requires an explicitly provisioned own session in ignored .local; never discovers
  * browser sessions, resets existing passwords, disables CAPTCHA, or runs bootstrap SQL.
  * Every phase must be selected explicitly. This run is closed; do not replay blindly.

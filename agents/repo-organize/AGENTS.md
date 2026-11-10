@@ -26,6 +26,6 @@
 
 ## 交付与断点
 
-正式执行结论追加 `Docs/releases/maintenance.md`，文档总入口为 `Docs/README.md`，旧报告仅作历史兼容。工作清单/状态存入 `.local/repo-organize/<run-id>/`，状态使用 `TODO / IN_PROGRESS / DONE / BLOCKED / DEFERRED`，每项有证据与验证结果。
+文档总入口为 `Docs/README.md`；只保留当前有效说明和简明版本变更，执行结论、旧报告与历史兼容台账仅留本地 `.local/`。工作清单/状态存入 `.local/repo-organize/<run-id>/`，状态使用 `TODO / IN_PROGRESS / DONE / BLOCKED / DEFERRED`，每项有证据与验证结果。
 
 结束时写清已完成、尚未处理、运行影响、保留的数据、实际测试、候选发布内容与未执行的外部动作。中断恢复先读基线、已完成批次及回退记录，不重复执行删除、移动或发布。

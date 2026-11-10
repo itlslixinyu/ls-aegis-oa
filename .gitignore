@@ -205,3 +205,10 @@ __pycache__/
 # 本地历史任务归档、数据库导出与一次性探针不进入 Git
 /Docs/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]_*/
 /Docs/**/*.sql
+
+# Development journals and execution reports stay local
+/Docs/archive/
+/Docs/reports/
+/Docs/Reports-README.md
+/Docs/releases/maintenance.md
+/ls-aegis-web/CHANGELOG.md
