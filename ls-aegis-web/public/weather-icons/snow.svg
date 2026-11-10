@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
+  <defs>
+    <linearGradient id="snowCloud" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#90A4AE"/>
+      <stop offset="100%" stop-color="#546E7A"/>
+    </linearGradient>
+  </defs>
+  <g fill="url(#snowCloud)">
+    <ellipse cx="24" cy="22" rx="13" ry="9"/>
+    <ellipse cx="36" cy="20" rx="15" ry="11"/>
+    <ellipse cx="46" cy="24" rx="10" ry="7"/>
+    <ellipse cx="18" cy="26" rx="8" ry="6"/>
+  </g>
+  <g stroke="#E3F2FD" stroke-width="1.6" stroke-linecap="round" fill="none">
+    <g transform="translate(16 44)">
+      <line x1="0" y1="-5" x2="0" y2="5"/><line x1="-4.3" y1="-2.5" x2="4.3" y2="2.5"/><line x1="-4.3" y1="2.5" x2="4.3" y2="-2.5"/>
+    </g>
+    <g transform="translate(32 50)">
+      <line x1="0" y1="-5" x2="0" y2="5"/><line x1="-4.3" y1="-2.5" x2="4.3" y2="2.5"/><line x1="-4.3" y1="2.5" x2="4.3" y2="-2.5"/>
+    </g>
+    <g transform="translate(46 42)">
+      <line x1="0" y1="-5" x2="0" y2="5"/><line x1="-4.3" y1="-2.5" x2="4.3" y2="2.5"/><line x1="-4.3" y1="2.5" x2="4.3" y2="-2.5"/>
+    </g>
+  </g>
+  <g fill="#BBDEFB">
+    <circle cx="24" cy="54" r="1.6"/>
+    <circle cx="40" cy="56" r="1.4"/>
+  </g>
+</svg>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.sign.mapper.SignFileMapper">
+
+    <resultMap id="SignFileResult" type="com.ls.aegis.biz.sign.domain.SignFile">
+        <id property="fileId" column="file_id"/>
+        <result property="fileName" column="file_name"/>
+        <result property="filePath" column="file_path"/>
+        <result property="fileSize" column="file_size"/>
+        <result property="fileMime" column="file_mime"/>
+        <result property="fileSha256" column="file_sha256"/>
+        <result property="fileExt" column="file_ext"/>
+        <result property="ownerId" column="owner_id"/>
+        <result property="bizType" column="biz_type"/>
+        <result property="createTime" column="create_time"/>
+        <result property="ownerName" column="owner_name"/>
+    </resultMap>
+
+    <select id="selectFileList" parameterType="com.ls.aegis.biz.sign.domain.SignFile" resultMap="SignFileResult">
+        SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.file_mime,
+               f.file_sha256, f.file_ext, f.owner_id, f.biz_type, f.create_time,
+               u.username AS owner_name
+        FROM sign_file f
+        LEFT JOIN sys_user u ON f.owner_id = u.id
+        <where>
+            <if test="fileName != null and fileName != ''">
+                AND f.file_name LIKE CONCAT('%', #{fileName}, '%')
+            </if>
+            <if test="bizType != null and bizType != ''">
+                AND f.biz_type = #{bizType}
+            </if>
+            <if test="ownerId != null">
+                AND f.owner_id = #{ownerId}
+            </if>
+        </where>
+        ORDER BY f.create_time DESC
+    </select>
+
+    <select id="selectFileById" parameterType="Long" resultMap="SignFileResult">
+        SELECT f.*, u.username AS owner_name
+        FROM sign_file f
+        LEFT JOIN sys_user u ON f.owner_id = u.id
+        WHERE f.file_id = #{fileId}
+    </select>
+
+    <select id="selectFileBySha256" parameterType="String" resultMap="SignFileResult">
+        SELECT * FROM sign_file WHERE file_sha256 = #{sha256}
+    </select>
+
+    <select id="selectFileByPath" parameterType="String" resultMap="SignFileResult">
+        SELECT * FROM sign_file WHERE file_path = #{filePath} LIMIT 1
+    </select>
+
+    <insert id="insertFile" parameterType="com.ls.aegis.biz.sign.domain.SignFile" useGeneratedKeys="true" keyProperty="fileId">
+        INSERT INTO sign_file (
+            file_name, file_path, file_size, file_mime, file_sha256,
+            file_ext, owner_id, biz_type, create_time
+        ) VALUES (
+            #{fileName}, #{filePath}, #{fileSize}, #{fileMime}, #{fileSha256},
+            #{fileExt}, #{ownerId}, #{bizType}, #{createTime}
+        )
+    </insert>
+
+    <delete id="deleteFileByIds">
+        DELETE FROM sign_file WHERE file_id IN
+        <foreach collection="array" item="fileId" open="(" separator="," close=")">
+            #{fileId}
+        </foreach>
+    </delete>
+
+</mapper>

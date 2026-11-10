@@ -1,0 +1,4 @@
+interface:
+  display_name: "ITLS 分阶段模块与联合测试"
+  short_description: "按国标框架逐模块验收，核对权限和数据清理后进行跨模块联合回归"
+  default_prompt: "使用 $itls-staged-test 在已确认的在用实例逐模块测试，完成清理复核后执行联合测试并记录证据。"

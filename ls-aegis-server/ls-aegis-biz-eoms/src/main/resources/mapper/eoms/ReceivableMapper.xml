@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.eoms.mapper.finance.ReceivableMapper">
+    
+    <resultMap type="Receivable" id="ReceivableResult">
+    	<id     property="id"      column="id"      />
+        <result property="customerId"    column="customer_id"    />
+        <result property="customerNo"    column="customer_no"    />
+        <result property="customerName"    column="customer_name"    />
+        <result property="repairOrderId"    column="repair_order_id"    />
+        <result property="receivableNo"    column="receivable_no"    />
+        <result property="orderNo"    column="order_no"    />
+        <result property="amount"    column="amount"    />
+        <result property="receivedAmount"    column="received_amount"    />
+        <result property="arrearsAmount"    column="arrears_amount"    />
+        <result property="status"    column="status"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createUser"  column="create_user"  />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="tenantId"  column="tenant_id"    />
+        <result property="deptId"    column="dept_id"      />
+        <result property="settlementId" column="settlement_id"/>
+    </resultMap>
+
+    <sql id="selectReceivableVo">
+        select r.id, r.settlement_id, r.customer_id, r.repair_order_id, r.receivable_no, r.amount, r.received_amount, r.arrears_amount, r.status,
+               r.create_by, r.create_user, r.create_time, r.update_by, r.update_time, r.remark, r.del_flag,
+               r.tenant_id, r.dept_id,
+               c.unit_code as customer_no,
+               c.unit_name as customer_name,
+               o.order_no as order_no
+		from eoms_receivable r
+		left join psi_unit c on r.customer_id = c.id and c.deleted = 0
+		left join eoms_repair_order o on r.repair_order_id = o.id
+    </sql>
+
+    <select id="selectReceivableById" parameterType="Long" resultMap="ReceivableResult">
+        <include refid="selectReceivableVo"/>
+        where r.id = #{id} and r.del_flag = '0'
+    </select>
+
+    <select id="selectReceivableList" parameterType="Receivable" resultMap="ReceivableResult">
+        <include refid="selectReceivableVo"/>
+        <where>
+			r.del_flag = '0'
+			<if test="id != null">
+				AND r.id = #{id}
+			</if>
+			<if test="customerId != null">
+				AND r.customer_id = #{customerId}
+			</if>
+			<if test="repairOrderId != null">
+				AND r.repair_order_id = #{repairOrderId}
+			</if>
+			<if test="status != null and status != ''">
+				AND r.status = #{status}
+			</if>
+			<if test="receivableNo != null and receivableNo != ''">
+				AND r.receivable_no like concat('%', #{receivableNo}, '%')
+			</if>
+			<if test="customerName != null and customerName != ''">
+				AND c.unit_name like concat('%', #{customerName}, '%')
+			</if>
+			<if test="orderNo != null and orderNo != ''">
+				AND o.order_no = #{orderNo}
+			</if>
+			<if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+				and r.create_time &gt;= #{params.beginTime}
+			</if>
+			<if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+				and r.create_time &lt; DATE_ADD(DATE(#{params.endTime}), INTERVAL 1 DAY)
+			</if>
+			<include refid="com.ls.aegis.biz.eoms.mapper.EomsDataScopeMapper.dataScopeFilter"/>
+		</where>
+    </select>
+
+    <!-- 查询指定客户的未结清应收单（状态为 UNPAID 或 PARTIAL），用于收款登记加载待核销列表 -->
+    <select id="selectUnsettledByCustomerId" parameterType="Receivable" resultMap="ReceivableResult">
+        <include refid="selectReceivableVo"/>
+        where r.del_flag = '0'
+          and r.customer_id = #{customerId}
+          and r.status in ('UNPAID', 'PARTIAL')
+          and r.arrears_amount &gt; 0
+          <include refid="com.ls.aegis.biz.eoms.mapper.EomsDataScopeMapper.dataScopeFilter"/>
+        order by r.create_time asc
+    </select>
+
+    <insert id="insertReceivable" parameterType="Receivable" useGeneratedKeys="true" keyProperty="id">
+        insert into eoms_receivable
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="settlementId != null">settlement_id,</if>
+			<if test="customerId != null">customer_id,</if>
+			<if test="repairOrderId != null">repair_order_id,</if>
+			<if test="receivableNo != null and receivableNo != ''">receivable_no,</if>
+			<if test="amount != null">amount,</if>
+			<if test="receivedAmount != null">received_amount,</if>
+			<if test="arrearsAmount != null">arrears_amount,</if>
+			<if test="status != null and status != ''">status,</if>
+			<if test="createBy != null and createBy != ''">create_by,</if>
+			<if test="createUser != null">create_user,</if>
+			<if test="true">create_time,</if>
+			<if test="updateBy != null and updateBy != ''">update_by,</if>
+			<if test="updateTime != null and updateTime != ''">update_time,</if>
+			<if test="remark != null and remark != ''">remark,</if>
+			<if test="delFlag != null and delFlag != ''">del_flag,</if>
+			<if test="tenantId != null">tenant_id,</if>
+			<if test="deptId != null">dept_id,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="settlementId != null">#{settlementId},</if>
+			<if test="customerId != null">#{customerId},</if>
+			<if test="repairOrderId != null">#{repairOrderId},</if>
+			<if test="receivableNo != null and receivableNo != ''">#{receivableNo},</if>
+			<if test="amount != null">#{amount},</if>
+			<if test="receivedAmount != null">#{receivedAmount},</if>
+			<if test="arrearsAmount != null">#{arrearsAmount},</if>
+			<if test="status != null and status != ''">#{status},</if>
+			<if test="createBy != null and createBy != ''">#{createBy},</if>
+			<if test="createUser != null">#{createUser},</if>
+			<if test="true">CURRENT_TIMESTAMP,</if>
+			<if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+			<if test="updateTime != null and updateTime != ''">#{updateTime},</if>
+			<if test="remark != null and remark != ''">#{remark},</if>
+			<if test="delFlag != null and delFlag != ''">#{delFlag,jdbcType=CHAR},</if>
+			<if test="tenantId != null">#{tenantId},</if>
+			<if test="deptId != null">#{deptId},</if>
+        </trim>
+    </insert>
+
+    <update id="updateReceivable" parameterType="Receivable">
+        update eoms_receivable 
+        <set>
+            <if test="customerId != null">customer_id = #{customerId},</if>
+            <if test="repairOrderId != null">repair_order_id = #{repairOrderId},</if>
+            <if test="amount != null">amount = #{amount},</if>
+            <if test="receivedAmount != null">received_amount = #{receivedAmount},</if>
+            <if test="arrearsAmount != null">arrears_amount = #{arrearsAmount},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = CURRENT_TIMESTAMP,
+            <if test="remark != null and remark != ''">remark = #{remark},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!-- 收款核销：原子更新应收账款
+         条件：id匹配 + 未删除 + 状态非PAID + 当前欠款 >= 本次收款
+         动作：已收金额累加、欠款金额递减、状态切换（新状态由Service层计算传入）
+         注：SET 从左到右执行，arrears_amount 引用的是旧值（此时尚未被赋值） -->
+    <update id="updateReceivableOnPayment">
+        update eoms_receivable
+        set received_amount = received_amount + #{amount},
+            arrears_amount  = arrears_amount - #{amount},
+            status          = #{newStatus},
+            update_by       = #{updateBy},
+            update_time     = CURRENT_TIMESTAMP
+        where id = #{id}
+          and del_flag = '0'
+          and status in ('UNPAID','PARTIAL')
+          and arrears_amount &gt;= #{amount}
+    </update>
+
+    <!-- 删除收款：原子回滚应收账款（相对值更新 + 欠额充足校验，避免并发覆盖）
+         条件：id匹配 + 未删除 + 当前已收 >= 本次回滚金额
+         动作：已收金额递减、欠款金额累加；回滚后已收=0 → UNPAID，否则 → PARTIAL -->
+    <update id="rollbackReceivableOnPaymentDelete">
+        update eoms_receivable
+        set status = case when received_amount = #{amount} then 'UNPAID' else 'PARTIAL' end,
+            received_amount = received_amount - #{amount},
+            arrears_amount = arrears_amount + #{amount},
+            update_by       = #{updateBy},
+            update_time     = CURRENT_TIMESTAMP
+        where id = #{id}
+          and del_flag = '0'
+          and received_amount &gt;= #{amount} and status in ('UNPAID','PARTIAL','PAID')
+    </update>
+
+    <update id="deleteReceivableById" parameterType="Long">
+        update eoms_receivable set del_flag = '2' where id = #{id}
+    </update>
+
+    <update id="deleteReceivableByIds" parameterType="Long">
+        update eoms_receivable set del_flag = '2' where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+        	#{id}
+        </foreach>
+    </update>
+
+    <select id="lockReceivable" resultMap="ReceivableResult">
+        select * from eoms_receivable where id=#{id} and del_flag='0' for update
+    </select>
+    <select id="lockByOrder" resultMap="ReceivableResult">
+        select * from eoms_receivable where repair_order_id=#{orderId} and del_flag='0' and status != 'VOID' for update
+    </select>
+    <update id="voidReceivable">
+        update eoms_receivable set status='VOID', arrears_amount=0, update_by=#{operator}, update_time=CURRENT_TIMESTAMP
+        where id=#{id} and del_flag='0' and received_amount=0 and (status in ('UNPAID','PARTIAL') or (status='PAID' and amount=0 and arrears_amount=0))
+    </update>
+</mapper>

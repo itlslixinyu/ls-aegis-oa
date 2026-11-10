@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.eoms.mapper.statistics.StatisticsMapper">
+
+    <!-- ==================== Dashboard 概览（标量子查询合并为单次 SQL） ==================== -->
+    <!-- 每个子查询均走索引（del_flag / status / create_time / income_date），避免全表扫描 -->
+    <select id="dashboardOverview" resultType="java.util.HashMap">
+        SELECT
+            (SELECT COUNT(*) FROM psi_unit WHERE deleted = 0 AND unit_type IN ('CUSTOMER','BOTH')) AS customerTotal,
+            (SELECT COUNT(*) FROM psi_unit WHERE deleted = 0 AND unit_type IN ('CUSTOMER','BOTH') AND create_time &gt;= #{monthStart}) AS thisMonthCustomer,
+            (SELECT COUNT(*) FROM eoms_repair_order WHERE del_flag = '0') AS orderTotal,
+            (SELECT COUNT(*) FROM eoms_repair_order WHERE del_flag = '0' AND status = 'WAIT_SETTLEMENT') AS waitSettlement,
+            (SELECT COUNT(*) FROM eoms_repair_order WHERE del_flag = '0' AND status IN ('WAIT_ACCEPT','ACCEPTED','PROCESSING')) AS waitRepair,
+            (SELECT COUNT(*) FROM eoms_repair_order WHERE del_flag = '0' AND status = 'WAIT_ACCEPT') AS waitAccept,
+            (SELECT COUNT(*) FROM eoms_repair_order WHERE del_flag = '0' AND status IN ('ACCEPTED','PROCESSING')) AS processing,
+            (SELECT COUNT(*) FROM eoms_repair_apply WHERE del_flag = '0' AND status = 'WAIT') AS waitApply,
+            (SELECT COUNT(*) FROM eoms_repair_order WHERE del_flag = '0' AND create_time &gt;= #{monthStart}) AS thisMonthOrder,
+            (SELECT COALESCE(SUM(amount), 0) FROM eoms_income WHERE del_flag = '0') AS totalIncome,
+            (SELECT COALESCE(SUM(amount), 0) FROM eoms_income WHERE del_flag = '0' AND income_date &gt;= #{monthStart}) AS monthIncome,
+            (SELECT COUNT(*) FROM psi_goods g
+                WHERE g.deleted = 0 AND g.stock_lower IS NOT NULL AND g.stock_lower &gt; 0
+                  AND (SELECT COALESCE(SUM(b.remain_quantity), 0) FROM psi_stock_batch b
+                       WHERE b.goods_id = g.id AND b.deleted = 0) &lt; g.stock_lower) AS stockAlert,
+            (SELECT COUNT(DISTINCT goods_id) FROM psi_stock_batch WHERE deleted = 0 AND remain_quantity &gt; 0) AS stockTotal
+        FROM dual
+    </select>
+
+    <!-- ==================== 工单趋势（按天聚合） ==================== -->
+    <!-- WHERE 用范围查询走索引；GROUP BY DATE(create_time) 利用已过滤的结果集分组 -->
+    <select id="orderTrend" resultType="java.util.HashMap">
+        SELECT DATE(create_time) AS day, COUNT(*) AS count
+        FROM eoms_repair_order
+        WHERE del_flag = '0'
+          AND create_time &gt;= #{beginDate}
+          AND create_time &lt; #{endDate}
+        GROUP BY DATE(create_time)
+        ORDER BY day ASC
+    </select>
+
+    <!-- ==================== 物料消耗 Top N（OUT 出库聚合） ==================== -->
+    <!-- usage 是 MySQL 保留字（USAGE），必须用反引号转义，否则 SQL 语法错误 -->
+    <select id="materialTop" resultType="java.util.HashMap">
+        SELECT m.material_id AS materialId,
+               COALESCE(g.goods_name, m.material_name, CONCAT('物料#', m.material_id)) AS name,
+               COALESCE(g.goods_name, m.material_name, CONCAT('物料#', m.material_id)) AS materialName,
+               g.goods_code AS materialNo,
+               COALESCE(SUM(m.quantity), 0) AS `usage`,
+               COALESCE(SUM(m.quantity), 0) AS quantity
+        FROM eoms_repair_material m
+        LEFT JOIN psi_goods g ON g.id = m.material_id AND g.deleted = 0
+        WHERE m.del_flag = '0'
+        GROUP BY m.material_id, g.goods_name, m.material_name, g.goods_code
+        ORDER BY `usage` DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- ==================== 收入按月聚合 ==================== -->
+    <!-- P1-4 修复：WHERE 条件改用范围查询替代 DATE_FORMAT 函数，让索引生效 -->
+    <select id="incomeTrendByMonth" resultType="java.util.HashMap">
+        SELECT DATE_FORMAT(create_time, '%Y-%m') AS month,
+               COALESCE(SUM(amount), 0) AS amount
+        FROM eoms_income
+        WHERE del_flag = '0'
+          AND create_time &gt;= #{beginMonthStart}
+        GROUP BY DATE_FORMAT(create_time, '%Y-%m')
+        ORDER BY month ASC
+    </select>
+
+    <!-- ==================== 成本按月聚合 ==================== -->
+    <!-- P1-4 修复：WHERE 条件改用范围查询替代 DATE_FORMAT 函数，让索引生效 -->
+    <select id="costTrendByMonth" resultType="java.util.HashMap">
+        SELECT DATE_FORMAT(create_time, '%Y-%m') AS month,
+               COALESCE(SUM(amount), 0) AS amount
+        FROM eoms_cost
+        WHERE del_flag = '0'
+          AND create_time &gt;= #{beginMonthStart}
+        GROUP BY DATE_FORMAT(create_time, '%Y-%m')
+        ORDER BY month ASC
+    </select>
+
+    <!-- ==================== 客户分布（按客户类型聚合） ==================== -->
+    <select id="customerDistribution" resultType="java.util.HashMap">
+        SELECT CASE unit_nature WHEN 'ENTERPRISE' THEN '企业' WHEN 'PERSON' THEN '个人' ELSE IFNULL(unit_nature, '未分类') END AS type,
+               CASE unit_nature WHEN 'ENTERPRISE' THEN '企业' WHEN 'PERSON' THEN '个人' ELSE IFNULL(unit_nature, '未分类') END AS name,
+               COUNT(*) AS count
+        FROM psi_unit
+        WHERE deleted = 0 AND unit_type IN ('CUSTOMER','BOTH')
+        GROUP BY unit_nature
+        ORDER BY count DESC
+    </select>
+
+    <!-- ==================== 工程师绩效（工单数 + 已完成数） ==================== -->
+    <!-- 已完成 = FINISHED 或 CLOSED；关联 sys_user 取工程师昵称 -->
+    <select id="engineerPerformance" resultType="java.util.HashMap">
+        SELECT o.engineer_id AS engineerId,
+               COALESCE(u.nickname, CONCAT('工程师#', o.engineer_id)) AS engineerName,
+               COUNT(*) AS orderCount,
+               SUM(CASE WHEN o.status IN ('FINISHED','CLOSED') THEN 1 ELSE 0 END) AS completedCount
+        FROM eoms_repair_order o
+        LEFT JOIN sys_user u ON u.id = o.engineer_id
+        WHERE o.del_flag = '0'
+          AND o.engineer_id IS NOT NULL
+        GROUP BY o.engineer_id, u.nickname
+        ORDER BY orderCount DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- ==================== 利润明细（按结算单维度：销售价-成本价=利润） ==================== -->
+    <!-- 数据源：eoms_repair_settlement（结算单） -->
+    <!-- 销售价 = total_income（服务费+材料销售+人工+其它收入，结算确认时确定） -->
+    <!-- 成本价 = total_cost（材料成本+人工成本+其它成本） -->
+    <!-- 利润 = total_income - total_cost = profit_amount（结算单字段已有） -->
+    <!-- 只统计 status=CONFIRMED 的已确认结算单，未确认的不计入利润 -->
+    <select id="profitList" resultType="java.util.HashMap">
+        SELECT s.id AS settlementId,
+               s.settlement_no AS settlementNo,
+               s.repair_order_id AS orderId,
+               o.order_no AS orderNo,
+               c.unit_name AS customerName,
+               COALESCE(s.total_income, 0) AS incomeAmount,
+               COALESCE(s.total_cost, 0) AS costAmount,
+               COALESCE(s.profit_amount, 0) AS profit,
+               CASE
+                   WHEN COALESCE(s.total_income, 0) &gt; 0
+                   THEN ROUND(COALESCE(s.profit_amount, 0) / s.total_income * 100, 2)
+                   ELSE 0
+               END AS profitRate,
+               s.update_time AS settleTime
+        FROM eoms_repair_settlement s
+        LEFT JOIN eoms_repair_order o ON s.repair_order_id = o.id
+        LEFT JOIN psi_unit c ON o.customer_id = c.id AND c.deleted = 0
+        WHERE s.del_flag = '0'
+          AND s.status = 'CONFIRMED'
+          <if test="beginMonth != null and beginMonth != ''">
+          AND s.update_time &gt;= #{beginMonth}
+          </if>
+          <if test="endMonthNext != null and endMonthNext != ''">
+          AND s.update_time &lt; #{endMonthNext}
+          </if>
+          <if test="customerName != null and customerName != ''">
+          <!-- 【P0-3 优化】先右模糊前缀过滤（可走 customer_name 前缀索引），再中模糊精确过滤 -->
+          AND c.unit_name LIKE CONCAT(#{customerName}, '%')
+          AND c.unit_name LIKE CONCAT('%', #{customerName}, '%')
+          </if>
+          <if test="orderNo != null and orderNo != ''">
+          <!-- 【P0-3 优化】右模糊（走 uk_order_no 索引），保留前缀搜索即可满足绝大多数搜索场景 -->
+          AND o.order_no LIKE CONCAT(#{orderNo}, '%')
+          </if>
+        ORDER BY s.update_time DESC
+    </select>
+
+    <!-- ==================== 利润汇总（总收入、总成本、总利润、利润率） ==================== -->
+    <select id="profitSummary" resultType="java.util.HashMap">
+        SELECT COALESCE(SUM(s.total_income), 0) AS totalIncome,
+               COALESCE(SUM(s.total_cost), 0) AS totalCost,
+               COALESCE(SUM(s.profit_amount), 0) AS totalProfit,
+               CASE
+                   WHEN SUM(s.total_income) &gt; 0
+                   THEN ROUND(SUM(s.profit_amount) / SUM(s.total_income) * 100, 2)
+                   ELSE 0
+               END AS profitRate,
+               COUNT(*) AS orderCount
+        FROM eoms_repair_settlement s
+        LEFT JOIN eoms_repair_order o ON s.repair_order_id = o.id
+        LEFT JOIN psi_unit c ON o.customer_id = c.id AND c.deleted = 0
+        WHERE s.del_flag = '0'
+          AND s.status = 'CONFIRMED'
+          <if test="beginMonth != null and beginMonth != ''">
+          AND s.update_time &gt;= #{beginMonth}
+          </if>
+          <if test="endMonthNext != null and endMonthNext != ''">
+          AND s.update_time &lt; #{endMonthNext}
+          </if>
+          <if test="customerName != null and customerName != ''">
+          <!-- 【P0-3 优化】先右模糊前缀过滤（可走 customer_name 前缀索引），再中模糊精确过滤 -->
+          AND c.unit_name LIKE CONCAT(#{customerName}, '%')
+          AND c.unit_name LIKE CONCAT('%', #{customerName}, '%')
+          </if>
+          <if test="orderNo != null and orderNo != ''">
+          <!-- 【P0-3 优化】右模糊（走 uk_order_no 索引），前缀搜索满足绝大多数搜索场景 -->
+          AND o.order_no LIKE CONCAT(#{orderNo}, '%')
+          </if>
+    </select>
+
+</mapper>

@@ -1,0 +1,49 @@
+---
+description: SQL 通用规范：UTF-8 防乱码 + 基础数据变更必须同步唯一部署 SQL
+alwaysApply: true
+---
+
+# SQL 规范（通用）
+
+## 1. 基础/种子数据变更必须同步部署 SQL
+
+只要改了任何 SQL **基础数据 / 种子数据**（含运行库手工纠正后需固化的内容），部署用 SQL **必须同步改**。禁止只改库、只改 Liquibase resources、或只改 sql 一侧。
+
+含：菜单、字典、参数、部门、角色、用户、客户端、存储、插件初始化等。
+
+| 用途 | 路径 |
+|------|------|
+| Liquibase 运行时 | `ls-aegis-server/ls-aegis-boot/src/main/resources/db/changelog/**` |
+| 部署 SQL（唯一） | `ls-aegis-server/sql/init.sql` |
+| 变更登记 | `db.changelog-master.yaml`（已上线库新增 patch 必须 include） |
+
+| 场景 | 做法 |
+|------|------|
+| 全新安装 | 改 Liquibase `main_data.sql` / 插件初始化 SQL（MySQL + PostgreSQL 对齐）→ **重新生成** `sql/init.sql`（表结构 + 种子 + 插件合并为一份） |
+| 已上线库 | **禁止改已执行 changeset 正文**；新增 `patch_xxx.sql` → 挂 master → 并把最终效果并入 `main_data` 与 `init.sql` |
+| 仅修当前库 | 修完后仍须写入种子或 patch，并同步 `init.sql`，避免下次部署丢失 |
+
+`ls-aegis-server/sql` 下**只允许** `init.sql`（可另有 `.gitkeep`），禁止再拆 `changelog/`、多份 `patch_*.sql` 作为部署副本。
+
+敏感字段（手机号、邮箱等）种子优先 `NULL`，禁止写入 FieldEncrypt 密文。
+
+## 2. 中文编码（禁止乱码）
+
+含中文的写入必须 UTF-8，禁止 `??????` 或 Latin1 误读。
+
+1. MySQL：`utf8mb4` + `utf8mb4_general_ci`；客户端带 `--default-character-set=utf8mb4` 或 `SET NAMES utf8mb4;`
+2. `*.sql`：**UTF-8 无 BOM**；changeset / `init.sql` 内直接写汉字
+3. **禁止** PowerShell 管道把含中文 SQL 喂给 `docker exec -i mysql`
+4. 正确导入：本机写好 SQL → `docker cp` 进容器 → 容器内 `mysql ... --default-character-set=utf8mb4 < init.sql`
+5. 改完可见中文配置后，按需清 Redis（如 `OPTION:SITE`）再验证
+
+验证：
+
+```sql
+SELECT code, name, description, HEX(LEFT(description, 12)) FROM sys_option WHERE code = '...';
+```
+
+- 正常中文 HEX 多为 `E` 开头多字节（如 `E698BE`）
+- 大量 `3F`（`?`）或 Latin1 乱码 → **立即重写**
+
+前端兜底：配置页对用户可见的说明文案优先前端写死正确中文，勿把可能被污染的 DB `description` 当唯一展示源。

@@ -1,0 +1,44 @@
+databaseChangeLog:
+  - preConditions:
+      - onFail: HALT
+      - onError: HALT
+      - dbms:
+          type: mysql
+      - or:
+          - not:
+              - tableExists:
+                  tableName: sys_app
+          - sqlCheck:
+              expectedResult: "0"
+              sql: SELECT COUNT(*) FROM sys_app
+      - or:
+          - not:
+              - tableExists:
+                  tableName: gen_config
+          - sqlCheck:
+              expectedResult: "0"
+              sql: SELECT COUNT(*) FROM gen_config
+      - or:
+          - not:
+              - tableExists:
+                  tableName: gen_field_config
+          - sqlCheck:
+              expectedResult: "0"
+              sql: SELECT COUNT(*) FROM gen_field_config
+      - sqlCheck:
+          expectedResult: "0"
+          sql: SELECT COUNT(*) FROM sys_menu WHERE parent_id IN (7000,7010,7011,7012,7013,7014,7015,7016,7017,7018,9000,9010,9011,9012,9013,9014) AND id NOT IN (7000,7010,7011,7012,7013,7014,7015,7016,7017,7018,9000,9010,9011,9012,9013,9014)
+      - sqlCheck:
+          expectedResult: "0"
+          sql: >-
+            SELECT COUNT(*) FROM sys_menu WHERE id IN (7000,7010,7011,7012,7013,7014,7015,7016,7017,7018,9000,9010,9011,9012,9013,9014) AND NOT ((id=7000 AND COALESCE(path,'')='/open') OR (id=7010 AND parent_id=7000 AND COALESCE(path,'')='/open/app') OR (id BETWEEN 7011 AND 7018 AND parent_id=7010 AND COALESCE(permission,'') LIKE 'open:app:%') OR (id=9000 AND COALESCE(path,'')='/code') OR (id=9010 AND parent_id=9000 AND COALESCE(path,'')='/code/generator') OR (id BETWEEN 9011 AND 9014 AND parent_id=9010 AND COALESCE(permission,'') LIKE 'code:generator:%'))
+  - changeSet:
+      id: r44_retire_generator_open_mysql
+      author: ls
+      dbms: mysql
+      changes:
+        - sqlFile:
+            path: db/changelog/mysql/patch_retire_generator_open.sql
+            encoding: UTF-8
+            splitStatements: true
+            stripComments: true

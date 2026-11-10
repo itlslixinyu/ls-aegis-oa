@@ -1,0 +1,84 @@
+# 本机完整部署：叠加根生产 Compose，复用现有数据，不用于空库初始化。
+# docker compose -p ls-aegis --env-file docker/.env -f docker-compose.yml -f docker-compose.local.yml up -d --build
+# 禁止 down -v；external 卷必须已存在，避免误建空库。
+name: ls-aegis
+
+services:
+  ls-aegis-mysql:
+    image: mysql:8.0.42
+    ports: !override
+      - "127.0.0.1:3306:3306"
+    volumes: !override
+      - existing-mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_ROOT_PASSWORD\" mysql -h127.0.0.1 -uroot -N -e 'SELECT 1 FROM ls_aegis.sys_user LIMIT 1' >/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  ls-aegis-redis:
+    image: redis:7.2.8
+    ports: !override
+      - "127.0.0.1:6379:6379"
+    volumes: !override
+      - existing-redis:/data
+      - ./docker/redis/conf/redis.conf:/usr/local/redis/config/redis.conf:ro
+
+  ls-aegis-server:
+    env_file: ./docker/.env
+    environment:
+      # 保持当前本机配置语义，不冒充正式生产验收。
+      SPRING_PROFILES_ACTIVE: dev
+      SERVER_PORT: "18000"
+      DB_USER: root
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+      APPLICATION_URL: http://localhost:5173
+      ITLS_H5_CUSTOMER_URL: http://127.0.0.1:25684
+      ITLS_H5_ENGINEER_URL: http://127.0.0.1:25685
+      GM_KEY_STORE_PATH: /app/data/gm/keys.properties
+      JAVA_OPTS: -Xms256m -Xmx1024m -XX:+UseG1GC
+    ports: !override
+      - "127.0.0.1:8000:18000"
+      - "127.0.0.1:25682:18000"
+    volumes: !override
+      - ./docker/data/ls-aegis-server/data:/app/data
+      - ./docker/data/ls-aegis-server/logs:/app/logs
+      - C:/Windows/Fonts/simhei.ttf:/app/fonts/simhei.ttf:ro
+
+  ls-aegis-web:
+    ports: !override
+      - "127.0.0.1:5173:80"
+      - "127.0.0.1:25683:80"
+
+  ls-aegis-h5:
+    ports: !override
+      - "127.0.0.1:5174:80"
+      - "127.0.0.1:25684:80"
+
+  ls-aegis-h5-engineer:
+    ports: !override
+      - "127.0.0.1:5175:80"
+      - "127.0.0.1:25685:80"
+
+  # 保持原有占位容器语义：尚未配置媒体业务，不声称媒体服务已可用。
+  ls-aegis-media:
+    image: zlmediakit/zlmediakit:master
+    container_name: ls-aegis-media
+    entrypoint: ["/bin/sleep"]
+    command: ["infinity"]
+    network_mode: none
+    restart: unless-stopped
+
+volumes:
+  existing-mysql:
+    external: true
+    name: ls-aegis_mysql-data
+  existing-redis:
+    external: true
+    name: ls-aegis_redis-data
+
+networks:
+  ls-aegis:
+    name: ls-aegis-net
+    external: true

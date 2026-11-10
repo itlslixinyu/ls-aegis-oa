@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.sign.mapper.SignCertRequestMapper">
+
+    <resultMap id="SignCertRequestResult" type="com.ls.aegis.biz.sign.domain.SignCertRequest">
+        <id property="requestId" column="request_id"/>
+        <result property="requestType" column="request_type"/>
+        <result property="orgId" column="org_id"/>
+        <result property="projectId" column="project_id"/>
+        <result property="sealId" column="seal_id"/>
+        <result property="subjectName" column="subject_name"/>
+        <result property="subjectCode" column="subject_code"/>
+        <result property="status" column="status"/>
+        <result property="approveBy" column="approve_by"/>
+        <result property="approveTime" column="approve_time"/>
+        <result property="rejectReason" column="reject_reason"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <select id="selectSignCertRequestByRequestId" parameterType="Long" resultMap="SignCertRequestResult">
+        SELECT request_id, request_type, org_id, project_id, seal_id, subject_name,
+               subject_code, status, approve_by, approve_time, reject_reason,
+               create_by, create_time, update_by, update_time, remark
+        FROM sign_cert_request
+        WHERE request_id = #{requestId}
+    </select>
+
+    <insert id="insertSignCertRequest" parameterType="com.ls.aegis.biz.sign.domain.SignCertRequest" useGeneratedKeys="true" keyProperty="requestId">
+        INSERT INTO sign_cert_request (
+            request_type, org_id, project_id, seal_id, subject_name, subject_code,
+            status, approve_by, approve_time, reject_reason,
+            create_by, create_time, update_by, update_time, remark
+        ) VALUES (
+            #{requestType}, #{orgId}, #{projectId}, #{sealId}, #{subjectName}, #{subjectCode},
+            #{status}, #{approveBy}, #{approveTime}, #{rejectReason},
+            #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{remark}
+        )
+    </insert>
+</mapper>

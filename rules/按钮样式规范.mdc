@@ -1,0 +1,49 @@
+---
+description: 管理后台按钮角色规范（七类角色 + 修饰；禁止 type×status 穷举）
+globs: "**/views/**/*.vue,**/components/**/*.vue,**/layout/**/*.vue,**/constant/button-role.ts,**/styles/arco-ui/a-button.less,**/styles/arco-ui/a-link.less,**/public/design/**,rules/按钮样式规范.mdc"
+alwaysApply: false
+---
+
+# 按钮样式规范
+
+权威视觉与文案字典：
+
+`ls-aegis-web/public/design/button-dictionary.html`
+
+开发态打开：`/design/button-dictionary.html`  
+代码常量：`ls-aegis-web/src/constant/button-role.ts`  
+全局皮肤（唯一入口，业务页勿再 import）：
+
+- `ls-aegis-web/src/styles/arco-ui/a-button.less`
+- `ls-aegis-web/src/styles/arco-ui/a-link.less`
+
+## 分类（先角色，再修饰）
+
+| 角色 | 何时用 | 推荐写法 |
+|---|---|---|
+| 1 主操作 | 页内唯一推进 CTA | `type="primary"` |
+| 2 次操作 | 同级辅助 | `type="secondary"` 或默认 |
+| 3 危险 | 不可逆破坏 | 实心 `primary+danger` / 轻量 `status=danger` / 描边 `outline+danger` / 行内 `a-link status=danger` |
+| 4 警示 | 有风险非删除 | `type="outline" status="warning"` |
+| 5 文字 | 表格行 / 轻量链接 | **统一 `a-link`** |
+| 6 图标 | 顶栏 / 表格工具 | 图标按钮 |
+| 7 更多 | 溢出低频项 | `a-dropdown` + `⋯`（触发可用 `type="text" size="mini"`） |
+
+修饰（非角色）：`size` / `long` / `loading` / `disabled` / `round`（仅特例）。
+
+## 强制约定
+
+1. **同一工具栏**最多 **1** 个实心 `primary`（不含 `primary+danger` 批量破坏）。列表页允许「筛选区查询」与「工具栏新增」各保留一个 `primary`。
+2. 表格操作列统一 **`a-link`**，禁止再新增 `a-button type="text"` 做行操作文案（详情/修改/删除等）。
+3. 警示统一描边；禁止新增 `primary+success`、`primary+warning` 冒充角色。
+4. 按钮文案优先「查询」，勿与「搜索」混用（placeholder / 顶栏全局搜可保留「搜索」）；「重试」禁止 `danger`。
+5. 查询区默认文案由 `GiForm` 的 `searchBtnText` 提供（默认「查询」）。
+6. 新增/改按钮前先对照字典归类；字典未收录的文案先补字典再落地。
+
+## 禁止
+
+- ❌ 按 Arco `type × status` 组合发明新业务皮肤  
+- ❌ 业务页各自 import 按钮 SCSS / 另造 `.btn-*` 平行体系  
+- ❌ 工具栏堆多个非危险 `primary`  
+- ❌ 业务工具栏随意 `shape="round"`（登录/营销/错误页除外）  
+- ❌ dashed / ghost 作为常规业务按钮  

@@ -1,0 +1,12 @@
+import mitt from 'mitt'
+
+interface Events {
+  // 自定义事件名称
+  event: void
+  // 任意传递的参数
+  [parmas: string]: unknown
+  [event: symbol]: unknown
+}
+
+const mittBus = mitt<Events>()
+export default mittBus

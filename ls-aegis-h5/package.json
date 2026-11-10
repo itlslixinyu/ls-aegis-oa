@@ -1,0 +1,32 @@
+{
+  "name": "itls-h5",
+  "version": "1.0.0",
+  "description": "LS·Aegis OA 管理平台移动入口：客户服务与工程师任务",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --mode customer",
+    "dev:customer": "vite --mode customer",
+    "dev:engineer": "vite --mode engineer",
+    "build": "vite build --mode customer",
+    "build:customer": "vite build --mode customer",
+    "build:engineer": "vite build --mode engineer",
+    "preview": "vite preview --mode customer --host 0.0.0.0",
+    "preview:engineer": "vite preview --mode engineer --host 0.0.0.0"
+  },
+  "dependencies": {
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0",
+    "pinia": "^3.0.1",
+    "vant": "^4.9.10",
+    "axios": "^1.7.9",
+    "sm-crypto": "^0.5.5",
+    "@vant/touch-emulator": "^1.5.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "vite": "^6.0.7",
+    "unplugin-vue-components": "^28.0.0",
+    "@vant/auto-import-resolver": "^1.3.0"
+  }
+}

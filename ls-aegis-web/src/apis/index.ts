@@ -1,0 +1,16 @@
+export * from './area'
+export * from './auth'
+export * from './common'
+export * from './monitor'
+export * from './system'
+export * from './tenant'
+export * from './schedule'
+// 业务域从 @/apis/psi、@/apis/eoms 等明确导入，避免同名财务接口互相覆盖。
+
+export * from './area/type'
+export * from './auth/type'
+export * from './common/type'
+export * from './monitor/type'
+export * from './system/type'
+export * from './tenant/type'
+export * from './schedule/type'

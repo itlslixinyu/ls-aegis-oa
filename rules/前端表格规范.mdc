@@ -1,0 +1,98 @@
+---
+description: 管理后台列表表格布局规范（锁宽档位 + scroll.x=列宽总和）
+globs: "**/BaseTable/**,**/GiTable/**,**/tableHelper.ts,**/table-col.ts,**/views/**/index.vue,rules/前端表格规范.mdc,rules/列表表格实现说明.md"
+alwaysApply: false
+---
+
+# 管理后台列表表格布局规范
+
+目标观感：编号单行完整、短列紧凑、名称舒适宽、时间完整显示；宽屏多余空白在**表格右侧**，不塞进某一列。  
+**禁止** `scroll.x:'100%'` 均分、**禁止**按单元格自动测宽做默认布局。
+
+实现细节见：`rules/列表表格实现说明.md`。
+
+## 一、核心原则（与组件库无关）
+
+1. **所有列最终都有明确 `width`（px）**，不靠弹性均分铺满。
+2. **`scroll.x` = 各列 width 之和（数字）**；容器更宽时右侧留白，更窄时横滚。
+3. 列分四类，业务只「选角色 / 选档位」，不调像素：
+
+| 角色 | 业务写法 | 归一化结果 |
+|---|---|---|
+| 操作 | `dataIndex:'action'` + `width` | 右固定，`ellipsis:false` |
+| 短列 | `width: 档位`（状态/类型/数量/时间） | 保持 width |
+| 编号 | `minWidth: 档位` + `ellipsis:false` | 锁成 `width`，`white-space:nowrap` |
+| 名称 | 不写 width，或 `width: name/nameLg` | 默认锁 **240**，`ellipsis`+`tooltip` |
+
+4. 默认 `align: 'center'`（业务可覆盖）。
+5. 列表统一走 `BaseTable` + `normalizeTableColumns`，禁止业务页直连 `GiTable` / `a-table` 绕过归一化。
+
+## 二、推荐档位（px）
+
+本仓库常量名：`TableCol`（`src/constant/table-col.ts`）。
+
+| 常量 | 值 | 用途 |
+|---|---|---|
+| codeMinSm | 152 | 短编码 / 用户名等 |
+| codeMin | 184 | 长单号 / 连续编号 |
+| codeMinLg | 220 | UUID 等 |
+| type / typeSm | 100 / 88 | 类型、标签 |
+| status | 96 | 状态 |
+| date / dateSm | 178 / 120 | 日期时间 / 仅日期 |
+| qty / unit / spec | 88 / 72 / 120 | 数量、单位、规格 |
+| name / nameLg | 240 / 320 | 名称默认 / 加宽 |
+| actionS / actionM / actionL / actionXl | 140 / 220 / 280 / 360 | 按按钮数 |
+
+## 三、归一化算法（须实现）
+
+```
+对每列：
+  action → fixed:right, ellipsis:false, width 兜底
+  已有 width → 补 ellipsis/tooltip/align
+  ellipsis===false（编号）→ width=minWidth，删 minWidth，nowrap
+  其它（名称）→ width = minWidth ?? 240，删 minWidth，ellipsis+tooltip
+scroll.x = sum(各列 width)；y 默认 '100%'
+```
+
+本仓库路径：
+
+| 用途 | 路径 |
+|---|---|
+| 档位常量 | `ls-aegis-web/src/constant/table-col.ts`（导出 `TableCol`） |
+| 归一化 / scroll | `ls-aegis-web/src/utils/tableHelper.ts` |
+| 表格壳 | `ls-aegis-web/src/components/BaseTable/index.vue` |
+| 底层表格 | `ls-aegis-web/src/components/GiTable/`（已有） |
+
+## 四、业务列示例
+
+```ts
+import { TableCol } from '@/constant/table-col'
+
+{ title: '用户名', dataIndex: 'username', minWidth: TableCol.codeMinSm, ellipsis: false },
+{ title: '昵称', dataIndex: 'nickname' },                 // 默认 240
+{ title: '所属部门', dataIndex: 'deptName', width: TableCol.nameLg }, // 需要更宽
+{ title: '状态', dataIndex: 'status', width: TableCol.status },
+{ title: '创建时间', dataIndex: 'createTime', width: TableCol.date },
+{ title: '操作', dataIndex: 'action', slotName: 'action', width: TableCol.actionM },
+```
+
+```vue
+<BaseTable row-key="id" :data="list" :columns="columns" :loading="loading" :pagination="pagination" />
+```
+
+## 五、落地清单
+
+1. 建档位常量 `TableCol` → `src/constant/table-col.ts`。
+2. 实现 `normalizeTableColumns` + `sumTableColumnsWidth` + `mergeTableScroll` → `src/utils/tableHelper.ts`。
+3. 建 `BaseTable`：normalize 列 → `scroll.x = 列宽总和` → 包 `GiTable`。
+4. 列表页只选档位；多页同类不对 → **改档位/归一化**，禁止逐页抠 CSS。
+5. 若有列设置本地缓存，改宽后需支持「重置」以免旧 width 残留。
+
+## 六、禁止
+
+- ❌ `scroll.x: '100%'` 做列均分  
+- ❌ 默认自动测宽布局  
+- ❌ 名称列吃光剩余宽度  
+- ❌ 编号 `ellipsis` 截断或档位过窄换行  
+- ❌ 百分比列宽  
+- ❌ 列表绕过 BaseTable / 归一化  

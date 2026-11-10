@@ -1,0 +1,36 @@
+---
+description: GM/T 国密与信创国产化约束（独立模块、可关闭、禁止硬编码密钥）
+alwaysApply: true
+---
+
+# 国密与信创
+
+## 国密（强制 · 整体切换）
+
+1. 算法：SM2 签名验签、SM3 摘要、SM4 对称加密，基于 **BouncyCastle**。
+2. 统一接口 `IGmCrypto`，软件实现仅 `SoftwareGmCrypto`；模块为 **`ls-aegis-crypto`**（`com.ls.aegis.crypto`），与业务/鉴权解耦。
+3. 全局开关 `gm.enable`：默认 **true**（整体国密）；`false` 关闭以兼容普通开源环境。
+4. 密钥禁止硬编码、禁止提交仓库；优先环境变量/配置中心；未配置时 **自动生成** 并写入 `gm.key-store-path`；**私钥绝不下发前端**。
+5. 全链路：
+   - 传输 **SM2**（前端 `/auth/gm/public-key` + `encryptTransport`）
+   - 字段存储 **SM4**（`Sm4Encryptor`）
+   - 摘要 / 新口令哈希 **SM3**（`{sm3}`；校验仍兼容存量 `{bcrypt}`）
+   - 行为验证码坐标 **SM4/ECB**
+   - 分片文件指纹 / 分片 ETag **SM3**
+   - SnailJob 登录摘要 **SM3**（库口令见 `ls-aegis-biz-schedule/README-GM.md`）
+6. 存量兼容（默认关闭，整体国密勿开）：
+   - `gm.legacy-rsa-fallback`：传输解密回退 RSA
+   - `gm.legacy-aes-fallback`：字段解密回退 AES
+7. `gm.enable=false` 时允许 MD5/AES/RSA/BCrypt 回退路径，不得在默认国密配置下依赖这些回退。
+
+## 信创（强制）
+
+1. CPU：x86_64、ARM64（鲲鹏、飞腾）；算法用纯 Java BC，不依赖本地 so。
+2. OS：银河麒麟服务器、统信 UOS 服务器版。
+3. 数据库：达梦 DM8、人大金仓 KingbaseES——注意分页与函数方言；默认仍 MySQL，国产库用配置/profile 切换，不破坏现网。
+4. 中间件与前端：兼容国产中间件；前端兼容国产浏览器与国产桌面。
+
+## 编码
+
+- 全部国密/信创增强须可配置关闭。
+- 变更种子/部署 SQL 仍遵守「SQL规范」；国密密钥不得写入 SQL 种子。

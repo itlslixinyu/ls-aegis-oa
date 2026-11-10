@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.sign.mapper.SignCertMapper">
+
+    <resultMap id="SignCertResult" type="com.ls.aegis.biz.sign.domain.SignCert">
+        <id property="certId" column="cert_id"/>
+        <result property="orgId" column="org_id"/>
+        <result property="projectId" column="project_id"/>
+        <result property="sealId" column="seal_id"/>
+        <result property="certType" column="cert_type"/>
+        <result property="subjectDn" column="subject_dn"/>
+        <result property="issuerDn" column="issuer_dn"/>
+        <result property="serialNo" column="serial_no"/>
+        <result property="fingerprintSha256" column="fingerprint_sha256"/>
+        <result property="notBefore" column="not_before"/>
+        <result property="notAfter" column="not_after"/>
+        <result property="status" column="status"/>
+        <result property="certPem" column="cert_pem"/>
+        <result property="chainPem" column="chain_pem"/>
+        <result property="keyRef" column="key_ref"/>
+        <result property="issuedAt" column="issued_at"/>
+        <result property="revokedAt" column="revoked_at"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectSignCertColumns">
+        SELECT cert_id, org_id, project_id, seal_id, cert_type, subject_dn, issuer_dn,
+               serial_no, fingerprint_sha256, not_before, not_after, status,
+               cert_pem, chain_pem, key_ref, issued_at, revoked_at,
+               create_by, create_time, update_by, update_time, remark
+        FROM sign_cert
+    </sql>
+
+    <select id="selectSignCertByCertId" parameterType="Long" resultMap="SignCertResult">
+        <include refid="selectSignCertColumns"/>
+        WHERE cert_id = #{certId}
+    </select>
+
+    <select id="selectActiveBySealId" parameterType="Long" resultMap="SignCertResult">
+        <include refid="selectSignCertColumns"/>
+        WHERE seal_id = #{sealId}
+          AND status = '0'
+        ORDER BY issued_at DESC, cert_id DESC
+        LIMIT 1
+    </select>
+
+    <insert id="insertSignCert" parameterType="com.ls.aegis.biz.sign.domain.SignCert" useGeneratedKeys="true" keyProperty="certId">
+        INSERT INTO sign_cert (
+            org_id, project_id, seal_id, cert_type, subject_dn, issuer_dn,
+            serial_no, fingerprint_sha256, not_before, not_after, status,
+            cert_pem, chain_pem, key_ref, issued_at, revoked_at,
+            create_by, create_time, update_by, update_time, remark
+        ) VALUES (
+            #{orgId}, #{projectId}, #{sealId}, #{certType}, #{subjectDn}, #{issuerDn},
+            #{serialNo}, #{fingerprintSha256}, #{notBefore}, #{notAfter}, #{status},
+            #{certPem}, #{chainPem}, #{keyRef}, #{issuedAt}, #{revokedAt},
+            #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{remark}
+        )
+    </insert>
+
+    <update id="updateSignCertStatus">
+        UPDATE sign_cert
+        SET status = #{status},
+            update_time = NOW()
+        WHERE cert_id = #{certId}
+    </update>
+</mapper>

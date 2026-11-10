@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.eoms.mapper.repair.RepairOrderMapper">
+    
+    <resultMap type="RepairOrder" id="RepairOrderResult">
+    	<id     property="id"      column="id"      />
+        <result property="orderNo"    column="order_no"    />
+        <result property="applyId"    column="apply_id"    />
+        <result property="quoteId"    column="quote_id"    />
+        <result property="applyNo"    column="apply_no"    />
+        <result property="quoteNo"    column="quote_no"    />
+        <result property="customerId"    column="customer_id"    />
+        <result property="engineerId"    column="engineer_id"    />
+        <result property="customerName"    column="customer_name"    />
+        <result property="engineerName"    column="engineer_name"    />
+        <result property="status"    column="status"    />
+        <result property="acceptTime"    column="accept_time"    />
+        <result property="startTime"    column="start_time"    />
+        <result property="finishTime"    column="finish_time"    />
+        <result property="address"    column="address"    />
+        <result property="photos"    column="photos"    />
+        <result property="signInLongitude"    column="sign_in_longitude"    />
+        <result property="signInLatitude"    column="sign_in_latitude"    />
+        <result property="signInAddress"    column="sign_in_address"    />
+        <result property="signOutLongitude"    column="sign_out_longitude"    />
+        <result property="signOutLatitude"    column="sign_out_latitude"    />
+        <result property="signOutAddress"    column="sign_out_address"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createUser"  column="create_user"  />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="tenantId"  column="tenant_id"    />
+        <result property="deptId"    column="dept_id"      />
+    </resultMap>
+
+    <sql id="selectRepairOrderVo">
+        select o.id, o.order_no, o.apply_id, o.quote_id, o.customer_id, o.engineer_id,
+               c.unit_name as customer_name,
+               u.nickname as engineer_name,
+               a.repair_no as apply_no,
+               q.quote_no as quote_no,
+               o.status, o.accept_time, o.start_time, o.finish_time, o.address,
+               o.sign_in_longitude, o.sign_in_latitude, o.sign_in_address,
+               o.sign_out_longitude, o.sign_out_latitude, o.sign_out_address,
+               IFNULL(a.photos, o.photos) as photos,
+               o.create_by, o.create_user, o.create_time, o.update_by, o.update_time, o.remark, o.del_flag,
+               o.tenant_id, o.dept_id
+		from eoms_repair_order o
+		left join psi_unit c on o.customer_id = c.id and c.deleted = 0
+		left join sys_user u on o.engineer_id = u.id
+		left join eoms_repair_apply a on o.apply_id = a.id
+		left join eoms_quote q on o.quote_id = q.id
+    </sql>
+
+    <select id="selectRepairOrderById" parameterType="Long" resultMap="RepairOrderResult">
+        <include refid="selectRepairOrderVo"/>
+        where o.id = #{id} and o.del_flag = '0'
+    </select>
+
+    <select id="selectRepairOrderList" parameterType="RepairOrder" resultMap="RepairOrderResult">
+        <include refid="selectRepairOrderVo"/>
+        <where>
+			o.del_flag = '0'
+			<if test="id != null">
+				AND o.id = #{id}
+			</if>
+			<if test="orderNo != null and orderNo != ''">
+				AND o.order_no = #{orderNo}
+			</if>
+			<if test="applyId != null">
+				AND o.apply_id = #{applyId}
+			</if>
+			<if test="quoteId != null">
+				AND o.quote_id = #{quoteId}
+			</if>
+			<if test="customerId != null">
+				AND o.customer_id = #{customerId}
+			</if>
+			<if test="engineerId != null">
+				AND o.engineer_id = #{engineerId}
+			</if>
+			<if test="status != null and status != ''">
+				AND o.status = #{status}
+			</if>
+			<if test="customerName != null and customerName != ''">
+				AND c.unit_name like concat('%', #{customerName}, '%')
+			</if>
+			<if test="engineerName != null and engineerName != ''">
+				AND u.nickname like concat('%', #{engineerName}, '%')
+			</if>
+			<if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+				and o.create_time &gt;= #{params.beginTime}
+			</if>
+			<if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+				and o.create_time &lt; DATE_ADD(DATE(#{params.endTime}), INTERVAL 1 DAY)
+			</if>
+			<include refid="com.ls.aegis.biz.eoms.mapper.EomsDataScopeMapper.dataScopeFilter"/>
+		</where>
+    </select>
+
+    <!-- 查询工程师角色用户选项（用于工单派单下拉选择） -->
+    <select id="selectEngineerOptions" resultType="java.util.Map">
+        select u.id as id, u.nickname as nickName
+        from sys_user u
+        inner join sys_user_role ur on u.id = ur.user_id
+        inner join sys_role r on ur.role_id = r.id
+        where u.deleted = 0 and u.status = 1 and r.deleted = 0
+          and r.code = 'eoms_engineer'
+        order by u.id
+    </select>
+
+    <select id="countEnabledEngineer" resultType="int">
+        select count(*) from sys_user u
+        where u.id=#{engineerId} and u.tenant_id=#{tenantId} and u.deleted=0 and u.status=1
+        and exists (select 1 from sys_user_role ur join sys_role r on r.id=ur.role_id
+                    where ur.user_id=u.id and r.deleted=0 and r.code='eoms_engineer')
+    </select>
+    <insert id="insertRepairOrder" parameterType="RepairOrder" useGeneratedKeys="true" keyProperty="id">
+        insert into eoms_repair_order
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="orderNo != null and orderNo != ''">order_no,</if>
+			<if test="applyId != null">apply_id,</if>
+			<if test="quoteId != null">quote_id,</if>
+			<if test="customerId != null">customer_id,</if>
+			<if test="engineerId != null">engineer_id,</if>
+			<if test="status != null and status != ''">status,</if>
+			<if test="acceptTime != null">accept_time,</if>
+			<if test="startTime != null">start_time,</if>
+			<if test="finishTime != null">finish_time,</if>
+			<if test="address != null and address != ''">address,</if>
+			<if test="photos != null and photos != ''">photos,</if>
+			<if test="signInLongitude != null and signInLongitude != ''">sign_in_longitude,</if>
+			<if test="signInLatitude != null and signInLatitude != ''">sign_in_latitude,</if>
+			<if test="signInAddress != null and signInAddress != ''">sign_in_address,</if>
+			<if test="signOutLongitude != null and signOutLongitude != ''">sign_out_longitude,</if>
+			<if test="signOutLatitude != null and signOutLatitude != ''">sign_out_latitude,</if>
+			<if test="signOutAddress != null and signOutAddress != ''">sign_out_address,</if>
+			<if test="createBy != null and createBy != ''">create_by,</if>
+			<if test="createUser != null">create_user,</if>
+			<if test="true">create_time,</if>
+			<if test="updateBy != null and updateBy != ''">update_by,</if>
+			<if test="updateTime != null and updateTime != ''">update_time,</if>
+			<if test="remark != null and remark != ''">remark,</if>
+			<if test="delFlag != null and delFlag != ''">del_flag,</if>
+			<if test="tenantId != null">tenant_id,</if>
+			<if test="deptId != null">dept_id,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="orderNo != null and orderNo != ''">#{orderNo},</if>
+			<if test="applyId != null">#{applyId},</if>
+			<if test="quoteId != null">#{quoteId},</if>
+			<if test="customerId != null">#{customerId},</if>
+			<if test="engineerId != null">#{engineerId},</if>
+			<if test="status != null and status != ''">#{status},</if>
+			<if test="acceptTime != null">#{acceptTime},</if>
+			<if test="startTime != null">#{startTime},</if>
+			<if test="finishTime != null">#{finishTime},</if>
+			<if test="address != null and address != ''">#{address},</if>
+			<if test="photos != null and photos != ''">#{photos},</if>
+			<if test="signInLongitude != null and signInLongitude != ''">#{signInLongitude},</if>
+			<if test="signInLatitude != null and signInLatitude != ''">#{signInLatitude},</if>
+			<if test="signInAddress != null and signInAddress != ''">#{signInAddress},</if>
+			<if test="signOutLongitude != null and signOutLongitude != ''">#{signOutLongitude},</if>
+			<if test="signOutLatitude != null and signOutLatitude != ''">#{signOutLatitude},</if>
+			<if test="signOutAddress != null and signOutAddress != ''">#{signOutAddress},</if>
+			<if test="createBy != null and createBy != ''">#{createBy},</if>
+			<if test="createUser != null">#{createUser},</if>
+			<if test="true">sysdate(),</if>
+			<if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+			<if test="updateTime != null and updateTime != ''">#{updateTime},</if>
+			<if test="remark != null and remark != ''">#{remark},</if>
+			<if test="delFlag != null and delFlag != ''">#{delFlag,jdbcType=CHAR},</if>
+			<if test="tenantId != null">#{tenantId},</if>
+			<if test="deptId != null">#{deptId},</if>
+        </trim>
+    </insert>
+
+    <update id="updateRepairOrder" parameterType="RepairOrder">
+        update eoms_repair_order 
+        <set>
+            <if test="orderNo != null and orderNo != ''">order_no = #{orderNo},</if>
+            <if test="applyId != null">apply_id = #{applyId},</if>
+            <if test="quoteId != null">quote_id = #{quoteId},</if>
+            <if test="customerId != null">customer_id = #{customerId},</if>
+            <if test="engineerId != null">engineer_id = #{engineerId},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="acceptTime != null">accept_time = #{acceptTime},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="finishTime != null">finish_time = #{finishTime},</if>
+            <if test="address != null and address != ''">address = #{address},</if>
+            <if test="photos != null and photos != ''">photos = #{photos},</if>
+            <if test="signInLongitude != null and signInLongitude != ''">sign_in_longitude = #{signInLongitude},</if>
+            <if test="signInLatitude != null and signInLatitude != ''">sign_in_latitude = #{signInLatitude},</if>
+            <if test="signInAddress != null and signInAddress != ''">sign_in_address = #{signInAddress},</if>
+            <if test="signOutLongitude != null and signOutLongitude != ''">sign_out_longitude = #{signOutLongitude},</if>
+            <if test="signOutLatitude != null and signOutLatitude != ''">sign_out_latitude = #{signOutLatitude},</if>
+            <if test="signOutAddress != null and signOutAddress != ''">sign_out_address = #{signOutAddress},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+ 			update_time = sysdate(),
+            <if test="remark != null and remark != ''">remark = #{remark},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <update id="deleteRepairOrderById" parameterType="Long">
+        update eoms_repair_order set del_flag = '2' where id = #{id}
+    </update>
+
+    <update id="deleteRepairOrderByIds" parameterType="Long">
+        update eoms_repair_order set del_flag = '2' where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+        	#{id}
+        </foreach>
+    </update>
+
+    <update id="clearApplyId" parameterType="Long">
+        update eoms_repair_order set apply_id = NULL, update_time = sysdate() where apply_id = #{applyId}
+    </update>
+
+    <!-- CAS 更新工单状态：WHERE 当前状态 = expectedStatus，用于并发下的状态转换（结算办结/关闭等） -->
+    <update id="updateOrderStatusWithCheck">
+        update eoms_repair_order
+        <set>
+            status        = #{newStatus},
+            update_by     = #{updateBy},
+            update_time   = sysdate(),
+            <if test="finishTime != null">finish_time = #{finishTime},</if>
+            <if test="remark != null and remark != ''">remark = #{remark},</if>
+        </set>
+        where id = #{id} and status = #{expectedStatus} and del_flag = '0'
+    </update>
+
+    <select id="lockOrder" resultMap="RepairOrderResult">
+        select * from eoms_repair_order where id=#{id} and del_flag='0' for update
+    </select>
+    <select id="countActiveByApply" resultType="int">
+        select count(*) from eoms_repair_order where apply_id=#{applyId} and del_flag='0'
+    </select>
+    <update id="reopenAfterSettlement">
+        update eoms_repair_order set status='WAIT_SETTLEMENT', finish_time=null,
+        update_by=#{operator}, update_time=CURRENT_TIMESTAMP, remark=#{remark}
+        where id=#{id} and del_flag='0' and status='FINISHED'
+    </update>
+    <!-- Exact authorized parent tenant confines children, including legacy mismatched child-tenant rows. -->
+    <select id="cancelSettlementHistory" resultType="com.ls.aegis.biz.eoms.domain.RepairSettlement" flushCache="true" useCache="false">
+        select s.* from eoms_repair_settlement s join eoms_repair_order o on o.id=s.repair_order_id
+        where o.tenant_id=#{tenantId} and o.id=#{orderId} and o.del_flag='0' and s.del_flag='0'
+        order by s.id
+    </select>
+    <select id="lockCancelReceivables" resultType="com.ls.aegis.biz.eoms.domain.Receivable">
+        select r.* from eoms_receivable r join eoms_repair_order o on o.id=r.repair_order_id
+        where o.tenant_id=#{tenantId} and o.id=#{orderId} and o.del_flag='0' and r.del_flag='0' for update
+    </select>
+    <select id="countCancelPayments" resultType="int" flushCache="true" useCache="false">
+        select count(*) from eoms_payment p join eoms_receivable r on r.id=p.receivable_id
+        join eoms_repair_order o on o.id=r.repair_order_id
+        where o.tenant_id=#{tenantId} and o.id=#{orderId} and o.del_flag='0' and p.del_flag='0' and (p.status is null or p.status != 'REVERSED')
+    </select>
+    <select id="cancelIncomeNet" resultType="java.math.BigDecimal" flushCache="true" useCache="false">
+        select coalesce(sum(i.amount),0) from eoms_income i join eoms_repair_order o on o.id=i.repair_order_id
+        where o.tenant_id=#{tenantId} and o.id=#{orderId} and o.del_flag='0' and i.del_flag='0'
+    </select>
+    <select id="cancelCostNet" resultType="java.math.BigDecimal" flushCache="true" useCache="false">
+        select coalesce(sum(c.amount),0) from eoms_cost c join eoms_repair_order o on o.id=c.repair_order_id
+        where o.tenant_id=#{tenantId} and o.id=#{orderId} and o.del_flag='0' and c.del_flag='0'
+    </select>
+    <select id="countCancelEvent" resultType="int">
+        select count(*) from eoms_finance_event e join eoms_repair_order o on o.id=e.aggregate_id
+        where o.tenant_id=#{tenantId} and o.id=#{orderId} and e.aggregate_type='ORDER' and e.action='CANCEL_CLOSE'
+    </select>
+    <update id="cancelClosed">
+        update eoms_repair_order set status='CLOSED',remark=#{remark},update_by=#{operator},update_time=CURRENT_TIMESTAMP
+        where id=#{orderId} and tenant_id=#{tenantId} and del_flag='0' and status='WAIT_SETTLEMENT'
+    </update>
+</mapper>

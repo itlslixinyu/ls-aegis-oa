@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.eoms.mapper.repair.RepairApplyMapper">
+    
+    <resultMap type="RepairApply" id="RepairApplyResult">
+    	<id     property="id"      column="id"      />
+        <result property="repairNo"    column="repair_no"    />
+        <result property="customerId"    column="customer_id"    />
+        <result property="customerNo"    column="customer_no"    />
+        <result property="customerName"    column="customer_name"    />
+        <result property="contactName"    column="contact_name"    />
+        <result property="contactPhone"    column="contact_phone"    />
+        <result property="faultType"    column="fault_type"    />
+        <result property="faultDesc"    column="fault_desc"    />
+        <result property="photos"    column="photos"    />
+        <result property="urgentLevel"    column="urgent_level"    />
+        <result property="contractId"    column="contract_id"    />
+        <result property="contractNo"    column="contract_no"    />
+        <result property="status"    column="status"    />
+        <result property="applyTime"    column="apply_time"    />
+        <result property="source"    column="source"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createUser"  column="create_user"  />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="tenantId"  column="tenant_id"    />
+        <result property="deptId"    column="dept_id"      />
+    </resultMap>
+
+    <sql id="selectRepairApplyVo">
+        select a.id, a.repair_no, a.customer_id, a.contact_name, a.contact_phone, a.fault_type, a.fault_desc,
+               a.photos, a.urgent_level, a.contract_id, a.status, a.apply_time, a.source,
+               a.create_by, a.create_user, a.create_time, a.update_by, a.update_time, a.remark, a.del_flag,
+               a.tenant_id, a.dept_id,
+               c.unit_code as customer_no,
+               c.unit_name as customer_name,
+               ct.contract_no as contract_no
+		from eoms_repair_apply a
+		left join psi_unit c on a.customer_id = c.id and c.deleted = 0
+		left join eoms_contract ct on a.contract_id = ct.id
+    </sql>
+
+    <select id="selectRepairApplyById" parameterType="Long" resultMap="RepairApplyResult">
+        <include refid="selectRepairApplyVo"/>
+        where a.id = #{id} and a.del_flag = '0'
+    </select>
+
+    <select id="selectRepairApplyList" parameterType="RepairApply" resultMap="RepairApplyResult">
+        <include refid="selectRepairApplyVo"/>
+        <where>
+			a.del_flag = '0'
+			<if test="id != null">
+				AND a.id = #{id}
+			</if>
+			<if test="repairNo != null and repairNo != ''">
+				AND a.repair_no = #{repairNo}
+			</if>
+			<if test="customerId != null">
+				AND a.customer_id = #{customerId}
+			</if>
+			<if test="customerName != null and customerName != ''">
+				AND c.unit_name like concat('%', #{customerName}, '%')
+			</if>
+			<if test="contactName != null and contactName != ''">
+				AND a.contact_name like concat('%', #{contactName}, '%')
+			</if>
+			<if test="faultType != null and faultType != ''">
+				AND a.fault_type = #{faultType}
+			</if>
+			<if test="urgentLevel != null and urgentLevel != ''">
+				AND a.urgent_level = #{urgentLevel}
+			</if>
+			<if test="contractId != null">
+				AND a.contract_id = #{contractId}
+			</if>
+			<if test="status != null and status != ''">
+				AND a.status = #{status}
+			</if>
+			<if test="source != null and source != ''">
+				AND a.source = #{source}
+			</if>
+			<if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+				and a.create_time &gt;= #{params.beginTime}
+			</if>
+			<if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+				and a.create_time &lt; DATE_ADD(DATE(#{params.endTime}), INTERVAL 1 DAY)
+			</if>
+			<include refid="com.ls.aegis.biz.eoms.mapper.EomsDataScopeMapper.dataScopeFilter"/>
+		</where>
+    </select>
+
+    <insert id="insertRepairApply" parameterType="RepairApply" useGeneratedKeys="true" keyProperty="id">
+        insert into eoms_repair_apply
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="repairNo != null and repairNo != ''">repair_no,</if>
+			<if test="customerId != null">customer_id,</if>
+			<if test="contactName != null and contactName != ''">contact_name,</if>
+			<if test="contactPhone != null and contactPhone != ''">contact_phone,</if>
+			<if test="faultType != null and faultType != ''">fault_type,</if>
+			<if test="faultDesc != null and faultDesc != ''">fault_desc,</if>
+			<if test="photos != null and photos != ''">photos,</if>
+			<if test="urgentLevel != null and urgentLevel != ''">urgent_level,</if>
+			<if test="contractId != null">contract_id,</if>
+			<if test="status != null and status != ''">status,</if>
+			<if test="applyTime != null">apply_time,</if>
+			<if test="source != null and source != ''">source,</if>
+			<if test="createBy != null and createBy != ''">create_by,</if>
+			<if test="createUser != null">create_user,</if>
+			<if test="true">create_time,</if>
+			<if test="updateBy != null and updateBy != ''">update_by,</if>
+			<if test="updateTime != null and updateTime != ''">update_time,</if>
+			<if test="remark != null and remark != ''">remark,</if>
+			<if test="delFlag != null and delFlag != ''">del_flag,</if>
+			<if test="tenantId != null">tenant_id,</if>
+			<if test="deptId != null">dept_id,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="repairNo != null and repairNo != ''">#{repairNo},</if>
+			<if test="customerId != null">#{customerId},</if>
+			<if test="contactName != null and contactName != ''">#{contactName},</if>
+			<if test="contactPhone != null and contactPhone != ''">#{contactPhone},</if>
+			<if test="faultType != null and faultType != ''">#{faultType},</if>
+			<if test="faultDesc != null and faultDesc != ''">#{faultDesc},</if>
+			<if test="photos != null and photos != ''">#{photos},</if>
+			<if test="urgentLevel != null and urgentLevel != ''">#{urgentLevel},</if>
+			<if test="contractId != null">#{contractId},</if>
+			<if test="status != null and status != ''">#{status},</if>
+			<if test="applyTime != null">#{applyTime},</if>
+			<if test="source != null and source != ''">#{source},</if>
+			<if test="createBy != null and createBy != ''">#{createBy},</if>
+			<if test="createUser != null">#{createUser},</if>
+			<if test="true">sysdate(),</if>
+			<if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+			<if test="updateTime != null and updateTime != ''">#{updateTime},</if>
+			<if test="remark != null and remark != ''">#{remark},</if>
+			<if test="delFlag != null and delFlag != ''">#{delFlag,jdbcType=CHAR},</if>
+			<if test="tenantId != null">#{tenantId},</if>
+			<if test="deptId != null">#{deptId},</if>
+        </trim>
+    </insert>
+
+    <update id="updateRepairApply" parameterType="RepairApply">
+        update eoms_repair_apply 
+        <set>
+            <if test="repairNo != null and repairNo != ''">repair_no = #{repairNo},</if>
+            <if test="customerId != null">customer_id = #{customerId},</if>
+            <if test="contactName != null and contactName != ''">contact_name = #{contactName},</if>
+            <if test="contactPhone != null and contactPhone != ''">contact_phone = #{contactPhone},</if>
+            <if test="faultType != null and faultType != ''">fault_type = #{faultType},</if>
+            <if test="faultDesc != null and faultDesc != ''">fault_desc = #{faultDesc},</if>
+            <if test="photos != null and photos != ''">photos = #{photos},</if>
+            <if test="urgentLevel != null and urgentLevel != ''">urgent_level = #{urgentLevel},</if>
+            <if test="contractId != null">contract_id = #{contractId},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="applyTime != null">apply_time = #{applyTime},</if>
+            <if test="source != null and source != ''">source = #{source},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+ 			update_time = sysdate(),
+            <if test="remark != null and remark != ''">remark = #{remark},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <update id="deleteRepairApplyById" parameterType="Long">
+        update eoms_repair_apply set del_flag = '2' where id = #{id}
+    </update>
+
+    <update id="deleteRepairApplyByIds" parameterType="Long">
+        update eoms_repair_apply set del_flag = '2' where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+        	#{id}
+        </foreach>
+    </update>
+
+    <select id="lockApply" resultMap="RepairApplyResult">
+        select * from eoms_repair_apply where id=#{id} and del_flag='0' for update
+    </select>
+    <update id="restoreAfterOrderDelete">
+        update eoms_repair_apply set status='CONFIRM', update_time=CURRENT_TIMESTAMP
+        where id=#{id} and del_flag='0' and status='ORDER'
+        and not exists (select 1 from eoms_repair_order where apply_id=#{id} and del_flag='0')
+    </update>
+</mapper>

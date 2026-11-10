@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - preConditions:
+      - onFail: HALT
+      - onError: HALT
+      - dbms:
+          type: mysql
+      - sqlCheck:
+          expectedResult: "1"
+          sql: SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='psi_stock_batch' AND engine='InnoDB'
+      - sqlCheck:
+          expectedResult: "1"
+          sql: >-
+            SELECT CASE WHEN COUNT(*)=0 THEN 1
+            WHEN COUNT(*)=5
+            AND GROUP_CONCAT(column_name ORDER BY seq_in_index SEPARATOR ',')='tenant_id,deleted,goods_id,warehouse_id,remain_quantity'
+            AND SUM(CASE WHEN non_unique=1 AND index_type='BTREE' AND sub_part IS NULL AND collation='A' AND is_visible='YES' THEN 1 ELSE 0 END)=5
+            THEN 1 ELSE 0 END
+            FROM information_schema.statistics
+            WHERE table_schema=DATABASE() AND table_name='psi_stock_batch' AND index_name='idx_stock_alert_balance'
+  - changeSet:
+      id: r31_stock_alert_balance_index_mysql
+      author: ls
+      dbms: mysql
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            - indexExists:
+                tableName: psi_stock_batch
+                indexName: idx_stock_alert_balance
+      changes:
+        - sqlFile:
+            path: db/changelog/mysql/patch_stock_alert_balance_index.sql
+            encoding: UTF-8
+            splitStatements: true
+            stripComments: true

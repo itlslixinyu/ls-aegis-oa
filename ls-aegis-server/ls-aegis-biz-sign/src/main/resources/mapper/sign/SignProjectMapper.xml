@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.sign.mapper.SignProjectMapper">
+
+    <resultMap id="SignProjectResult" type="com.ls.aegis.biz.sign.domain.SignProject">
+        <id property="projectId" column="project_id"/>
+        <result property="projectName" column="project_name"/>
+        <result property="projectCode" column="project_code"/>
+        <result property="managerIds" column="manager_ids"/>
+        <result property="managerNames" column="manager_names"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="status" column="status"/>
+        <result property="description" column="description"/>
+        <result property="contractType" column="contract_type"/>
+        <result property="contractId" column="contract_id"/>
+        <result property="contractNo" column="contract_no"/>
+        <result property="contractName" column="contract_name"/>
+        <result property="partnerName" column="partner_name"/>
+        <result property="saleContractId" column="sale_contract_id"/>
+        <result property="saleContractNo" column="sale_contract_no"/>
+        <result property="saleContractName" column="sale_contract_name"/>
+        <result property="salePartnerName" column="sale_partner_name"/>
+        <result property="purchaseContractId" column="purchase_contract_id"/>
+        <result property="purchaseContractNo" column="purchase_contract_no"/>
+        <result property="purchaseContractName" column="purchase_contract_name"/>
+        <result property="purchasePartnerName" column="purchase_partner_name"/>
+        <result property="repairContractId" column="repair_contract_id"/>
+        <result property="repairContractNo" column="repair_contract_no"/>
+        <result property="repairContractName" column="repair_contract_name"/>
+        <result property="repairPartnerName" column="repair_partner_name"/>
+        <result property="otherFileIds" column="other_file_ids"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="createUser" column="create_user"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <resultMap id="SignProjectDetailResult" type="com.ls.aegis.biz.sign.domain.SignProject" extends="SignProjectResult">
+        <collection property="sealIds" ofType="java.lang.Long" column="project_id" select="selectProjectSealIds"/>
+    </resultMap>
+
+    <sql id="selectProjectVo">
+        SELECT p.project_id, p.project_name, p.project_code, p.manager_ids, p.manager_names,
+               p.dept_id, p.start_date, p.end_date, p.status, p.description,
+               p.contract_type, p.contract_id, p.contract_no, p.contract_name, p.partner_name,
+               p.sale_contract_id, p.sale_contract_no, p.sale_contract_name, p.sale_partner_name,
+               p.purchase_contract_id, p.purchase_contract_no, p.purchase_contract_name, p.purchase_partner_name,
+               p.repair_contract_id, p.repair_contract_no, p.repair_contract_name, p.repair_partner_name,
+               p.other_file_ids,
+               p.del_flag, p.tenant_id, p.create_user, p.create_by, p.create_time, p.update_by, p.update_time,
+               d.name AS dept_name
+        FROM sign_project p
+        LEFT JOIN sys_dept d ON p.dept_id = d.id
+    </sql>
+
+    <select id="selectProjectList" parameterType="com.ls.aegis.biz.sign.domain.SignProject" resultMap="SignProjectResult">
+        <include refid="selectProjectVo"/>
+        WHERE p.del_flag = '0'
+        <if test="projectId != null">
+            AND p.project_id = #{projectId}
+        </if>
+        <if test="projectName != null and projectName != ''">
+            AND p.project_name LIKE CONCAT('%', #{projectName}, '%')
+        </if>
+        <if test="projectCode != null and projectCode != ''">
+            AND p.project_code = #{projectCode}
+        </if>
+        <if test="status != null and status != ''">
+            AND p.status = #{status}
+        </if>
+        <if test="deptId != null">
+            AND p.dept_id = #{deptId}
+        </if>
+        <if test="contractType != null and contractType != ''">
+            <choose>
+                <when test="contractType == 'SALE'">
+                    AND p.sale_contract_id IS NOT NULL
+                </when>
+                <when test="contractType == 'PURCHASE'">
+                    AND p.purchase_contract_id IS NOT NULL
+                </when>
+                <when test="contractType == 'REPAIR'">
+                    AND p.repair_contract_id IS NOT NULL
+                </when>
+                <otherwise>
+                    AND p.contract_type = #{contractType}
+                </otherwise>
+            </choose>
+        </if>
+        <if test="contractNo != null and contractNo != ''">
+            AND (
+                p.contract_no LIKE CONCAT('%', #{contractNo}, '%')
+                OR p.sale_contract_no LIKE CONCAT('%', #{contractNo}, '%')
+                OR p.purchase_contract_no LIKE CONCAT('%', #{contractNo}, '%')
+                OR p.repair_contract_no LIKE CONCAT('%', #{contractNo}, '%')
+            )
+        </if>
+        <if test="params.beginTime != null and params.beginTime != ''">
+            AND p.start_date &gt;= #{params.beginTime}
+        </if>
+        <if test="params.endTime != null and params.endTime != ''">
+            AND p.end_date &lt;= #{params.endTime}
+        </if>
+        <include refid="com.ls.aegis.biz.sign.mapper.SignDataScopeMapper.dataScopeFilter"/>
+        ORDER BY p.create_time DESC
+    </select>
+
+    <select id="selectProjectById" parameterType="Long" resultMap="SignProjectResult">
+        <include refid="selectProjectVo"/>
+        WHERE p.project_id = #{projectId}
+    </select>
+
+    <select id="selectProjectDetail" parameterType="Long" resultMap="SignProjectDetailResult">
+        <include refid="selectProjectVo"/>
+        WHERE p.project_id = #{projectId}
+    </select>
+
+    <insert id="insertProject" parameterType="com.ls.aegis.biz.sign.domain.SignProject" useGeneratedKeys="true" keyProperty="projectId">
+        INSERT INTO sign_project (
+            project_name, project_code, manager_ids, manager_names, dept_id,
+            start_date, end_date, status, description,
+            contract_type, contract_id, contract_no, contract_name, partner_name,
+            sale_contract_id, sale_contract_no, sale_contract_name, sale_partner_name,
+            purchase_contract_id, purchase_contract_no, purchase_contract_name, purchase_partner_name,
+            repair_contract_id, repair_contract_no, repair_contract_name, repair_partner_name,
+            other_file_ids,
+            del_flag, tenant_id, create_user, create_by, create_time
+        ) VALUES (
+            #{projectName}, #{projectCode}, #{managerIds}, #{managerNames}, #{deptId},
+            #{startDate}, #{endDate}, #{status}, #{description},
+            #{contractType}, #{contractId}, #{contractNo}, #{contractName}, #{partnerName},
+            #{saleContractId}, #{saleContractNo}, #{saleContractName}, #{salePartnerName},
+            #{purchaseContractId}, #{purchaseContractNo}, #{purchaseContractName}, #{purchasePartnerName},
+            #{repairContractId}, #{repairContractNo}, #{repairContractName}, #{repairPartnerName},
+            #{otherFileIds},
+            '0', #{tenantId}, #{createUser}, #{createBy}, #{createTime}
+        )
+    </insert>
+
+    <update id="updateProject" parameterType="com.ls.aegis.biz.sign.domain.SignProject">
+        UPDATE sign_project
+        <set>
+            <if test="projectName != null">project_name = #{projectName},</if>
+            <if test="managerIds != null">manager_ids = #{managerIds},</if>
+            <if test="managerNames != null">manager_names = #{managerNames},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="startDate != null">start_date = #{startDate},</if>
+            <if test="endDate != null">end_date = #{endDate},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="description != null">description = #{description},</if>
+            contract_type = #{contractType},
+            contract_id = #{contractId},
+            contract_no = #{contractNo},
+            contract_name = #{contractName},
+            partner_name = #{partnerName},
+            sale_contract_id = #{saleContractId},
+            sale_contract_no = #{saleContractNo},
+            sale_contract_name = #{saleContractName},
+            sale_partner_name = #{salePartnerName},
+            purchase_contract_id = #{purchaseContractId},
+            purchase_contract_no = #{purchaseContractNo},
+            purchase_contract_name = #{purchaseContractName},
+            purchase_partner_name = #{purchasePartnerName},
+            repair_contract_id = #{repairContractId},
+            repair_contract_no = #{repairContractNo},
+            repair_contract_name = #{repairContractName},
+            repair_partner_name = #{repairPartnerName},
+            other_file_ids = #{otherFileIds},
+            update_by = #{updateBy},
+            update_time = NOW()
+        </set>
+        WHERE project_id = #{projectId}
+    </update>
+
+    <update id="deleteProjectByIds">
+        UPDATE sign_project SET del_flag = '2' WHERE project_id IN
+        <foreach collection="array" item="projectId" open="(" separator="," close=")">
+            #{projectId}
+        </foreach>
+    </update>
+
+    <insert id="batchInsertProjectSeal">
+        INSERT INTO sign_project_seal (project_id, seal_id, create_by, create_time) VALUES
+        <if test="sealIds != null and sealIds.size() > 0">
+            <foreach collection="sealIds" item="sealId" separator=",">
+                (#{projectId}, #{sealId}, '', NOW())
+            </foreach>
+        </if>
+    </insert>
+
+    <insert id="batchInsertProjectUser">
+        INSERT INTO sign_project_user (project_id, user_id, create_time) VALUES
+        <if test="userIds != null and userIds.length > 0">
+            <foreach collection="userIds" item="userId" separator=",">
+                (#{projectId}, #{userId}, NOW())
+            </foreach>
+        </if>
+    </insert>
+
+    <delete id="deleteProjectSeal">
+        DELETE FROM sign_project_seal WHERE project_id = #{projectId}
+    </delete>
+
+    <delete id="deleteProjectUser">
+        DELETE FROM sign_project_user WHERE project_id = #{projectId}
+    </delete>
+
+    <!-- 未开始+到达开始时间→进行中；未开始/进行中+到达结束时间→已完成（结束优先，可一步 1→3） -->
+    <update id="refreshExpiredProjects">
+        UPDATE sign_project
+        SET status = CASE
+            WHEN status IN ('1', '2') AND end_date IS NOT NULL AND end_date &lt;= NOW() THEN '3'
+            WHEN status = '1' AND start_date IS NOT NULL AND start_date &lt;= NOW() THEN '2'
+            ELSE status
+        END,
+            update_time = NOW()
+        WHERE del_flag = '0'
+          AND status IN ('1', '2')
+          AND (
+                (status = '1' AND start_date IS NOT NULL AND start_date &lt;= NOW())
+             OR (status IN ('1', '2') AND end_date IS NOT NULL AND end_date &lt;= NOW())
+          )
+    </update>
+
+    <select id="selectProjectListByUserId" parameterType="Long" resultMap="SignProjectResult">
+        SELECT DISTINCT p.*
+        FROM sign_project p
+        LEFT JOIN sign_project_user pu ON p.project_id = pu.project_id
+        WHERE p.del_flag = '0'
+          AND p.status = '2'
+          AND (FIND_IN_SET(#{userId}, p.manager_ids) OR pu.user_id = #{userId})
+        ORDER BY p.create_time DESC
+    </select>
+
+    <select id="countProjectSeals" parameterType="Long" resultType="int">
+        SELECT COUNT(1)
+        FROM sign_project_seal
+        WHERE project_id = #{projectId}
+    </select>
+
+    <select id="existsProjectSeal" resultType="int">
+        SELECT COUNT(1)
+        FROM sign_project_seal
+        WHERE project_id = #{projectId}
+          AND seal_id = #{sealId}
+    </select>
+
+    <select id="selectProjectSealIds" parameterType="Long" resultType="Long">
+        SELECT seal_id
+        FROM sign_project_seal
+        WHERE project_id = #{projectId}
+        ORDER BY seal_id ASC
+    </select>
+
+    <select id="existsByProjectCode" resultType="int">
+        SELECT COUNT(1)
+        FROM sign_project
+        WHERE del_flag = '0' AND project_code = #{projectCode}
+    </select>
+
+    <select id="selectMaxDailySeq" resultType="java.lang.Long">
+        SELECT MAX(CAST(SUBSTRING(project_code, #{substringPos}) AS UNSIGNED))
+        FROM sign_project
+        WHERE del_flag = '0'
+          AND project_code LIKE #{likePattern}
+    </select>
+
+    <select id="selectContractById" resultType="com.ls.aegis.biz.sign.domain.SignContractOption">
+        <choose>
+            <when test="contractType == 'SALE'">
+                SELECT 'SALE' AS contractType, c.id, c.contract_no AS contractNo, c.contract_name AS contractName,
+                       u.unit_name AS partnerName, c.file_id AS fileId
+                FROM psi_contract_sale c
+                LEFT JOIN psi_unit u ON u.id = c.unit_id AND u.deleted = 0
+                WHERE c.deleted = 0 AND c.id = #{contractId}
+                LIMIT 1
+            </when>
+            <when test="contractType == 'PURCHASE'">
+                SELECT 'PURCHASE' AS contractType, c.id, c.contract_no AS contractNo, c.contract_name AS contractName,
+                       u.unit_name AS partnerName, c.file_id AS fileId
+                FROM psi_contract_purchase c
+                LEFT JOIN psi_unit u ON u.id = c.unit_id AND u.deleted = 0
+                WHERE c.deleted = 0 AND c.id = #{contractId}
+                LIMIT 1
+            </when>
+            <when test="contractType == 'REPAIR'">
+                SELECT 'REPAIR' AS contractType, c.id, c.contract_no AS contractNo, c.contract_name AS contractName,
+                       cust.unit_name AS partnerName, c.file_id AS fileId
+                FROM eoms_contract c
+                LEFT JOIN psi_unit cust ON cust.id = c.customer_id AND cust.deleted = 0
+                WHERE c.del_flag = '0' AND c.id = #{contractId}
+                LIMIT 1
+            </when>
+            <otherwise>
+                SELECT NULL AS contractType, NULL AS id, NULL AS contractNo, NULL AS contractName,
+                       NULL AS partnerName, NULL AS fileId
+                FROM DUAL WHERE 1 = 0
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="selectContractOptions" resultType="com.ls.aegis.biz.sign.domain.SignContractOption">
+        <choose>
+            <when test="contractType == 'SALE'">
+                SELECT 'SALE' AS contractType, c.id, c.contract_no AS contractNo, c.contract_name AS contractName,
+                       u.unit_name AS partnerName, c.file_id AS fileId
+                FROM psi_contract_sale c
+                LEFT JOIN psi_unit u ON u.id = c.unit_id AND u.deleted = 0
+                WHERE c.deleted = 0
+                <if test="keyword != null and keyword != ''">
+                    AND (c.contract_no LIKE CONCAT('%', #{keyword}, '%')
+                      OR c.contract_name LIKE CONCAT('%', #{keyword}, '%')
+                      OR u.unit_name LIKE CONCAT('%', #{keyword}, '%'))
+                </if>
+                AND NOT EXISTS (
+                    SELECT 1 FROM sign_project sp
+                    WHERE sp.del_flag = '0'
+                      AND sp.sale_contract_id = c.id
+                    <if test="excludeProjectId != null">
+                      AND sp.project_id != #{excludeProjectId}
+                    </if>
+                )
+                ORDER BY c.create_time DESC
+                LIMIT 50
+            </when>
+            <when test="contractType == 'PURCHASE'">
+                SELECT 'PURCHASE' AS contractType, c.id, c.contract_no AS contractNo, c.contract_name AS contractName,
+                       u.unit_name AS partnerName, c.file_id AS fileId
+                FROM psi_contract_purchase c
+                LEFT JOIN psi_unit u ON u.id = c.unit_id AND u.deleted = 0
+                WHERE c.deleted = 0
+                <if test="keyword != null and keyword != ''">
+                    AND (c.contract_no LIKE CONCAT('%', #{keyword}, '%')
+                      OR c.contract_name LIKE CONCAT('%', #{keyword}, '%')
+                      OR u.unit_name LIKE CONCAT('%', #{keyword}, '%'))
+                </if>
+                AND NOT EXISTS (
+                    SELECT 1 FROM sign_project sp
+                    WHERE sp.del_flag = '0'
+                      AND sp.purchase_contract_id = c.id
+                    <if test="excludeProjectId != null">
+                      AND sp.project_id != #{excludeProjectId}
+                    </if>
+                )
+                ORDER BY c.create_time DESC
+                LIMIT 50
+            </when>
+            <when test="contractType == 'REPAIR'">
+                SELECT 'REPAIR' AS contractType, c.id, c.contract_no AS contractNo, c.contract_name AS contractName,
+                       cust.unit_name AS partnerName, c.file_id AS fileId
+                FROM eoms_contract c
+                LEFT JOIN psi_unit cust ON cust.id = c.customer_id AND cust.deleted = 0
+                WHERE c.del_flag = '0'
+                <if test="keyword != null and keyword != ''">
+                    AND (c.contract_no LIKE CONCAT('%', #{keyword}, '%')
+                      OR c.contract_name LIKE CONCAT('%', #{keyword}, '%')
+                      OR cust.unit_name LIKE CONCAT('%', #{keyword}, '%'))
+                </if>
+                AND NOT EXISTS (
+                    SELECT 1 FROM sign_project sp
+                    WHERE sp.del_flag = '0'
+                      AND sp.repair_contract_id = c.id
+                    <if test="excludeProjectId != null">
+                      AND sp.project_id != #{excludeProjectId}
+                    </if>
+                )
+                ORDER BY c.create_time DESC
+                LIMIT 50
+            </when>
+            <otherwise>
+                SELECT NULL AS contractType, NULL AS id, NULL AS contractNo, NULL AS contractName,
+                       NULL AS partnerName, NULL AS fileId
+                FROM DUAL WHERE 1 = 0
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="countBoundContract" resultType="int">
+        SELECT COUNT(1)
+        FROM sign_project
+        WHERE del_flag = '0'
+        <choose>
+            <when test="contractType == 'SALE'">
+                AND sale_contract_id = #{contractId}
+            </when>
+            <when test="contractType == 'PURCHASE'">
+                AND purchase_contract_id = #{contractId}
+            </when>
+            <when test="contractType == 'REPAIR'">
+                AND repair_contract_id = #{contractId}
+            </when>
+            <otherwise>
+                AND contract_type = #{contractType}
+                AND contract_id = #{contractId}
+            </otherwise>
+        </choose>
+        <if test="excludeProjectId != null">
+          AND project_id != #{excludeProjectId}
+        </if>
+    </select>
+
+    <update id="clearContractProject">
+        <choose>
+            <when test="contractType == 'SALE'">
+                UPDATE psi_contract_sale SET project_id = NULL WHERE id = #{contractId} AND deleted = 0
+            </when>
+            <when test="contractType == 'PURCHASE'">
+                UPDATE psi_contract_purchase SET project_id = NULL WHERE id = #{contractId} AND deleted = 0
+            </when>
+            <when test="contractType == 'REPAIR'">
+                UPDATE eoms_contract SET project_id = NULL WHERE id = #{contractId} AND del_flag = '0'
+            </when>
+        </choose>
+    </update>
+
+    <update id="setContractProject">
+        <choose>
+            <when test="contractType == 'SALE'">
+                UPDATE psi_contract_sale SET project_id = #{projectId} WHERE id = #{contractId} AND deleted = 0
+            </when>
+            <when test="contractType == 'PURCHASE'">
+                UPDATE psi_contract_purchase SET project_id = #{projectId} WHERE id = #{contractId} AND deleted = 0
+            </when>
+            <when test="contractType == 'REPAIR'">
+                UPDATE eoms_contract SET project_id = #{projectId} WHERE id = #{contractId} AND del_flag = '0'
+            </when>
+        </choose>
+    </update>
+
+</mapper>

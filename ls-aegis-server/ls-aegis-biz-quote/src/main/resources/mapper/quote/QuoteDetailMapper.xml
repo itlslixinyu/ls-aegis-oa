@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.quote.mapper.QuoteDetailMapper">
+
+    <resultMap type="com.ls.aegis.biz.quote.domain.QuoteDetail" id="QuoteDetailResult">
+        <id     property="id"         column="id"          />
+        <result property="quoteId"    column="quote_id"    />
+        <result property="lineType"   column="line_type"   />
+        <result property="goodsId"    column="goods_id"    />
+        <result property="itemName"   column="item_name"   />
+        <result property="brandModel" column="brand_model" />
+        <result property="unit"       column="unit"        />
+        <result property="description" column="description" />
+        <result property="sortNo"     column="sort_no"     />
+        <result property="quantity"   column="quantity"    />
+        <result property="price"      column="price"       />
+        <result property="amount"     column="amount"      />
+        <result property="createBy"   column="create_by"   />
+        <result property="createTime" column="create_time" />
+        <result property="updateBy"   column="update_by"   />
+        <result property="updateTime" column="update_time" />
+        <result property="remark"     column="remark"      />
+        <result property="delFlag"    column="del_flag"    />
+    </resultMap>
+
+    <sql id="selectQuoteDetailVo">
+        select d.id, d.quote_id, d.line_type, d.goods_id, d.item_name, d.brand_model, d.unit, d.description, d.sort_no,
+               d.quantity, d.price, d.amount, d.create_by, d.create_time, d.update_by, d.update_time, d.remark, d.del_flag
+        from eoms_quote_detail d join eoms_quote q on q.id = d.quote_id and q.del_flag = '0'
+    </sql>
+
+    <select id="selectQuoteDetailById" parameterType="Long" resultMap="QuoteDetailResult">
+        <include refid="com.ls.aegis.biz.quote.mapper.QuoteMapper.accessBinding"/>
+        <include refid="selectQuoteDetailVo"/>
+        where d.id = #{id} and d.del_flag = '0'
+        <include refid="com.ls.aegis.biz.quote.mapper.QuoteMapper.tenantFilter"/>
+    </select>
+
+    <select id="selectQuoteDetailList" parameterType="com.ls.aegis.biz.quote.domain.QuoteDetail" resultMap="QuoteDetailResult">
+        <include refid="com.ls.aegis.biz.quote.mapper.QuoteMapper.accessBinding"/>
+        <include refid="selectQuoteDetailVo"/>
+        <where>
+            d.del_flag = '0'
+            <include refid="com.ls.aegis.biz.quote.mapper.QuoteMapper.tenantFilter"/>
+            <if test="quoteId != null">
+                AND d.quote_id = #{quoteId}
+            </if>
+            <if test="itemName != null and itemName != ''">
+                AND d.item_name like concat('%', #{itemName}, '%')
+            </if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and d.create_time &gt;= #{params.beginTime}
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and d.create_time &lt; DATE_ADD(DATE(#{params.endTime}), INTERVAL 1 DAY)
+            </if>
+        </where>
+        order by d.sort_no, d.id
+    </select>
+
+    <insert id="insertQuoteDetail" parameterType="com.ls.aegis.biz.quote.domain.QuoteDetail" useGeneratedKeys="true" keyProperty="id">
+        <include refid="com.ls.aegis.biz.quote.mapper.QuoteMapper.accessBinding"/>
+        insert into eoms_quote_detail
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="quoteId != null">quote_id,</if>
+            <if test="lineType != null and lineType != ''">line_type,</if>
+            <if test="goodsId != null">goods_id,</if>
+            <if test="itemName != null and itemName != ''">item_name,</if>
+            <if test="brandModel != null and brandModel != ''">brand_model,</if>
+            <if test="unit != null and unit != ''">unit,</if>
+            <if test="description != null and description != ''">description,</if>
+            <if test="sortNo != null">sort_no,</if>
+            <if test="quantity != null">quantity,</if>
+            <if test="price != null">price,</if>
+            <if test="amount != null">amount,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="true">create_time,</if>
+            <if test="updateBy != null and updateBy != ''">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+            <if test="delFlag != null and delFlag != ''">del_flag,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="quoteId != null">#{quoteId},</if>
+            <if test="lineType != null and lineType != ''">#{lineType},</if>
+            <if test="goodsId != null">#{goodsId},</if>
+            <if test="itemName != null and itemName != ''">#{itemName},</if>
+            <if test="brandModel != null and brandModel != ''">#{brandModel},</if>
+            <if test="unit != null and unit != ''">#{unit},</if>
+            <if test="description != null and description != ''">#{description},</if>
+            <if test="sortNo != null">#{sortNo},</if>
+            <if test="quantity != null">#{quantity},</if>
+            <if test="price != null">#{price},</if>
+            <if test="amount != null">#{amount},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="true">sysdate(),</if>
+            <if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+            <if test="delFlag != null and delFlag != ''">#{delFlag,jdbcType=CHAR},</if>
+        </trim>
+    </insert>
+
+    <update id="updateQuoteDetail" parameterType="com.ls.aegis.biz.quote.domain.QuoteDetail">
+        <include refid="com.ls.aegis.biz.quote.mapper.QuoteMapper.accessBinding"/>
+        update eoms_quote_detail d
+        <set>
+            <if test="lineType != null and lineType != ''">line_type = #{lineType},</if>
+            <if test="goodsId != null">goods_id = #{goodsId},</if>
+            <if test="itemName != null and itemName != ''">item_name = #{itemName},</if>
+            <if test="brandModel != null">brand_model = #{brandModel},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="sortNo != null">sort_no = #{sortNo},</if>
+            <if test="quantity != null">quantity = #{quantity},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="amount != null">amount = #{amount},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null and remark != ''">remark = #{remark},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+        </set>
+        where d.id = #{id} and d.del_flag = '0'
+        <include refid="parentTenantFilter"/>
+    </update>
+
+    <update id="deleteQuoteDetailById" parameterType="Long">
+        <include refid="com.ls.aegis.biz.quote.mapper.QuoteMapper.accessBinding"/>
+        update eoms_quote_detail d set del_flag = '2' where d.id = #{id} and d.del_flag = '0'
+        <include refid="parentTenantFilter"/>
+    </update>
+
+    <update id="deleteQuoteDetailByIds" parameterType="Long">
+        <include refid="com.ls.aegis.biz.quote.mapper.QuoteMapper.accessBinding"/>
+        update eoms_quote_detail d set del_flag = '2' where d.id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        and d.del_flag = '0'
+        <include refid="parentTenantFilter"/>
+    </update>
+
+    <update id="deleteQuoteDetailByQuoteId" parameterType="Long">
+        <include refid="com.ls.aegis.biz.quote.mapper.QuoteMapper.accessBinding"/>
+        update eoms_quote_detail d set del_flag = '2' where d.quote_id = #{quoteId} and d.del_flag = '0'
+        <include refid="parentTenantFilter"/>
+    </update>
+
+    <update id="deleteQuoteDetailByQuoteIds" parameterType="Long">
+        <include refid="com.ls.aegis.biz.quote.mapper.QuoteMapper.accessBinding"/>
+        update eoms_quote_detail d set del_flag = '2' where d.quote_id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        and d.del_flag = '0'
+        <include refid="parentTenantFilter"/>
+    </update>
+
+    <!-- Writes are internal only, after the service locks/authorizes each parent with QuoteMapper. -->
+    <sql id="parentTenantFilter">
+        AND EXISTS (SELECT 1 FROM eoms_quote q WHERE q.id = d.quote_id and q.del_flag = '0'
+            <include refid="com.ls.aegis.biz.quote.mapper.QuoteMapper.tenantFilter"/>)
+    </sql>
+
+</mapper>

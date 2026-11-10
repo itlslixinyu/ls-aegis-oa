@@ -1,0 +1,4 @@
+interface:
+  display_name: "ITLS Android 双端"
+  short_description: "规划和交付 EOMS 客户与维修工程师原生 Android 应用"
+  default_prompt: "使用 $itls-android 按项目工作流推进客户与工程师 Android 双端，复用现有 EOMS 后端并验证完整业务闭环。"

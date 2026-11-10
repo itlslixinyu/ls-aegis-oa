@@ -1,0 +1,207 @@
+# ====================== 依赖与构建产物 ======================
+node_modules/
+dist/
+dist-*/
+dist-ssr/
+coverage/
+target/
+build/
+.flattened-pom.xml
+
+# spring-boot-maven-plugin fat-jar 打包临时目录
+tmp-jar/
+
+# maven 本地生成文件
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# gradle（如果后续用到gradle也防护）
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Vite 预构建缓存、sourcemap 映射文件
+ls-aegis-web/.vite/
+ls-aegis-h5/.vite/
+*.map
+
+# 本地临时探针 / 跳转残留（含历史 .tmp-wchk*）
+.tmp*/
+.tmp-*/
+anniu.html
+*_gm.json
+*-tmp.json
+gm-verify-*.log
+
+# 根目录解压探测 / 冒烟脚本与结果（正式报告仅 Docs/Reports-README.md）
+tmp-*/
+tmp-eoms-jar/
+_tmp_*/
+_tmp_*
+_smoke_*
+/_smoke_*.mjs
+/_smoke_*_result.json
+_recover*
+# 会话任务目录（yyyyMMdd_HHmmss_任务名）
+/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]_[0-9][0-9][0-9][0-9][0-9][0-9]_*/
+docker/BOOT-INF/
+ls-aegis-web/META-INF/
+Docs/**/*.jar
+Docs/**/*.log
+Docs/**/*.pid
+Docs/tmp-*
+Docs/smoke-*
+Docs/_*
+# 兼容旧路径名 reports/
+reports/**/*.jar
+reports/**/*.log
+reports/**/*.pid
+reports/tmp-*
+reports/smoke-*
+reports/_*
+
+# 散落编译产物（Maven target 已忽略；防手工解压/探针残留）
+*.class
+*.jar.original
+
+# 包管理器 / 前端本地缓存
+.pnpm-store/
+**/.pnpm-store/
+.turbo/
+**/.turbo/
+
+# 国密验证临时日志（勿入库）
+gm-verify*.log
+
+# ====================== 本地环境与密钥 严禁提交 ======================
+.env.local
+.env.*.local
+*.pem
+*.key
+*.crt
+*.csr
+**/credentials*
+**/data/gm/
+data/gm/
+
+# docker 运行时数据、本地环境文件
+**/docker/data/
+docker/.env
+*.env
+!/.env.example
+!/docker/.env.example
+
+# 打包向导缓存与部署元数据（含服务器信息，勿提交）
+pack.config.json
+scripts/deploy-info.json
+ls-aegis-deploy.tar.gz
+
+# 前端构建产物（由 pnpm build 后同步，勿入库）
+docker/nginx/web/**
+!docker/nginx/web/.gitkeep
+!docker/nginx/web/README.md
+
+# 换机迁移备份（含密钥/库 dump，禁止入库）
+backups/
+
+# ====================== 编译产出jar/war/zip 包 ======================
+*.jar
+!android-demo/gradle/wrapper/gradle-wrapper.jar
+/android-demo/local.properties
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+docker/**/bin/*.jar
+
+# ====================== 日志、缓存、临时文件 ======================
+logs/
+*.log
+*.log.gz
+*.logs
+*.cache
+*.diff
+*.patch
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# js包管理器日志
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ====================== IDE / 编辑器配置 ======================
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# eclipse
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# IntelliJ run配置
+.idea/**/runConfigurations/
+.idea/**/artifacts/
+
+# Cursor IDE 缓存；项目通用规范位于根目录 rules/
+.cursor/
+# 工具本地缓存；共享技能位于根 skills/
+.agents/
+
+# ====================== 操作系统残留文件 ======================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ====================== 测试报告、jacoco、输出报告 ======================
+**/target/site/
+**/jacoco/
+**/test-output/
+**/allure-results/
+**/allure-report/
+
+# ====================== 其他本地运行生成文件 ======================
+.local/
+spring-boot-devtools.properties
+hs_err_pid*
+replay_pid*
+
+# 前端演示截图（不入库；本地备忘可自建）
+ls-aegis-web/.image/screenshot/
+
+# Python runtime caches
+__pycache__/
+*.py[cod]
+
+# 本地历史任务归档、数据库导出与一次性探针不进入 Git
+/Docs/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]_*/
+/Docs/**/*.sql

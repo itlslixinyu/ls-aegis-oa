@@ -1,0 +1,8 @@
+# Auto-deploy shell scripts must use LF on Linux
+*.sh text eol=lf
+android-demo/gradlew text eol=lf
+# Windows launchers must also work with native cmd.exe / Windows PowerShell 5.1
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+VERSION text eol=lf

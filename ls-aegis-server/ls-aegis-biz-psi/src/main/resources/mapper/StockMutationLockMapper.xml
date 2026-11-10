@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.psi.mapper.StockMutationLockMapper">
+    <insert id="ensureAnchor">
+        insert into psi_stock_mutation_lock (tenant_id, warehouse_id, goods_id)
+        values (#{tenantId}, #{warehouseId}, #{goodsId})
+        <choose>
+            <when test="_databaseId == 'pgsql' || _databaseId == 'postgresql'">
+                on conflict (tenant_id, warehouse_id, goods_id) do nothing
+            </when>
+            <otherwise>on duplicate key update goods_id = values(goods_id)</otherwise>
+        </choose>
+    </insert>
+    <select id="lockAnchor" resultType="java.lang.Long">
+        select goods_id from psi_stock_mutation_lock
+        where tenant_id=#{tenantId} and warehouse_id=#{warehouseId} and goods_id=#{goodsId}
+        for update
+    </select>
+</mapper>

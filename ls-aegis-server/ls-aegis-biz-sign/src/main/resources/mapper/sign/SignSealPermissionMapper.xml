@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.sign.mapper.SignSealPermissionMapper">
+
+    <resultMap id="SignSealPermissionResult" type="com.ls.aegis.biz.sign.domain.SignSealPermission">
+        <id property="id" column="id"/>
+        <result property="sealId" column="seal_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="createTime" column="create_time"/>
+        <result property="userName" column="user_name"/>
+        <result property="nickName" column="nick_name"/>
+    </resultMap>
+
+    <select id="selectPermissionList" parameterType="com.ls.aegis.biz.sign.domain.SignSealPermission" resultMap="SignSealPermissionResult">
+        SELECT sp.id, sp.seal_id, sp.user_id, sp.create_time,
+               u.username AS user_name, u.nickname AS nick_name
+        FROM sign_seal_permission sp
+        LEFT JOIN sys_user u ON sp.user_id = u.id
+        <where>
+            <if test="sealId != null">AND sp.seal_id = #{sealId}</if>
+            <if test="userId != null">AND sp.user_id = #{userId}</if>
+        </where>
+        ORDER BY sp.create_time DESC
+    </select>
+
+    <select id="selectUserIdsBySealId" parameterType="Long" resultType="Long">
+        SELECT user_id FROM sign_seal_permission WHERE seal_id = #{sealId}
+    </select>
+
+    <insert id="batchInsert">
+        INSERT INTO sign_seal_permission (seal_id, user_id, create_time) VALUES
+        <foreach collection="userIds" item="userId" separator=",">
+            (#{sealId}, #{userId}, NOW())
+        </foreach>
+    </insert>
+
+    <delete id="deleteBySealIdAndUserIds">
+        DELETE FROM sign_seal_permission
+        WHERE seal_id = #{sealId}
+        AND user_id IN
+        <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+    </delete>
+
+    <delete id="deleteBySealId">
+        DELETE FROM sign_seal_permission WHERE seal_id = #{sealId}
+    </delete>
+
+    <select id="existsPermission" resultType="int">
+        SELECT COUNT(1) FROM sign_seal_permission
+        WHERE seal_id = #{sealId} AND user_id = #{userId}
+    </select>
+
+</mapper>

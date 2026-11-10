@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="theme-color" content="#1989fa" />
+  <title>LS·Aegis OA 维修服务</title>
+  <script>
+    // 浏览器标题抗闪烁：在 Vue 应用挂载前同步读取缓存的 H5 标题/页面标题
+    // 这样刷新页面时不会先看到编译期默认标题（LS·Aegis OA 维修服务）再闪到实际值
+    (function () {
+      try {
+        var cache = JSON.parse(localStorage.getItem('h5-app-title-cache') || '{}');
+        if (cache) {
+          if (cache.lastPageTitle) {
+            document.title = cache.lastPageTitle;
+          } else if (cache.h5Title) {
+            document.title = cache.h5Title;
+          }
+        }
+      } catch (e) {
+        // localStorage 被禁用 / JSON 损坏时静默忽略，降级到默认 <title>
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

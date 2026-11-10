@@ -1,0 +1,34 @@
+---
+description: 仓库唯一平台原则——同一鉴权、同一接口形态、同一前端范式、同一份部署；业务只是功能域
+alwaysApply: true
+---
+
+# 平台一体
+
+当前为 ITLS V2.2（工程版本以根 VERSION 为准）。仓库里只有「一个平台」（LS・Aegis / ITLS），不是多个子系统拼装。
+
+## 四统一
+
+| 维度 | 唯一选型 |
+|---|---|
+| 鉴权 | Sa-Token + 平台 RBAC + 国密（`ls-aegis-security` / `ls-aegis-crypto`） |
+| 接口形态 | 平台 `R` / 分页（与 psi 一致）；禁止新增 `AjaxResult` / `TableDataInfo` / 若依 `BaseController` |
+| 前端范式 | PC 见「前端统一架构」：Arco + `GiPageLayout` / `BaseTable` / `GiForm`；客户/工程师 H5 使用 Vant，共用平台鉴权和接口 |
+| 部署 | 全新安装唯一 SQL 为 `ls-aegis-server/sql/init.sql`；已上线库使用增量迁移，业务种子须同步部署流水线 |
+
+## 功能域（不是独立系统）
+
+`psi` / `eoms` / `sign` / `quote` 仅为 `ls-aegis-biz-*` 功能域，由 `ls-aegis-boot` 挂载。Maven 多模块可保留作代码边界。
+
+V2.0 已下线代码生成和应用管理（原 `/open/app`）；不重新实现其页面、菜单或后端接口。系统登录客户端配置仍属于统一认证，继续保留。
+
+## 禁止
+
+- ❌ 再引入 `ls-aegis-legacy` 模块，或扩大 `com.itls.*` / `com.ls.aegis.compat.*` 新能力
+- ❌ 同一业务双轨（如两套报价菜单 / 两套 API）
+- ❌ 前端若依 adapter、第二套 UI 库、第二套响应约定
+- ❌ 复活可独立启动的 RuoYi admin / `apps/` 工程
+
+## 迁移方向
+
+存量业务包已在 `com.ls.aegis.biz.*`；`ls-aegis-legacy` 已删除。`com.ls.aegis.compat.*`（`BaseEntity`/`ExcelUtil` 等）仅存量，目标对齐 PSI 的 `BaseDO` + EasyExcel 后删除。

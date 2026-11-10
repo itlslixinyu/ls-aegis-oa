@@ -1,0 +1,177 @@
+# Compose 工程名：ls-aegis
+# 服务名 = 容器名 = ls-aegis-<组件>（Docker Desktop 列表与 jar 命名一致）
+# 密钥请放 docker/.env（已 gitignore），模板见 docker/.env.example
+name: ls-aegis
+
+services:
+  ls-aegis-mysql:
+    container_name: ls-aegis-mysql
+    image: mysql:8.0.42
+    restart: always
+    ports:
+      # 仅绑定本机，避免数据库端口对局域网暴露
+      - '127.0.0.1:3306:3306'
+    volumes:
+      - mysql-data:/var/lib/mysql
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ls_aegis
+    command:
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_general_ci
+      --explicit_defaults_for_timestamp=true
+      --lower_case_table_names=1
+    networks:
+      - net
+    healthcheck:
+      test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  ls-aegis-redis:
+    container_name: ls-aegis-redis
+    image: redis:7.2.8
+    restart: always
+    ports:
+      # 仅绑定本机；容器内仍 bind 0.0.0.0 供 compose 网络互访
+      - '127.0.0.1:6379:6379'
+    volumes:
+      - ./redis/conf/redis.conf:/usr/local/redis/config/redis.conf
+      - redis-data:/data
+    environment:
+      TZ: Asia/Shanghai
+      REDIS_PWD: ${REDIS_PWD}
+    # 口令由环境变量注入，禁止在 conf 写死弱口令
+    command: 'redis-server /usr/local/redis/config/redis.conf --appendonly yes --requirepass ${REDIS_PWD}'
+    networks:
+      - net
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli -a "$$REDIS_PWD" ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  ls-aegis-server:
+    container_name: ls-aegis-server
+    image: ls-aegis-server
+    build: ./ls-aegis-server
+    restart: always
+    ports:
+      - '127.0.0.1:18000:18000'
+      - '127.0.0.1:1789:1789'
+    volumes:
+      - ./data/ls-aegis-server/config/:/app/config/
+      - ./data/ls-aegis-server/data/file/:/app/data/file/
+      # 国密密钥持久化，避免重建容器后密钥变更导致邮箱/手机等密文无法解密与按密文查询
+      - ./data/ls-aegis-server/data/gm/:/app/data/gm/
+      - ./data/ls-aegis-server/logs/:/app/logs/
+      # PDF 导出 TrueType 中文字体（simhei.ttf）；勿用 Noto CJK OTF
+      - ./ls-aegis-server/fonts/:/app/fonts/:ro
+    environment:
+      TZ: Asia/Shanghai
+      APPLICATION_URL: ${APPLICATION_URL:-http://localhost:8080}
+      # 与 Compose 服务名一致（容器内 DNS）
+      DB_HOST: ls-aegis-mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PWD: ${DB_PWD}
+      DB_NAME: ls_aegis
+      REDIS_HOST: ls-aegis-redis
+      REDIS_PORT: 6379
+      REDIS_PWD: ${REDIS_PWD}
+      REDIS_DB: 0
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      TOKEN_SECRET: ${TOKEN_SECRET}
+      ENCRYPT_AES_PASSWORD: ${ENCRYPT_AES_PASSWORD:-}
+      ENCRYPT_RSA_PUBLIC_KEY: ${ENCRYPT_RSA_PUBLIC_KEY:-}
+      ENCRYPT_RSA_PRIVATE_KEY: ${ENCRYPT_RSA_PRIVATE_KEY:-}
+      # 与挂载目录一致，禁止落在容器可写层导致重建丢钥
+      GM_KEY_STORE_PATH: ${GM_KEY_STORE_PATH:-/app/data/gm/keys.properties}
+      # 存量指纹 SHA256→SM3：运维窗口设 true 重启一次，完成后改回 false
+      FILE_DIGEST_MIGRATE_TO_SM3: ${FILE_DIGEST_MIGRATE_TO_SM3:-false}
+      FILE_DIGEST_MIGRATE_BATCH_SIZE: ${FILE_DIGEST_MIGRATE_BATCH_SIZE:-100}
+      FILE_DIGEST_MIGRATE_RECYCLE_BIN: ${FILE_DIGEST_MIGRATE_RECYCLE_BIN:-true}
+      SNAIL_JOB_ENABLED: ${SNAIL_JOB_ENABLED:-false}
+      SNAIL_JOB_URL: ${SNAIL_JOB_URL:-http://127.0.0.1:8001/snail-job}
+      SCHEDULE_TOKEN: ${SCHEDULE_TOKEN:-}
+      SCHEDULE_USERNAME: ${SCHEDULE_USERNAME:-}
+      SCHEDULE_PASSWORD: ${SCHEDULE_PASSWORD:-}
+      JUSTAUTH_ENABLED: ${JUSTAUTH_ENABLED:-false}
+      # 多租户中间件默认关；启用后还须在「功能模块 - 租户管理」打开产品开关
+      CONTINEW_STARTER_TENANT_ENABLED: ${CONTINEW_STARTER_TENANT_ENABLED:-false}
+    depends_on:
+      ls-aegis-mysql:
+        condition: service_healthy
+      ls-aegis-redis:
+        condition: service_healthy
+    networks:
+      - net
+
+  ls-aegis-web:
+    container_name: ls-aegis-web
+    image: ls-aegis-web
+    build:
+      # 上下文为仓库根，多阶段构建前端并打入 Nginx 镜像（裸 clone 开箱可用）
+      context: ..
+      dockerfile: docker/nginx/Dockerfile
+    restart: always
+    ports:
+      - '127.0.0.1:8080:80'
+    volumes:
+      # 仅挂载配置，便于改反代而不重建镜像；静态资源在镜像内，勿再挂空的 nginx/web
+      - ./nginx/conf/nginx.conf:/etc/nginx/nginx.conf
+    environment:
+      TZ: Asia/Shanghai
+    depends_on:
+      - ls-aegis-server
+    networks:
+      - net
+
+  # H5 客户端（报修）；开发 Vite 5174 ↔ 宿主 18081
+  ls-aegis-h5:
+    container_name: ls-aegis-h5
+    image: ls-aegis-h5
+    build:
+      context: ../ls-aegis-h5
+      dockerfile: Dockerfile
+      args:
+        H5_ROLE: customer
+    restart: always
+    ports:
+      - '127.0.0.1:18081:80'
+    environment:
+      TZ: Asia/Shanghai
+    depends_on:
+      - ls-aegis-server
+    networks:
+      - net
+
+  # H5 工程师端；开发 Vite 5175 ↔ 宿主 18082
+  ls-aegis-h5-engineer:
+    container_name: ls-aegis-h5-engineer
+    image: ls-aegis-h5-engineer
+    build:
+      context: ../ls-aegis-h5
+      dockerfile: Dockerfile
+      args:
+        H5_ROLE: engineer
+    restart: always
+    ports:
+      - '127.0.0.1:18082:80'
+    environment:
+      TZ: Asia/Shanghai
+    depends_on:
+      - ls-aegis-server
+    networks:
+      - net
+
+volumes:
+  mysql-data:
+  redis-data:
+
+networks:
+  net:
+    name: ls-aegis-net

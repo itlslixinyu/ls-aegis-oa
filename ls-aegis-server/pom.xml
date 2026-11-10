@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- 过渡期继承 continew-starter 作为运行底座，后续可替换为自建父 POM -->
+    <parent>
+        <groupId>top.continew.starter</groupId>
+        <artifactId>continew-starter</artifactId>
+        <version>2.14.0</version>
+    </parent>
+
+    <groupId>com.ls</groupId>
+    <artifactId>ls-aegis-server</artifactId>
+    <version>${revision}</version>
+    <packaging>pom</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>LS Aegis 服务端 Maven 父工程：统一版本、依赖与模块编排</description>
+
+    <modules>
+        <module>ls-aegis-crypto</module>
+        <module>ls-aegis-common</module>
+        <module>ls-aegis-mybatis</module>
+        <module>ls-aegis-redis</module>
+        <module>ls-aegis-security</module>
+        <module>ls-aegis-starter</module>
+        <module>ls-aegis-rbac</module>
+        <module>ls-aegis-biz-file</module>
+        <module>ls-aegis-biz-notice</module>
+        <module>ls-aegis-biz-tenant</module>
+        <module>ls-aegis-biz-schedule</module>
+        <module>ls-aegis-biz-psi</module>
+        <module>ls-aegis-biz-quote</module>
+        <module>ls-aegis-biz-eoms</module>
+        <module>ls-aegis-biz-sign</module>
+        <module>ls-aegis-boot</module>
+    </modules>
+
+    <properties>
+        <revision>1.0.0</revision>
+        <!-- 与 hutool-crypto 传递版本对齐；国密模块显式依赖 -->
+        <bouncycastle.version>1.78.1</bouncycastle.version>
+        <!-- 进销存发票解析 + 签章渲染共用；禁止 2.x/3.x 混用 -->
+        <pdfbox.version>3.0.3</pdfbox.version>
+        <!-- 报价 HTML→PDF；须用 io.github 分叉以兼容 PDFBox 3（官方 1.0.10 仅支持 2.x） -->
+        <openhtmltopdf.version>1.1.73</openhtmltopdf.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.ls</groupId>
+                <artifactId>ls-aegis-common</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ls</groupId>
+                <artifactId>ls-aegis-crypto</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ls</groupId>
+                <artifactId>ls-aegis-mybatis</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ls</groupId>
+                <artifactId>ls-aegis-redis</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ls</groupId>
+                <artifactId>ls-aegis-security</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ls</groupId>
+                <artifactId>ls-aegis-starter</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ls</groupId>
+                <artifactId>ls-aegis-rbac</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ls</groupId>
+                <artifactId>ls-aegis-biz-file</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ls</groupId>
+                <artifactId>ls-aegis-biz-notice</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ls</groupId>
+                <artifactId>ls-aegis-biz-tenant</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ls</groupId>
+                <artifactId>ls-aegis-biz-schedule</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ls</groupId>
+                <artifactId>ls-aegis-biz-psi</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ls</groupId>
+                <artifactId>ls-aegis-biz-eoms</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ls</groupId>
+                <artifactId>ls-aegis-biz-sign</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ls</groupId>
+                <artifactId>ls-aegis-biz-quote</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <!-- pagehelper 默认拉 mybatis-spring 2.x，与 Boot 3.3 冲突；强制 3.0.4 -->
+            <dependency>
+                <groupId>org.mybatis.spring.boot</groupId>
+                <artifactId>mybatis-spring-boot-starter</artifactId>
+                <version>3.0.4</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mybatis.spring.boot</groupId>
+                <artifactId>mybatis-spring-boot-autoconfigure</artifactId>
+                <version>3.0.4</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mybatis</groupId>
+                <artifactId>mybatis-spring</artifactId>
+                <version>3.0.4</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.pdfbox</groupId>
+                <artifactId>pdfbox</artifactId>
+                <version>${pdfbox.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.openhtmltopdf</groupId>
+                <artifactId>openhtmltopdf-pdfbox</artifactId>
+                <version>${openhtmltopdf.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <!-- 固定 3.x，避免未声明 version 时解析到需 Maven 4 的 4.0.0-beta -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.13.0</version>
+                </plugin>
+                <!-- 与依赖 spring-boot 3.3.x 对齐；勿省略 version（否则会解析到 4.x） -->
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>3.3.12</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <!-- 用 release 替代 source/target，避免 JDK21 编译 source17 时的系统模块路径警告 -->
+                    <release>17</release>
+                    <parameters>true</parameters>
+                    <!-- JDK21+：显式启用批注处理（Lombok 等），消除“未来可能禁用批注处理”提示 -->
+                    <proc>full</proc>
+                </configuration>
+            </plugin>
+            <!-- 父工程 / 非 boot 模块：声明插件以便 reactor 执行 run 时 skip，避免找 mainClass -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

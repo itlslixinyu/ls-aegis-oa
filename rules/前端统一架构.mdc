@@ -1,0 +1,55 @@
+---
+description: 管理后台唯一开发架构（仅 Arco + Gi/Base 范式；禁止 Element Plus / 若依双栈）
+globs: "ls-aegis-web/**,rules/前端*.mdc,rules/按钮样式规范.mdc"
+alwaysApply: false
+---
+
+# 前端统一架构
+
+全站只认一套底座范式。新页照抄标准页，旧页逐步收敛；禁止再引入第二套 UI / 表格算法 / 按钮皮肤。
+
+## 唯一选型
+
+| 维度 | 选型 |
+|---|---|
+| UI 库 | **仅** `@arco-design/web-vue` |
+| 视觉皮肤 | `src/styles/arco-ui/` + 按钮字典（见「按钮样式规范」） |
+| 列表页 | `GiPageLayout` → `BaseTable` → `useTable` → `TableCol` |
+| 表单弹层 | `a-modal` / `a-drawer` + `GiForm` + `useResetReactive` |
+| 行操作 | `a-link`（见按钮规范） |
+| 反馈 | `Message` / `Modal`（`@arco-design/web-vue`） |
+| 下载导出 | `useDownload` / `http.download` |
+| 业务分层 | `views` + `apis`；复用 `Gi*` / `BaseTable` / `GiCell*` |
+
+细则：列表见「前端表格规范」；按钮见「按钮样式规范」。
+
+## 标准列表页骨架
+
+```vue
+<GiPageLayout>
+  <BaseTable :data="dataList" :columns="columns" :loading="loading" :pagination="pagination" @refresh="search">
+    <template #toolbar-left><!-- 筛选 --></template>
+    <template #toolbar-right><!-- 新增等，至多一个非危险 primary --></template>
+    <template #action="{ record }">
+      <a-space>
+        <a-link @click="onUpdate(record)">修改</a-link>
+        <a-link status="danger" @click="onDelete(record)">删除</a-link>
+      </a-space>
+    </template>
+  </BaseTable>
+  <AddModal ref="AddModalRef" @save-success="search" />
+</GiPageLayout>
+```
+
+参考：`views/system/user/index.vue`、`views/psi/goods/index.vue`。
+
+## 例外（可保留 `a-table`）
+
+单据弹窗内明细行编辑、看板统计表、文件浏览器、分片上传进度等**非后台分页列表**，不必强行套 `BaseTable`。
+
+## 禁止
+
+- ❌ `element-plus` / `@element-plus/*` / `<el-*>` / 若依 `$modal` 全局兼容层
+- ❌ 后台列表直连 `GiTable` / `a-table` 绕过 `BaseTable` 归一化
+- ❌ 业务页另造按钮 / 表格平行皮肤
+- ❌ 再引入第二套组件库「临时兼容」

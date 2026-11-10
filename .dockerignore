@@ -1,0 +1,46 @@
+# 仓库根作为 build context 时共用（生产 Dockerfile.prod + docker/nginx/Dockerfile）
+# 注意：不可排除 ls-aegis-server（服务器端多阶段 Maven 需要源码）
+
+.git
+.cursor
+.agents
+agents
+rules
+skills
+.local
+# Android is built separately; server/PC images do not need its Gradle caches/APKs.
+android-demo
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+**/.env.*.local
+**/__pycache__
+**/*.pyc
+**/*.pyo
+tests
+.idea
+.vscode
+backups
+reports
+Docs
+scripts
+pack.ps1
+pack.bat
+pack.config.json
+*.tar.gz
+**/node_modules
+**/target
+**/dist
+**/dist-*/
+**/*.log
+docker/data
+docker/ls-aegis-server/bin
+docker/ls-aegis-server/logs
+docker/redis
+docker/nginx/web
+# H5 使用独立 context（./ls-aegis-h5），根 context 的 Web 构建不需要它
+ls-aegis-h5
+*.md
+!docker/nginx/README.md

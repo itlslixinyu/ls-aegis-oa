@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.eoms.mapper.repair.RepairSettlementMapper">
+    
+    <resultMap type="RepairSettlement" id="RepairSettlementResult">
+    	<id     property="id"      column="id"      />
+        <result property="settlementNo"    column="settlement_no"    />
+        <result property="repairOrderId"    column="repair_order_id"    />
+        <result property="orderNo"    column="order_no"    />
+        <result property="serviceFee"    column="service_fee"    />
+        <result property="materialAmount"    column="material_amount"    />
+        <result property="laborAmount"    column="labor_amount"    />
+        <result property="otherAmount"    column="other_amount"    />
+        <result property="totalIncome"    column="total_income"    />
+        <result property="materialCost"    column="material_cost"    />
+        <result property="laborCost"    column="labor_cost"    />
+        <result property="otherCost"    column="other_cost"    />
+        <result property="totalCost"    column="total_cost"    />
+        <result property="profitAmount"    column="profit_amount"    />
+        <result property="status"    column="status"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createUser"  column="create_user"  />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="tenantId"  column="tenant_id"    />
+        <result property="deptId"    column="dept_id"      />
+        <result property="customerNo" column="customer_no" />
+        <result property="customerName" column="customer_name" />
+        <result property="customerNameForBill" column="customer_name_for_bill" />
+        <result property="phone" column="phone" />
+        <result property="address" column="address" />
+        <result property="applyNo" column="apply_no" />
+        <result property="contactName" column="contact_name" />
+        <result property="contactPhone" column="contact_phone" />
+        <result property="faultDesc" column="fault_desc" />
+        <result property="faultType" column="fault_type" />
+        <result property="applyTime" column="apply_time" />
+        <result property="engineerName" column="engineer_name" />
+        <result property="engineerId" column="engineer_id" />
+        <result property="serviceAddress" column="service_address" />
+        <result property="finishTime" column="finish_time" />
+    </resultMap>
+
+    <sql id="selectRepairSettlementVo">
+        select s.id, s.settlement_no, s.repair_order_id, s.service_fee, s.material_amount, s.labor_amount, s.other_amount,
+               s.total_income, s.material_cost, s.labor_cost, s.other_cost, s.total_cost, s.profit_amount,
+               s.status, s.create_by, s.create_user, s.create_time, s.update_by, s.update_time, s.remark, s.del_flag,
+               s.tenant_id, s.dept_id,
+               o.order_no as order_no,
+               c.unit_code as customer_no,
+               c.unit_name as customer_name,
+               c.unit_name as customer_name_for_bill,
+               (SELECT cc.mobile FROM psi_unit_contact cc WHERE cc.unit_id = c.id AND cc.deleted = 0 ORDER BY cc.is_default DESC, cc.id ASC LIMIT 1) as phone,
+               c.address as address,
+               a.repair_no as apply_no,
+               a.contact_name as contact_name,
+               a.contact_phone as contact_phone,
+               a.fault_desc as fault_desc,
+               a.fault_type as fault_type,
+               a.apply_time as apply_time,
+               u.nickname as engineer_name,
+               o.engineer_id as engineer_id,
+               o.address as service_address,
+               o.finish_time as finish_time
+		from eoms_repair_settlement s
+		left join eoms_repair_order o on s.repair_order_id = o.id
+		left join psi_unit c on o.customer_id = c.id and c.deleted = 0
+		left join eoms_repair_apply a on o.apply_id = a.id
+		left join sys_user u on o.engineer_id = u.id
+    </sql>
+
+    <select id="selectRepairSettlementById" parameterType="Long" resultMap="RepairSettlementResult">
+        <include refid="selectRepairSettlementVo"/>
+        where s.id = #{id} and s.del_flag = '0'
+    </select>
+
+    <select id="selectRepairSettlementList" parameterType="RepairSettlement" resultMap="RepairSettlementResult">
+        <include refid="selectRepairSettlementVo"/>
+        <where>
+			s.del_flag = '0'
+			<if test="id != null">
+				AND s.id = #{id}
+			</if>
+			<if test="repairOrderId != null">
+				AND s.repair_order_id = #{repairOrderId}
+			</if>
+			<if test="orderNo != null and orderNo != ''">
+				AND o.order_no = #{orderNo}
+			</if>
+			<if test="status != null and status != ''">
+				AND s.status = #{status}
+			</if>
+			<if test="customerName != null and customerName != ''">
+				AND c.unit_name like concat('%', #{customerName}, '%')
+			</if>
+			<if test="applyNo != null and applyNo != ''">
+				AND a.repair_no = #{applyNo}
+			</if>
+			<if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+				and s.create_time &gt;= #{params.beginTime}
+			</if>
+			<if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+				and s.create_time &lt; DATE_ADD(DATE(#{params.endTime}), INTERVAL 1 DAY)
+			</if>
+			<include refid="com.ls.aegis.biz.eoms.mapper.EomsDataScopeMapper.dataScopeFilter"/>
+		</where>
+    </select>
+
+    <select id="selectSettlementByOrderId" parameterType="Long" resultMap="RepairSettlementResult">
+        <include refid="selectRepairSettlementVo"/>
+        where s.repair_order_id = #{repairOrderId} and s.del_flag = '0' and s.status != 'REVERSED'
+        limit 1
+    </select>
+
+    <insert id="insertRepairSettlement" parameterType="RepairSettlement" useGeneratedKeys="true" keyProperty="id">
+        insert into eoms_repair_settlement
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="settlementNo != null and settlementNo != ''">settlement_no,</if>
+			<if test="repairOrderId != null">repair_order_id,</if>
+			<if test="serviceFee != null">service_fee,</if>
+			<if test="materialAmount != null">material_amount,</if>
+			<if test="laborAmount != null">labor_amount,</if>
+			<if test="otherAmount != null">other_amount,</if>
+			<if test="totalIncome != null">total_income,</if>
+			<if test="materialCost != null">material_cost,</if>
+			<if test="laborCost != null">labor_cost,</if>
+			<if test="otherCost != null">other_cost,</if>
+			<if test="totalCost != null">total_cost,</if>
+			<if test="profitAmount != null">profit_amount,</if>
+			<if test="status != null and status != ''">status,</if>
+			<if test="createBy != null and createBy != ''">create_by,</if>
+			<if test="createUser != null">create_user,</if>
+			<if test="true">create_time,</if>
+			<if test="updateBy != null and updateBy != ''">update_by,</if>
+			<if test="updateTime != null and updateTime != ''">update_time,</if>
+			<if test="remark != null and remark != ''">remark,</if>
+			<if test="delFlag != null and delFlag != ''">del_flag,</if>
+			<if test="tenantId != null">tenant_id,</if>
+			<if test="deptId != null">dept_id,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="settlementNo != null and settlementNo != ''">#{settlementNo},</if>
+			<if test="repairOrderId != null">#{repairOrderId},</if>
+			<if test="serviceFee != null">#{serviceFee},</if>
+			<if test="materialAmount != null">#{materialAmount},</if>
+			<if test="laborAmount != null">#{laborAmount},</if>
+			<if test="otherAmount != null">#{otherAmount},</if>
+			<if test="totalIncome != null">#{totalIncome},</if>
+			<if test="materialCost != null">#{materialCost},</if>
+			<if test="laborCost != null">#{laborCost},</if>
+			<if test="otherCost != null">#{otherCost},</if>
+			<if test="totalCost != null">#{totalCost},</if>
+			<if test="profitAmount != null">#{profitAmount},</if>
+			<if test="status != null and status != ''">#{status},</if>
+			<if test="createBy != null and createBy != ''">#{createBy},</if>
+			<if test="createUser != null">#{createUser},</if>
+			<if test="true">sysdate(),</if>
+			<if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+			<if test="updateTime != null and updateTime != ''">#{updateTime},</if>
+			<if test="remark != null and remark != ''">#{remark},</if>
+			<if test="delFlag != null and delFlag != ''">#{delFlag,jdbcType=CHAR},</if>
+			<if test="tenantId != null">#{tenantId},</if>
+			<if test="deptId != null">#{deptId},</if>
+        </trim>
+    </insert>
+
+    <update id="updateRepairSettlement" parameterType="RepairSettlement">
+        update eoms_repair_settlement 
+        <set>
+            <if test="settlementNo != null and settlementNo != ''">settlement_no = #{settlementNo},</if>
+            <if test="repairOrderId != null">repair_order_id = #{repairOrderId},</if>
+            <if test="serviceFee != null">service_fee = #{serviceFee},</if>
+            <if test="materialAmount != null">material_amount = #{materialAmount},</if>
+            <if test="laborAmount != null">labor_amount = #{laborAmount},</if>
+            <if test="otherAmount != null">other_amount = #{otherAmount},</if>
+            <if test="totalIncome != null">total_income = #{totalIncome},</if>
+            <if test="materialCost != null">material_cost = #{materialCost},</if>
+            <if test="laborCost != null">labor_cost = #{laborCost},</if>
+            <if test="otherCost != null">other_cost = #{otherCost},</if>
+            <if test="totalCost != null">total_cost = #{totalCost},</if>
+            <if test="profitAmount != null">profit_amount = #{profitAmount},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+ 			update_time = sysdate(),
+            <if test="remark != null and remark != ''">remark = #{remark},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+        </set>
+        where id = #{id} and status='DRAFT' and del_flag='0'
+    </update>
+
+    <!-- CAS原子确认结算单：仅当status=旧状态时才更新，防止并发双重确认 -->
+    <update id="casConfirmSettlement">
+        update eoms_repair_settlement
+        set settlement_no = #{settlementNo},
+            service_fee = #{serviceFee},
+            labor_amount = #{laborAmount},
+            other_amount = #{otherAmount},
+            material_amount = #{materialAmount},
+            material_cost = #{materialCost},
+            total_income = #{totalIncome},
+            total_cost = #{totalCost},
+            profit_amount = #{profitAmount},
+            status = #{newStatus},
+            update_by = #{updateBy},
+            update_time = sysdate(),
+            <if test="remark != null and remark != ''">remark = #{remark},</if>
+            del_flag = '0'
+        where id = #{id}
+          and status = #{oldStatus}
+          and del_flag = '0'
+    </update>
+
+    <update id="deleteRepairSettlementById" parameterType="Long">
+        update eoms_repair_settlement set del_flag = '2' where id = #{id} and status='DRAFT' and del_flag='0'
+    </update>
+
+    <update id="deleteRepairSettlementByIds" parameterType="Long">
+        update eoms_repair_settlement set del_flag = '2' where status='DRAFT' and del_flag='0' and id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+        	#{id}
+        </foreach>
+    </update>
+
+    <select id="lockSettlement" resultMap="RepairSettlementResult">
+        select * from eoms_repair_settlement where id=#{id} and del_flag='0' for update
+    </select>
+    <update id="reverseSettlement">
+        update eoms_repair_settlement set status='REVERSED', update_by=#{operator}, update_time=CURRENT_TIMESTAMP where id=#{id} and del_flag='0' and status='CONFIRMED'
+    </update>
+</mapper>

@@ -1,0 +1,4 @@
+interface:
+  display_name: "ITLS 代码与性能检查"
+  short_description: "检查请求并发、加载依赖和查询规模，保持跨模块数据与权限一致"
+  default_prompt: "使用 $itls-code-review 检查当前 ITLS 改动，复现真实缺陷并完成有证据的修复与回归。"

@@ -1,0 +1,4 @@
+interface:
+  display_name: "ITLS 项目优化"
+  short_description: "分析维护成本、业务操作和运行性能，实施可验证的渐进精简"
+  default_prompt: "使用 $itls-optimize 处理当前 ITLS 项目任务，给出实际修改、验证结果与未覆盖项。"

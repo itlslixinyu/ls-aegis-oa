@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.sign.mapper.SignBackupJobMapper">
+
+    <resultMap id="SignBackupJobResult" type="com.ls.aegis.biz.sign.domain.SignBackupJob">
+        <id property="jobId" column="job_id"/>
+        <result property="jobCode" column="job_code"/>
+        <result property="triggerType" column="trigger_type"/>
+        <result property="operatorId" column="operator_id"/>
+        <result property="status" column="status"/>
+        <result property="filePath" column="file_path"/>
+        <result property="fileSize" column="file_size"/>
+        <result property="message" column="message"/>
+        <result property="startedAt" column="started_at"/>
+        <result property="finishedAt" column="finished_at"/>
+        <result property="createTime" column="create_time"/>
+        <result property="operatorName" column="operator_name"/>
+    </resultMap>
+
+    <select id="selectJobList" parameterType="com.ls.aegis.biz.sign.domain.SignBackupJob" resultMap="SignBackupJobResult">
+        SELECT j.job_id, j.job_code, j.trigger_type, j.operator_id, j.status,
+               j.file_path, j.file_size, j.message, j.started_at, j.finished_at,
+               j.create_time, u.username AS operator_name
+        FROM sign_backup_job j
+        LEFT JOIN sys_user u ON j.operator_id = u.id
+        <where>
+            <if test="triggerType != null and triggerType != ''">AND j.trigger_type = #{triggerType}</if>
+            <if test="status != null and status != ''">AND j.status = #{status}</if>
+        </where>
+        ORDER BY j.create_time DESC
+    </select>
+
+    <select id="selectJobById" parameterType="Long" resultMap="SignBackupJobResult">
+        SELECT * FROM sign_backup_job WHERE job_id = #{jobId}
+    </select>
+
+    <insert id="insertJob" parameterType="com.ls.aegis.biz.sign.domain.SignBackupJob" useGeneratedKeys="true" keyProperty="jobId">
+        INSERT INTO sign_backup_job (
+            job_code, trigger_type, operator_id, status, file_path, file_size,
+            message, started_at, finished_at, create_time
+        ) VALUES (
+            #{jobCode}, #{triggerType}, #{operatorId}, #{status}, #{filePath}, #{fileSize},
+            #{message}, #{startedAt}, #{finishedAt}, #{createTime}
+        )
+    </insert>
+
+    <update id="updateJob" parameterType="com.ls.aegis.biz.sign.domain.SignBackupJob">
+        UPDATE sign_backup_job
+        <set>
+            <if test="status != null">status = #{status},</if>
+            <if test="filePath != null">file_path = #{filePath},</if>
+            <if test="fileSize != null">file_size = #{fileSize},</if>
+            <if test="message != null">message = #{message},</if>
+            <if test="startedAt != null">started_at = #{startedAt},</if>
+            <if test="finishedAt != null">finished_at = #{finishedAt},</if>
+        </set>
+        WHERE job_id = #{jobId}
+    </update>
+
+    <delete id="deleteJobByIds">
+        DELETE FROM sign_backup_job WHERE job_id IN
+        <foreach collection="array" item="jobId" open="(" separator="," close=")">
+            #{jobId}
+        </foreach>
+    </delete>
+
+    <select id="selectExcessJobs" resultMap="SignBackupJobResult">
+        SELECT * FROM sign_backup_job
+        WHERE status = 'success'
+        ORDER BY create_time DESC
+        LIMIT #{retainCount}, 1000
+    </select>
+
+    <update id="updateJobStatus">
+        UPDATE sign_backup_job
+        SET status = #{status},
+            message = #{message}
+        WHERE job_id = #{jobId}
+    </update>
+
+</mapper>

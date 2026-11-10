@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.ls</groupId>
+        <artifactId>ls-aegis-server</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <artifactId>ls-aegis-biz-eoms</artifactId>
+    <packaging>jar</packaging>
+    <name>${project.artifactId}</name>
+    <description>ITLS 运维报修业务模块</description>
+    <dependencies>
+        <dependency>
+            <groupId>com.ls</groupId>
+            <artifactId>ls-aegis-starter</artifactId>
+        </dependency>
+        <!-- XML Mapper 分页拦截器；列表封装走 starter PageQueryHelper -->
+        <dependency>
+            <groupId>com.github.pagehelper</groupId>
+            <artifactId>pagehelper-spring-boot-starter</artifactId>
+            <version>2.1.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.mybatis.spring.boot</groupId>
+                    <artifactId>mybatis-spring-boot-starter</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- pagehelper 需要 MybatisAutoConfiguration 类在 classpath；勿启用官方 starter（与 MP 冲突） -->
+        <dependency>
+            <groupId>org.mybatis.spring.boot</groupId>
+            <artifactId>mybatis-spring-boot-autoconfigure</artifactId>
+        </dependency>
+        <!-- 报价单轨：桥接实现与兼容转发依赖 biz-quote -->
+        <dependency>
+            <groupId>com.ls</groupId>
+            <artifactId>ls-aegis-biz-quote</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.ls</groupId>
+            <artifactId>ls-aegis-biz-file</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.2.224</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

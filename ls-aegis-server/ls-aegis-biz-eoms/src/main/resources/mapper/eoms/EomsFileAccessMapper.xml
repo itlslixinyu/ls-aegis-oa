@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.eoms.mapper.file.EomsFileAccessMapper">
+
+    <sql id="fileInPhotos">
+        FIND_IN_SET(#{fileId}, REPLACE(photos, ' ', '')) &gt; 0
+    </sql>
+
+    <select id="countVisibleApplyFile" resultType="int">
+        SELECT COUNT(*) FROM eoms_repair_apply a WHERE a.tenant_id=#{tenantId} AND a.del_flag='0'
+        AND FIND_IN_SET(#{fileId}, REPLACE(a.photos,' ','')) &gt; 0
+        <include refid="com.ls.aegis.biz.eoms.mapper.EomsDataScopeMapper.dataScopeFilter"/>
+    </select>
+    <select id="countVisibleOrderFile" resultType="int">
+        SELECT COUNT(*) FROM eoms_repair_order o WHERE o.tenant_id=#{tenantId} AND o.del_flag='0'
+        AND (FIND_IN_SET(#{fileId}, REPLACE(o.photos,' ','')) &gt; 0 OR EXISTS (
+            SELECT 1 FROM eoms_repair_record r WHERE r.repair_order_id=o.id AND r.tenant_id=o.tenant_id AND r.del_flag='0'
+            AND (FIND_IN_SET(#{fileId}, REPLACE(r.processing_photos,' ','')) &gt; 0 OR FIND_IN_SET(#{fileId}, REPLACE(r.completed_photos,' ','')) &gt; 0)))
+        <include refid="com.ls.aegis.biz.eoms.mapper.EomsDataScopeMapper.dataScopeFilter"/>
+    </select>
+    <select id="countVisibleRecordFile" resultType="int">
+        SELECT COUNT(*) FROM eoms_repair_order o WHERE o.tenant_id=#{tenantId} AND o.del_flag='0' AND EXISTS (
+            SELECT 1 FROM eoms_repair_record r WHERE r.repair_order_id=o.id AND r.tenant_id=o.tenant_id AND r.del_flag='0'
+            AND (FIND_IN_SET(#{fileId}, REPLACE(r.processing_photos,' ','')) &gt; 0 OR FIND_IN_SET(#{fileId}, REPLACE(r.completed_photos,' ','')) &gt; 0))
+        <include refid="com.ls.aegis.biz.eoms.mapper.EomsDataScopeMapper.dataScopeFilter"/>
+    </select>
+    <select id="countVisibleContractFile" resultType="int">
+        SELECT COUNT(*) FROM eoms_contract ct WHERE ct.tenant_id=#{tenantId} AND ct.del_flag='0'
+        AND FIND_IN_SET(#{fileId}, REPLACE(ct.file_id,' ','')) &gt; 0
+        <include refid="com.ls.aegis.biz.eoms.mapper.EomsDataScopeMapper.dataScopeFilter"/>
+    </select>
+
+    <select id="countByCustomerAndFileId" resultType="int">
+        SELECT COUNT(1) FROM (
+            SELECT 1 FROM eoms_repair_apply a
+            INNER JOIN psi_unit u ON a.customer_id = u.id
+            WHERE u.unit_code = #{customerNo} AND a.del_flag = '0'
+              AND a.photos IS NOT NULL AND a.photos != ''
+              AND <include refid="fileInPhotos"/>
+            UNION ALL
+            SELECT 1 FROM eoms_repair_order o
+            INNER JOIN psi_unit u ON o.customer_id = u.id
+            WHERE u.unit_code = #{customerNo} AND o.del_flag = '0'
+              AND o.photos IS NOT NULL AND o.photos != ''
+              AND <include refid="fileInPhotos"/>
+            UNION ALL
+            SELECT 1 FROM eoms_repair_record r
+            INNER JOIN eoms_repair_order o ON r.repair_order_id = o.id
+            INNER JOIN psi_unit u ON o.customer_id = u.id
+            WHERE u.unit_code = #{customerNo} AND r.del_flag = '0'
+              AND (
+                (r.processing_photos IS NOT NULL AND r.processing_photos != ''
+                  AND FIND_IN_SET(#{fileId}, REPLACE(r.processing_photos, ' ', '')) &gt; 0)
+                OR (r.completed_photos IS NOT NULL AND r.completed_photos != ''
+                  AND FIND_IN_SET(#{fileId}, REPLACE(r.completed_photos, ' ', '')) &gt; 0)
+              )
+            UNION ALL
+            SELECT 1 FROM eoms_contract c
+            INNER JOIN psi_unit u ON c.customer_id = u.id
+            WHERE u.unit_code = #{customerNo} AND c.del_flag = '0'
+              AND c.file_id IS NOT NULL
+              AND FIND_IN_SET(#{fileId}, REPLACE(c.file_id, ' ', '')) &gt; 0
+        ) t
+    </select>
+
+    <select id="countByOwnerAndFileId" resultType="int">
+        SELECT COUNT(1) FROM (
+            SELECT 1 FROM eoms_repair_apply a JOIN psi_unit u ON u.id=a.customer_id AND u.tenant_id=a.tenant_id
+            WHERE u.id=#{customerId} AND u.tenant_id=#{tenantId} AND u.deleted=0 AND u.status=1
+              AND a.del_flag='0' AND FIND_IN_SET(#{fileId}, REPLACE(a.photos,' ','')) &gt; 0
+            UNION ALL
+            SELECT 1 FROM eoms_repair_order o JOIN psi_unit u ON u.id=o.customer_id AND u.tenant_id=o.tenant_id
+            WHERE u.id=#{customerId} AND u.tenant_id=#{tenantId} AND u.deleted=0 AND u.status=1
+              AND o.del_flag='0' AND FIND_IN_SET(#{fileId}, REPLACE(o.photos,' ','')) &gt; 0
+            UNION ALL
+            SELECT 1 FROM eoms_repair_record r JOIN eoms_repair_order o ON r.repair_order_id=o.id AND r.tenant_id=o.tenant_id
+            JOIN psi_unit u ON u.id=o.customer_id AND u.tenant_id=o.tenant_id
+            WHERE u.id=#{customerId} AND u.tenant_id=#{tenantId} AND u.deleted=0 AND u.status=1 AND r.del_flag='0' AND o.del_flag='0'
+              AND (FIND_IN_SET(#{fileId}, REPLACE(r.processing_photos,' ','')) &gt; 0 OR FIND_IN_SET(#{fileId}, REPLACE(r.completed_photos,' ','')) &gt; 0)
+            UNION ALL
+            SELECT 1 FROM eoms_contract c JOIN psi_unit u ON u.id=c.customer_id AND u.tenant_id=c.tenant_id
+            WHERE u.id=#{customerId} AND u.tenant_id=#{tenantId} AND u.deleted=0 AND u.status=1
+              AND c.del_flag='0' AND FIND_IN_SET(#{fileId}, REPLACE(c.file_id,' ','')) &gt; 0
+        ) owned_refs
+    </select>
+
+    <select id="countByFileId" resultType="int">
+        SELECT COUNT(1) FROM (
+            SELECT 1 FROM eoms_repair_apply a
+            WHERE a.del_flag = '0' AND a.photos IS NOT NULL AND a.photos != ''
+              AND <include refid="fileInPhotos"/>
+            UNION ALL
+            SELECT 1 FROM eoms_repair_order o
+            WHERE o.del_flag = '0' AND o.photos IS NOT NULL AND o.photos != ''
+              AND <include refid="fileInPhotos"/>
+            UNION ALL
+            SELECT 1 FROM eoms_repair_record r
+            WHERE r.del_flag = '0'
+              AND (
+                (r.processing_photos IS NOT NULL AND r.processing_photos != ''
+                  AND FIND_IN_SET(#{fileId}, REPLACE(r.processing_photos, ' ', '')) &gt; 0)
+                OR (r.completed_photos IS NOT NULL AND r.completed_photos != ''
+                  AND FIND_IN_SET(#{fileId}, REPLACE(r.completed_photos, ' ', '')) &gt; 0)
+              )
+            UNION ALL
+            SELECT 1 FROM eoms_contract c
+            WHERE c.del_flag = '0' AND c.file_id IS NOT NULL
+              AND FIND_IN_SET(#{fileId}, REPLACE(c.file_id, ' ', '')) &gt; 0
+        ) t
+    </select>
+</mapper>

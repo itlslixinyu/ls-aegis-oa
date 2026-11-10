@@ -1,0 +1,20 @@
+# 日常开发覆盖：只起 MySQL + Redis，不启后端/前端容器
+# 用法：
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#   或执行 ./dev-up.ps1
+# 完整部署栈仍用：
+#   docker compose up -d
+#
+# 本机后端：dev 配置默认端口 8000，前端 Vite 代理见 ls-aegis-web/.env.development
+
+name: ls-aegis
+
+services:
+  ls-aegis-server:
+    profiles: ["full"]
+  ls-aegis-web:
+    profiles: ["full"]
+  ls-aegis-h5:
+    profiles: ["full"]
+  ls-aegis-h5-engineer:
+    profiles: ["full"]

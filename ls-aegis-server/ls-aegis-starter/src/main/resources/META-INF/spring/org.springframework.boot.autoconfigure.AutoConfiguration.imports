@@ -1,0 +1,5 @@
+com.ls.aegis.starter.autoconfigure.LsAegisAutoConfiguration
+com.ls.aegis.redis.config.RedisAutoConfiguration
+com.ls.aegis.crypto.config.GmCryptoAutoConfiguration
+com.ls.aegis.crypto.config.GmPasswordEncoderAutoConfiguration
+com.ls.aegis.compat.legacy.config.LegacyConfiguration

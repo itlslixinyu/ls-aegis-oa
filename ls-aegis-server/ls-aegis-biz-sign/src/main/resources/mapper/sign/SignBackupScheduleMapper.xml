@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.sign.mapper.SignBackupScheduleMapper">
+
+    <resultMap id="SignBackupScheduleResult" type="com.ls.aegis.biz.sign.domain.SignBackupSchedule">
+        <id property="scheduleId" column="schedule_id"/>
+        <result property="name" column="name"/>
+        <result property="cycle" column="cycle"/>
+        <result property="runTime" column="run_time"/>
+        <result property="status" column="status"/>
+        <result property="triggerOs" column="trigger_os"/>
+        <result property="lastRunAt" column="last_run_at"/>
+        <result property="nextRunAt" column="next_run_at"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <select id="selectScheduleList" parameterType="com.ls.aegis.biz.sign.domain.SignBackupSchedule" resultMap="SignBackupScheduleResult">
+        SELECT * FROM sign_backup_schedule
+        <where>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="cycle != null and cycle != ''">AND cycle = #{cycle}</if>
+            <if test="status != null and status != ''">AND status = #{status}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectScheduleById" parameterType="Long" resultMap="SignBackupScheduleResult">
+        SELECT * FROM sign_backup_schedule WHERE schedule_id = #{scheduleId}
+    </select>
+
+    <insert id="insertSchedule" parameterType="com.ls.aegis.biz.sign.domain.SignBackupSchedule" useGeneratedKeys="true" keyProperty="scheduleId">
+        INSERT INTO sign_backup_schedule (
+            name, cycle, run_time, status, trigger_os, last_run_at, next_run_at,
+            create_by, create_time, update_by, update_time
+        ) VALUES (
+            #{name}, #{cycle}, #{runTime}, #{status}, #{triggerOs}, #{lastRunAt}, #{nextRunAt},
+            #{createBy}, NOW(), #{updateBy}, NOW()
+        )
+    </insert>
+
+    <update id="updateSchedule" parameterType="com.ls.aegis.biz.sign.domain.SignBackupSchedule">
+        UPDATE sign_backup_schedule
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="cycle != null">cycle = #{cycle},</if>
+            <if test="runTime != null">run_time = #{runTime},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="triggerOs != null">trigger_os = #{triggerOs},</if>
+            <if test="lastRunAt != null">last_run_at = #{lastRunAt},</if>
+            <if test="nextRunAt != null">next_run_at = #{nextRunAt},</if>
+            update_by = #{updateBy},
+            update_time = NOW()
+        </set>
+        WHERE schedule_id = #{scheduleId}
+    </update>
+
+    <delete id="deleteScheduleByIds">
+        DELETE FROM sign_backup_schedule WHERE schedule_id IN
+        <foreach collection="array" item="scheduleId" open="(" separator="," close=")">
+            #{scheduleId}
+        </foreach>
+    </delete>
+
+    <select id="selectPendingSchedules" resultMap="SignBackupScheduleResult">
+        SELECT * FROM sign_backup_schedule
+        WHERE status = '0'
+          AND next_run_at &lt;= NOW()
+        ORDER BY next_run_at ASC
+    </select>
+
+</mapper>

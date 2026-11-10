@@ -1,0 +1,4 @@
+interface:
+  display_name: "ITLS 业务流程测试"
+  short_description: "梳理报价运维修结算与进销存签章流程，验证权限金额及状态"
+  default_prompt: "使用 $itls-business-test 处理当前 ITLS 项目任务，给出实际修改、验证结果与未覆盖项。"
