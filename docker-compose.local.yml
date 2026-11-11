@@ -1,6 +1,6 @@
-# 本机完整部署：叠加根生产 Compose，复用现有数据，不用于空库初始化。
+# 本机完整部署：叠加根生产 Compose，默认复用原数据；显式指定空卷时执行唯一初始化SQL。
 # docker compose -p ls-aegis --env-file docker/.env -f docker-compose.yml -f docker-compose.local.yml up -d --build
-# 禁止 down -v；external 卷必须已存在，避免误建空库。
+# 禁止 down -v；external 卷必须显式创建，空卷会由init.sql初始化。
 name: ls-aegis
 
 services:
@@ -10,6 +10,7 @@ services:
       - "127.0.0.1:3306:3306"
     volumes: !override
       - existing-mysql:/var/lib/mysql
+      - ./ls-aegis-server/sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_ROOT_PASSWORD\" mysql -h127.0.0.1 -uroot -N -e 'SELECT 1 FROM ls_aegis.sys_user LIMIT 1' >/dev/null"]
       interval: 5s
@@ -61,22 +62,13 @@ services:
       - "127.0.0.1:5175:80"
       - "127.0.0.1:25685:80"
 
-  # 保持原有占位容器语义：尚未配置媒体业务，不声称媒体服务已可用。
-  ls-aegis-media:
-    image: zlmediakit/zlmediakit:master
-    container_name: ls-aegis-media
-    entrypoint: ["/bin/sleep"]
-    command: ["infinity"]
-    network_mode: none
-    restart: unless-stopped
-
 volumes:
   existing-mysql:
     external: true
-    name: ls-aegis_mysql-data
+    name: ${LS_AEGIS_MYSQL_VOLUME:-ls-aegis_mysql-data}
   existing-redis:
     external: true
-    name: ls-aegis_redis-data
+    name: ${LS_AEGIS_REDIS_VOLUME:-ls-aegis_redis-data}
 
 networks:
   ls-aegis:

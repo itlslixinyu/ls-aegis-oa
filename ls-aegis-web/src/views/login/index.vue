@@ -3,7 +3,7 @@
     <header class="login-header">
       <div class="brand">
         <div class="brand-logo">
-          <img :src="logo || '/logo.svg'" alt="logo" />
+          <img :src="logo || '/brand-logo.png'" alt="logo" />
         </div>
         <div class="brand-text">
           <span v-if="company" class="company">{{ company }}</span>

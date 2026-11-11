@@ -6,7 +6,7 @@
   >
     <div class="system-logo__inner">
       <img v-if="logo" class="logo" :src="logo" alt="logo" />
-      <img v-else class="logo" src="/logo.svg" alt="logo" />
+      <img v-else class="logo" src="/brand-logo.png" alt="logo" />
       <span v-if="!props.hideName" class="system-name gi_line_1">{{ title }}</span>
     </div>
   </section>

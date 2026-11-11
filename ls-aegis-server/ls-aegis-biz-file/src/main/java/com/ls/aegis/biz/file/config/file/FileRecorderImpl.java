@@ -16,6 +16,8 @@
 
 package com.ls.aegis.biz.file.config.file;
 
+import com.ls.aegis.biz.file.util.FileUrlUtils;
+
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ClassUtil;
 import cn.hutool.core.util.StrUtil;
@@ -71,10 +73,10 @@ public class FileRecorderImpl implements FileRecorder {
         fileInfo.setId(String.valueOf(file.getId()));
         if (!URLUtils.isHttpUrl(fileInfo.getUrl())) {
             String prefix = storage.getUrlPrefix();
-            String url = URLUtil.normalize(prefix + fileInfo.getUrl(), false, true);
+            String url = FileUrlUtils.join(prefix, fileInfo.getUrl());
             fileInfo.setUrl(url);
             if (StrUtil.isNotBlank(fileInfo.getThUrl())) {
-                fileInfo.setThUrl(URLUtil.normalize(prefix + fileInfo.getThUrl(), false, true));
+                fileInfo.setThUrl(FileUrlUtils.join(prefix, fileInfo.getThUrl()));
             }
         }
         return true;
@@ -125,7 +127,7 @@ public class FileRecorderImpl implements FileRecorder {
             .eq(FileDO::getName, StrUtil.subAfter(url, StringConstants.SLASH, true));
         // 非 HTTP URL 场景
         if (!URLUtils.isHttpUrl(url)) {
-            return queryWrapper.eq(FileDO::getPath, StrUtil.prependIfMissing(url, StringConstants.SLASH)).one();
+            return queryWrapper.eq(FileDO::getPath, StrUtil.prependIfMissing(FileUrlUtils.storagePath(url), StringConstants.SLASH)).one();
         }
         // HTTP URL 场景
         List<FileDO> list = queryWrapper.list();
@@ -144,7 +146,8 @@ public class FileRecorderImpl implements FileRecorder {
             String urlPrefix = StrUtil.subBefore(url, StringConstants.SLASH, true);
             // http://localhost:8000/file/ + /user/avatar => http://localhost:8000/file/user/avatar
             StorageDO storage = storageMap.get(file.getStorageId());
-            return urlPrefix.equals(URLUtil.normalize(storage.getUrlPrefix() + file.getParentPath(), false, true));
+            return (FileUrlUtils.isSameOrigin(storage.getUrlPrefix()) ? URLUtil.url(urlPrefix).getPath() : urlPrefix)
+                .equals(FileUrlUtils.join(storage.getUrlPrefix(), file.getParentPath()));
         }).findFirst().orElse(null);
     }
 }

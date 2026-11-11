@@ -3,7 +3,7 @@
     <div class="auth-container">
       <div class="logo-section">
         <SystemLogo :src="systemStore.logoUrl" class="logo-img" />
-        <h2 class="title">{{ systemStore.h5Title }}</h2>
+        <SingleLineHeading v-if="systemStore.h5Title" class="title" :text="systemStore.h5Title" />
         <p class="subtitle">{{ mode === 'login' ? '客户服务端' : '客户账号激活' }}</p>
       </div>
 
@@ -117,6 +117,7 @@ import { activateAccount, getImageCaptcha, passwordLogin } from '@/api/customer'
 import { toBizId } from '@/utils/biz-id'
 import { encryptTransport } from '@/utils/encrypt'
 import SystemLogo from '@/components/SystemLogo.vue'
+import SingleLineHeading from '@/components/SingleLineHeading.vue'
 
 const router = useRouter()
 const userStore = useUserStore()

@@ -141,7 +141,7 @@ const storeSetup = () => {
       document.title = resMap.get('SITE_TITLE')
       document
         .querySelector('link[rel="shortcut icon"]')
-        ?.setAttribute('href', resMap.get('SITE_FAVICON') || '/favicon.ico')
+        ?.setAttribute('href', resMap.get('SITE_FAVICON') || '/favicon.png')
     })
   }
 
@@ -149,7 +149,7 @@ const storeSetup = () => {
   const setSiteConfig = (config: BasicConfig) => {
     Object.assign(siteConfig, config)
     document.title = config.SITE_TITLE || ''
-    document.querySelector('link[rel="shortcut icon"]')?.setAttribute('href', config.SITE_FAVICON || '/favicon.ico')
+    document.querySelector('link[rel="shortcut icon"]')?.setAttribute('href', config.SITE_FAVICON || '/favicon.png')
   }
   // 监听 色弱模式 和 哀悼模式
   watch([
@@ -188,9 +188,9 @@ const storeSetup = () => {
   const getTitleShort = () => {
     const short = (siteConfig.SITE_TITLE_SHORT || '').trim()
     if (short) {
-      return short.slice(0, 8)
+      return short
     }
-    return '雷铄御警'
+    return 'ls·aegis·oa'
   }
 
   const getCompany = () => {

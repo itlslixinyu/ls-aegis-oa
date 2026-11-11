@@ -272,3 +272,14 @@ databaseChangeLog:
 
   - include:
       file: db/changelog/releases/r44-mysql.yaml
+  - include:
+      file: db/changelog/mysql/patch_clean_install_defaults.sql
+
+  - include:
+      file: db/changelog/mysql/patch_oa_site_identity.sql
+
+  - include:
+      file: db/changelog/mysql/patch_oa_file_same_origin.sql
+
+  - include:
+      file: db/changelog/mysql/patch_oa_copyright.sql

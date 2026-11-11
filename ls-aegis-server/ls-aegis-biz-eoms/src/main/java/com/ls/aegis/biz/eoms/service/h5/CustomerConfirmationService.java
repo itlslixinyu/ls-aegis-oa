@@ -12,12 +12,20 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Objects;
 import java.util.Set;
+import java.util.List;
+import com.ls.aegis.biz.eoms.domain.RepairApply;
 
 @Service
 @RequiredArgsConstructor
 public class CustomerConfirmationService {
     private final CustomerConfirmationMapper mapper;
     private final IRepairOrderService orderService;
+
+    @Transactional(readOnly = true)
+    public List<RepairApply> pendingConfirmations(Long tenantId, Long customerId) {
+        if (tenantId == null || customerId == null) throw new ServiceException("客户会话无效或已过期");
+        return mapper.pendingConfirmations(tenantId, customerId);
+    }
 
     @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
     public CustomerConfirmationResp confirm(Long tenantId, Long customerId, Long orderId, String remark) {

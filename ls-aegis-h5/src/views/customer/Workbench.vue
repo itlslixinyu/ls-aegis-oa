@@ -2,14 +2,7 @@
   <div class="workbench-page">
     <van-nav-bar title="工作台" />
 
-    <section class="welcome-card">
-      <div>
-        <div class="eyebrow">客户服务中心</div>
-        <h1>{{ customerName }}，您好</h1>
-        <p>选择下面的功能开始使用</p>
-      </div>
-      <SystemLogo :src="systemStore.logoUrl" class="workbench-logo" />
-    </section>
+    <WelcomeCard eyebrow="客户服务中心" :name="customerName" description="选择下面的功能开始使用" :logo="systemStore.logoUrl" />
 
     <section class="section-block">
       <div class="section-title">常用功能</div>
@@ -32,19 +25,17 @@
       </div>
     </section>
 
-    <van-tabbar route>
-      <van-tabbar-item to="/customer/workbench" icon="apps-o">工作台</van-tabbar-item>
-      <van-tabbar-item to="/customer/profile" icon="manager-o">我的</van-tabbar-item>
-    </van-tabbar>
+    <AppTabbar />
   </div>
 </template>
 
 <script setup>
+import AppTabbar from '@/components/AppTabbar.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { useSystemStore } from '@/store/system'
-import SystemLogo from '@/components/SystemLogo.vue'
+import WelcomeCard from '@/components/WelcomeCard.vue'
 import { getRepairList } from '@/api/customer'
 
 const router = useRouter()
@@ -70,24 +61,4 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped>
-.workbench-page { min-height: 100vh; padding-bottom: 70px; background: #f4f6fa; color: #1e2b42; }
-:deep(.van-nav-bar) { background: transparent; }
-:deep(.van-nav-bar__title) { font-size: 18px; font-weight: 700; }
-.welcome-card { margin: 12px 16px 24px; padding: 22px; display: flex; align-items: center; justify-content: space-between; border-radius: 24px; color: #fff; background: linear-gradient(135deg, #315ec4, #668ce8); box-shadow: 0 14px 28px rgba(49,94,196,.22); }
-.eyebrow { font-size: 12px; opacity: .78; letter-spacing: .1em; }
-h1 { margin: 8px 0 6px; font-size: 23px; }
-.welcome-card p { margin: 0; font-size: 13px; opacity: .82; }
-.workbench-logo { width: 70px; height: 70px; object-fit: contain; }
-.section-block { margin: 0 16px 22px; }
-.section-title { margin-bottom: 10px; font-size: 16px; font-weight: 700; }
-.action-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
-.action-card { min-height: 122px; padding: 17px; border: 0; border-radius: 18px; color: #fff; text-align: left; box-shadow: 0 8px 18px rgba(35,56,100,.12); }
-.action-card--blue { background: linear-gradient(145deg,#3f78df,#5e95ee); }
-.action-card--purple { background: linear-gradient(145deg,#7359ce,#9a7be2); }
-.action-card span:not(.action-icon) { display: block; font-size: 16px; font-weight: 700; }
-.action-card small { display: block; margin-top: 7px; font-size: 12px; opacity: .8; }
-.action-icon { display: block; margin-bottom: 8px; font-size: 27px; line-height: 1; }
-.status-card { min-height: 104px; }.status-card--orange { background: linear-gradient(145deg,#e99b39,#f3bd67); }.status-card--blue { background: linear-gradient(145deg,#4b7ee1,#79a0ed); }.status-card--green { background: linear-gradient(145deg,#34a978,#61c79a); }.status-card--gray { background: linear-gradient(145deg,#7f8a9a,#aab3c0); }.status-dot { display: block; width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,.85); }
-.status-card-title { display:flex !important; align-items:center; justify-content:space-between; gap:8px; }.status-card-title b { min-width:28px; padding:3px 7px; border-radius:10px; background:rgba(255,255,255,.2); font-size:15px; text-align:center; }
-</style>
+<style scoped src="@/styles/workbench.css"></style>

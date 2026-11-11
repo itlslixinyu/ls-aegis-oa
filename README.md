@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="ls-aegis-web/public/logo.svg" width="64" alt="LS·Aegis" />
+<img src="ls-aegis-web/public/brand-logo.png" width="64" alt="LS·Aegis OA" />
 
 # LS·Aegis OA
 

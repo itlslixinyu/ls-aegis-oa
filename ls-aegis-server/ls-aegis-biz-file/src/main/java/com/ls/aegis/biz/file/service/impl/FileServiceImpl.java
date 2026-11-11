@@ -16,11 +16,12 @@
 
 package com.ls.aegis.biz.file.service.impl;
 
+import com.ls.aegis.biz.file.util.FileUrlUtils;
+
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.util.ClassUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.core.util.URLUtil;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -236,13 +237,12 @@ public class FileServiceImpl extends BaseServiceImpl<FileMapper, FileDO, FileRes
         if (obj instanceof FileResp fileResp) {
             StorageDO storage = storageService.getById(fileResp.getStorageId());
             String prefix = storage.getUrlPrefix();
-            String url = URLUtil.normalize(prefix + fileResp.getPath(), false, true);
+            String url = FileUrlUtils.join(prefix, fileResp.getPath());
             fileResp.setUrl(url);
             String parentPath = StringConstants.SLASH.equals(fileResp.getParentPath())
                 ? StringConstants.EMPTY
                 : fileResp.getParentPath();
-            String thumbnailUrl = StrUtils.blankToDefault(fileResp.getThumbnailName(), url, thName -> URLUtil
-                .normalize(prefix + parentPath + StringConstants.SLASH + thName, false, true));
+            String thumbnailUrl = StrUtils.blankToDefault(fileResp.getThumbnailName(), url, thName -> FileUrlUtils.join(prefix, parentPath + StringConstants.SLASH + thName));
             fileResp.setThumbnailUrl(thumbnailUrl);
             fileResp.setStorageName("%s (%s)".formatted(storage.getName(), storage.getCode()));
         }

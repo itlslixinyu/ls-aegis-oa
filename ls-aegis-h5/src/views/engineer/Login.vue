@@ -5,7 +5,7 @@
     <div class="auth-container">
       <div class="logo-section">
         <SystemLogo :src="systemStore.logoUrl" class="logo-img" />
-        <h2 class="title" v-if="systemStore.h5Title">{{ systemStore.h5Title }}</h2>
+        <SingleLineHeading v-if="systemStore.h5Title" class="title" :text="systemStore.h5Title" />
         <p class="subtitle">工程师端</p>
       </div>
 
@@ -103,6 +103,7 @@ import { useUserStore } from '@/store/user'
 import { useSystemStore } from '@/store/system'
 import policeBadge from '@/assets/images/police-badge.png'
 import SystemLogo from '@/components/SystemLogo.vue'
+import SingleLineHeading from '@/components/SingleLineHeading.vue'
 
 const router = useRouter()
 const userStore = useUserStore()

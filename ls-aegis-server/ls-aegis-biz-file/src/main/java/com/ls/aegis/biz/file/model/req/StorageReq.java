@@ -106,7 +106,7 @@ public class StorageReq implements Serializable {
     /**
      * 域名/访问路径
      */
-    @Schema(description = "域名/访问路径", example = "http://localhost:8000/file/")
+    @Schema(description = "域名/访问路径", example = "/api/file/")
     @Length(max = 255, message = "域名长度不能超过 {max} 个字符", groups = ValidationGroup.Storage.OSS.class)
     @Length(max = 255, message = "访问路径长度不能超过 {max} 个字符", groups = ValidationGroup.Storage.Local.class)
     @NotBlank(message = "访问路径不能为空", groups = ValidationGroup.Storage.Local.class)

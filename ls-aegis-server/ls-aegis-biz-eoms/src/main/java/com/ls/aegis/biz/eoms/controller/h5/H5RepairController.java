@@ -176,6 +176,14 @@ public class H5RepairController
     /**
      * 当前客户报修列表
      */
+    @GetMapping("/todos")
+    public R<PageResp<RepairApply>> todos(HttpServletRequest request, @Valid PageQuery pageQuery)
+    {
+        H5CustomerInfo session = customerSession(request);
+        return R.ok(PageQueryHelper.page(pageQuery, () -> customerConfirmationService.pendingConfirmations(
+            session.getTenantId(), session.getCustomerId())));
+    }
+
     @GetMapping("/list")
     public R<PageResp<RepairApply>> list(HttpServletRequest request, RepairApply query, @Valid PageQuery pageQuery)
     {

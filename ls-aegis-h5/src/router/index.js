@@ -15,8 +15,8 @@ const routes = [
   ...roleRoutes,
   // 保留另一端已知入口原有的回本站登录行为，不引入另一端页面模块。
   ...(h5Role === 'engineer'
-    ? ['/customer/auth', '/customer/workbench', '/customer/apply', '/customer/repairs', '/customer/repairs/all', '/customer/repairs/status/:status', '/customer/profile', '/customer/repair/:id']
-    : ['/engineer/login', '/engineer/workbench', '/engineer/tasks', '/engineer/tasks/status/:status', '/engineer/task/:id', '/engineer/record/:orderId', '/engineer/profile'])
+    ? ['/customer/todos', '/customer/auth', '/customer/workbench', '/customer/apply', '/customer/repairs', '/customer/repairs/all', '/customer/repairs/status/:status', '/customer/profile', '/customer/repair/:id']
+    : ['/engineer/todos', '/engineer/login', '/engineer/workbench', '/engineer/tasks', '/engineer/tasks/status/:status', '/engineer/task/:id', '/engineer/record/:orderId', '/engineer/profile'])
     .map(path => ({ path, redirect: homePath })),
   {
     path: '/:pathMatch(.*)*',

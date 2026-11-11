@@ -12,6 +12,8 @@
 
 ## 任务路由
 
+- 正式品牌、双端命名和干净MySQL安装交付：读 `skills/itls-clean-release/SKILL.md`，角色见 `agents/clean-release/AGENTS.md`；安装文件整理不能替代或隐含在用数据清理。
+
 - 开发、修复、启动：读 `skills/itls-maintain/SKILL.md`。
 - 本地目录/文档整理、新仓库 `ls-aegis-oa` 发布准备：读 `skills/itls-repo-organize/SKILL.md`，角色见 `agents/repo-organize/AGENTS.md`；先盘点与规划，不因生成规范而自动删除数据、改版本或操作远端。
 - 减负、性能、页面和流程精简：读 `skills/itls-optimize/SKILL.md`。

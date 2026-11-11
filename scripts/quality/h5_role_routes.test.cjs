@@ -41,8 +41,8 @@ for (const role of ['customer', 'engineer']) {
     const { router } = setup(role)
     const own = router.routes.filter(r => r.meta?.role === role && r.component)
     const expectedPaths = role === 'customer'
-      ? ['/customer/auth', '/customer/workbench', '/customer/apply', '/customer/repairs/all', '/customer/repairs/status/:status', '/customer/repairs', '/customer/profile', '/customer/repair/:id']
-      : ['/engineer/login', '/engineer/workbench', '/engineer/tasks/status/:status', '/engineer/tasks', '/engineer/task/:id', '/engineer/record/:orderId', '/engineer/profile']
+      ? ['/customer/todos', '/customer/auth', '/customer/workbench', '/customer/apply', '/customer/repairs/all', '/customer/repairs/status/:status', '/customer/repairs', '/customer/profile', '/customer/repair/:id']
+      : ['/engineer/todos', '/engineer/login', '/engineer/workbench', '/engineer/tasks/status/:status', '/engineer/tasks', '/engineer/task/:id', '/engineer/record/:orderId', '/engineer/profile']
     assert.deepEqual(Array.from(own, r => r.path).sort(), expectedPaths.sort())
     for (const route of own) {
       const publicPage = route.path === '/customer/auth' || route.path === '/engineer/login'
@@ -57,7 +57,7 @@ for (const role of ['customer', 'engineer']) {
   })
   test(`${role}页面继续使用原身份守卫，不能由另一种令牌放行`, () => {
     const env = setup(role)
-    const protectedPath = role === 'customer' ? '/customer/apply' : '/engineer/tasks'
+    const protectedPath = `/${role}/todos`
     const meta = env.router.routes.find(r => r.path === protectedPath).meta
     const home = role === 'customer' ? '/customer/auth' : '/engineer/login'
     env.user[role === 'customer' ? 'engineerToken' : 'h5Token'] = 'other-role-fixture'

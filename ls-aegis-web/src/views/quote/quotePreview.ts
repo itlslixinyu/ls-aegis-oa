@@ -49,8 +49,8 @@ const escAttr = (raw?: string | null) => {
 }
 
 export function resolveLogoUrl(logo?: string | null) {
-  const raw = (logo || '/logo.svg').trim()
-  if (!raw) return `${window.location.origin}/logo.svg`
+  const raw = (logo || '/brand-logo.png').trim()
+  if (!raw) return `${window.location.origin}/brand-logo.png`
   if (/^data:/i.test(raw)) return raw
   if (/^https?:\/\//i.test(raw)) return raw
   if (raw.startsWith('//')) return `${window.location.protocol}${raw}`

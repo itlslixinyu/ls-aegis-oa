@@ -1,6 +1,12 @@
 // 工程师构建专用页面，身份及接口仍使用平台共用底座。
 export default [
   {
+    path: '/engineer/todos',
+    name: 'EngineerTodos',
+    component: () => import('@/views/engineer/Todos.vue'),
+    meta: { title: '我的待办', requireAuth: true, role: 'engineer' }
+  },
+  {
     path: '/engineer/login',
     name: 'EngineerLogin',
     component: () => import('@/views/engineer/Login.vue'),

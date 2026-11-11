@@ -41,11 +41,11 @@ function toOptionMap(list) {
  * 从平台 SITE option 加载名称、Logo、版权等，H5 各页共享
  */
 export const useSystemStore = defineStore('system', () => {
-  const systemName = ref('ITLS-EOMS 维修服务')
+  const systemName = ref('LS·Aegis 雷铄 OA 安全应用构建平台')
   const subtitle = ref('设备运维一体化管理平台')
   const logoUrl = ref('')
-  const footerContent = ref('Copyright © 2018-2026 ITLS. All Rights Reserved.')
-  const h5Title = ref('ITLS-EOMS 维修服务')
+  const footerContent = ref('LS·Aegis 雷铄 OA 安全应用构建平台')
+  const h5Title = ref('LS·Aegis 雷铄 OA 安全应用构建平台')
   const faviconUrl = ref('')
   const icpNumber = ref('')
   const publicSecurityNumber = ref('')

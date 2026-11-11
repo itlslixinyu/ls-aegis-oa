@@ -16,6 +16,8 @@
 
 package com.ls.aegis.biz.file.enums;
 
+import com.ls.aegis.biz.file.util.FileUrlUtils;
+
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.Getter;
@@ -45,7 +47,7 @@ public enum StorageTypeEnum implements BaseEnum<Integer> {
         @Override
         public void validate(StorageReq req) {
             ValidationUtils.validate(req, ValidationGroup.Storage.Local.class);
-            ValidationUtils.throwIf(StrUtil.isNotBlank(req.getDomain()) && !URLUtils.isHttpUrl(req
+            ValidationUtils.throwIf(StrUtil.isNotBlank(req.getDomain()) && !FileUrlUtils.isSameOrigin(req.getDomain()) && !URLUtils.isHttpUrl(req
                 .getDomain()), "访问路径格式不正确");
             // 禁止本地存储路径穿越（如 ../）
             String bucket = StrUtil.blankToDefault(req.getBucketName(), StringConstants.EMPTY).replace('\\', '/');

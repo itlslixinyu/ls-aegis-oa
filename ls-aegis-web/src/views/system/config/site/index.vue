@@ -55,7 +55,7 @@
 
               <a-input
                 v-model="form[field.code]"
-                :max-length="field.short ? 8 : 512"
+                :max-length="field.maxLength ?? (field.short ? 8 : 512)"
                 :readonly="!editing"
                 :disabled="!!uploading"
                 :placeholder="section.images ? '图片地址' : undefined"
@@ -97,6 +97,7 @@ interface SiteField {
   code: string
   label: string
   required?: boolean
+  maxLength?: number
   short?: boolean
   wide?: boolean
   imageSize?: SiteImageSize
@@ -118,7 +119,7 @@ const sections: { title: string, description: string, images?: boolean, fields: 
     description: '设置平台与公司的显示名称。',
     fields: [
       { code: 'SITE_TITLE', label: '系统名称', required: true },
-      { code: 'SITE_TITLE_SHORT', label: '系统简称', short: true, required: true },
+      { code: 'SITE_TITLE_SHORT', label: '系统简称', maxLength: 32, required: true },
       { code: 'SITE_COMPANY', label: '公司名称', required: true },
       { code: 'SITE_COMPANY_SHORT', label: '公司简称', short: true, required: true },
       { code: 'SITE_DESCRIPTION', label: '系统描述', wide: true },

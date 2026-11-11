@@ -44,4 +44,12 @@ flowchart LR
 
 全新空库使用ls-aegis-server/sql/init.sql。已有库按适用范围执行增量升级，不能重放全量初始化或任意改写已执行changeset。
 
+全量初始化只预置超级管理员及所属根部门、菜单权限、角色定义、字典、必要配置和内置打印模板；业务表、公告和文件引用为空。正式Logo和图标来自源码静态资源，不依赖原环境上传目录或外观缓存。
+
+全新安装必须使用独立空数据目录。既有本机覆盖会复用原数据卷，重新构建容器不会获得空库。历史Liquibase迁移保持不可变；其中的安装专用整理仅在显式选择clean-install上下文且满足空业务库前提时运行，普通升级不执行数据清理。
+
+本机覆盖可通过本地环境中的LS_AEGIS_MYSQL_VOLUME、LS_AEGIS_REDIS_VOLUME选择已经显式创建的独立命名卷；未设置时继续使用原卷。MySQL空卷从唯一init.sql初始化，已有卷不会重复导入。切换为全新数据集时应同时使用独立缓存卷，使旧登录态与配置缓存失效；原卷可保留以供回退。
+
 受限入口分别见[R29](../../docker/ls-aegis-server/MIGRATION-R29.md)、[R31](../../docker/ls-aegis-server/MIGRATION-R31.md)、[R32](../../docker/ls-aegis-server/MIGRATION-R32.md)及[R43/R44](../../docker/ls-aegis-server/MIGRATION-R43-R44.md)。这些入口只覆盖固定发布范围，不是完整master的通用执行器。
+
+本地文件存储默认使用同源 `/api/file/`，由当前 PC 或 H5 入口代理到后端 `/file/`。本机端口与正式域名共用同一配置；正式网关需保留 `/api/` 转发规则。对象存储和自定义绝对域名仍使用各自配置，升级只替换旧模板的 `http://localhost:8080/api/file/`。直接访问 API 时请使用后端实际的 `/file/` 路径。

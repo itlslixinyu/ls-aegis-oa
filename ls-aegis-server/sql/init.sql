@@ -517,8 +517,7 @@ VALUES
 INSERT INTO `sys_dept`
 (`id`, `name`, `parent_id`, `ancestors`, `description`, `sort`, `status`, `is_system`, `create_user`, `create_time`)
 VALUES
-(1, '总公司', 0, '0', '一级部门', 1, 1, b'1', 1, NOW()),
-(2, '总经办', 1, '0,1', '二级部门', 1, 1, b'0', 1, NOW());
+(1, '总公司', 0, '0', '一级部门', 1, 1, b'1', 1, NOW());
 
 -- 初始化默认角色
 INSERT INTO `sys_role`
@@ -535,19 +534,18 @@ VALUES
 INSERT INTO `sys_user`
 (`id`, `username`, `nickname`, `password`, `gender`, `email`, `phone`, `avatar`, `description`, `status`, `is_system`, `pwd_reset_time`, `dept_id`, `create_user`, `create_time`)
 VALUES
-(1, 'admin', '超级管理员', '{sm3}v1$ef4114fbfe4881f4710b626429c97c04$bd43c9a531b4cc2705aaff6d1a2f9563906c254cc3ffe05fbb21c2456bd86d99', 1, NULL, NULL, NULL, '系统初始用户', 1, b'1', '2000-01-01 00:00:00', 1, 1, NOW()),
-(547889293968801822, 'test', '测试用户', '{sm3}v1$cfa6968c5df393377b04ff6e33f6f90c$025649846502c230dbfcff724d5724a2aa0af1c2a97defc84da59c70b9df24c8', 2, NULL, NULL, NULL, '系统测试账号', 1, b'0', '2000-01-01 00:00:00', 2, 1, NOW());
+(1, 'admin', '超级管理员', '{sm3}v1$ef4114fbfe4881f4710b626429c97c04$bd43c9a531b4cc2705aaff6d1a2f9563906c254cc3ffe05fbb21c2456bd86d99', 1, NULL, NULL, NULL, '系统初始用户', 1, b'1', '2000-01-01 00:00:00', 1, 1, NOW());
 
 -- 初始化默认参数
 INSERT INTO `sys_option`
 (`id`, `category`, `name`, `code`, `value`, `default_value`, `description`)
 VALUES
-(1, 'SITE', '系统名称', 'SITE_TITLE', NULL, 'LS-Aegis 雷铄御警安全应用构建平台', '显示在浏览器标题栏和登录页顶栏的产品/项目名称'),
-(2, 'SITE', '系统描述', 'SITE_DESCRIPTION', NULL, 'LS Aegis 前后端分离中后台平台', '用于 SEO 的网站元描述'),
-(3, 'SITE', '版权声明', 'SITE_COPYRIGHT', NULL, '© 2026 雷铄科技 · LS-Aegis 雷铄御警安全应用构建平台', '显示在页面底部的版权声明文本'),
+(1, 'SITE', '系统名称', 'SITE_TITLE', NULL, 'LS·Aegis 雷铄 OA 安全应用构建平台', '显示在浏览器标题栏和登录页顶栏的产品/项目名称'),
+(2, 'SITE', '系统描述', 'SITE_DESCRIPTION', NULL, 'LS·Aegis 雷铄 OA 安全应用构建平台', '用于 SEO 的网站元描述'),
+(3, 'SITE', '版权声明', 'SITE_COPYRIGHT', NULL, 'LS·Aegis 雷铄 OA 安全应用构建平台', '显示在页面底部的版权声明文本'),
 (4, 'SITE', 'ICP备案号', 'SITE_BEIAN', NULL, '冀ICP备 00000000 号', '工信部 ICP 备案编号（如：冀ICP备00000000号）'),
-(5, 'SITE', '系统图标', 'SITE_FAVICON', NULL, '/favicon.ico', '浏览器标签页显示的网站图标（建议 .ico 格式）'),
-(6, 'SITE', '系统LOGO', 'SITE_LOGO', NULL, '/logo.svg', '显示在登录页面和系统导航栏的网站图标（建议 .svg 格式）'),
+(5, 'SITE', '系统图标', 'SITE_FAVICON', NULL, '/favicon.png', '浏览器标签页显示的网站图标（建议 .ico 格式）'),
+(6, 'SITE', '系统LOGO', 'SITE_LOGO', NULL, '/brand-logo.png', '显示在登录页面和系统导航栏的网站图标（建议 .svg 格式）'),
 (7, 'SITE', '公司名称', 'SITE_COMPANY', NULL, '雷铄科技', '显示在登录页顶栏的公司名称'),
 (8, 'SITE', '公安备案号', 'SITE_BEIAN_GONGAN', NULL, '冀公网安备 00000000000000 号', '显示在登录页底部的公安备案编号'),
 (9, 'SITE', '公安备案图标', 'SITE_BEIAN_GONGAN_ICON', NULL, '/beian-gongan.png', '公安备案号左侧图标（建议小尺寸 PNG）'),
@@ -559,7 +557,7 @@ VALUES
 (15, 'PASSWORD', '密码最小长度', 'PASSWORD_MIN_LENGTH', NULL, '8', '密码最小字符长度要求（8-32个字符）'),
 (16, 'PASSWORD', '是否允许密码包含用户名', 'PASSWORD_ALLOW_CONTAIN_USERNAME', NULL, '1', '是否允许密码包含正序或倒序的用户名字符'),
 (17, 'PASSWORD', '密码是否必须包含特殊字符', 'PASSWORD_REQUIRE_SYMBOLS', NULL, '0', '是否要求密码必须包含特殊字符（如：!@#$%）'),
-(18, 'SITE', '系统名称简称', 'SITE_TITLE_SHORT', NULL, '雷铄御警', '显示在左侧栏 Logo 旁的系统简称（必填，最多 8 个字）'),
+(18, 'SITE', '系统名称简称', 'SITE_TITLE_SHORT', NULL, 'ls·aegis·oa', '显示在左侧栏 Logo 旁的系统简称（必填，最多 32 个字符）'),
 (19, 'SITE', '公司简称', 'SITE_COMPANY_SHORT', NULL, '雷铄', '公司名称简称（必填，最多 8 个字）'),
 (20, 'MAIL', '邮件协议', 'MAIL_PROTOCOL', NULL, 'smtp', '邮件发送协议类型'),
 (21, 'MAIL', '服务器地址', 'MAIL_HOST', NULL, NULL, '邮件服务器地址'),
@@ -639,46 +637,20 @@ VALUES
 INSERT INTO `sys_user_role`
 (`id`, `user_id`, `role_id`)
 VALUES
-(1, 1, 1),
-(2, 547889293968801822, 3);
+(1, 1, 1);
 
 -- 初始化默认存储
 INSERT INTO `sys_storage`
 (`id`, `name`, `code`, `type`, `access_key`, `secret_key`, `endpoint`, `bucket_name`, `domain`, `recycle_bin_enabled`, `recycle_bin_path`, `description`, `is_default`, `sort`, `status`, `create_user`, `create_time`)
 VALUES
-(1, '开发环境', 'local_dev', 1, NULL, NULL, NULL, 'data/file/', 'http://localhost:8080/api/file/', b'1', '.RECYCLE.BIN/', '本地存储', b'1', 1, 1, 1, NOW()),
-(2, '生产环境', 'local_prod', 1, NULL, NULL, NULL, 'data/file/', 'http://localhost:8080/api/file/', b'1', '.RECYCLE.BIN/', '本地存储', b'0', 2, 2, 1, NOW());
+(1, '开发环境', 'local_dev', 1, NULL, NULL, NULL, 'data/file/', '/api/file/', b'1', '.RECYCLE.BIN/', '本地存储', b'1', 1, 1, 1, NOW()),
+(2, '生产环境', 'local_prod', 1, NULL, NULL, NULL, 'data/file/', '/api/file/', b'1', '.RECYCLE.BIN/', '本地存储', b'0', 2, 2, 1, NOW());
 
 -- 初始化客户端数据
 INSERT INTO `sys_client`
 (`id`, `client_id`, `client_type`, `auth_type`, `active_timeout`, `timeout`, `status`, `create_user`, `create_time`)
 VALUES
 (1, 'ef51c9a3e9046c4f2ea45142c8a8344a', 'PC', '["ACCOUNT", "EMAIL"]', 1800, 86400, 1, 1, NOW());
-
--- 初始化仪表盘公告种子（20 条已发布）
-INSERT INTO `sys_notice`
-(`id`, `title`, `content`, `type`, `notice_scope`, `notice_users`, `notice_methods`, `is_timing`, `publish_time`, `is_top`, `status`, `create_user`, `create_time`, `deleted`)
-VALUES
-(910000000000000001, '系统维护窗口通知', '<p>本周六 22:00-24:00 进行系统例行维护，期间登录可能短暂中断，请提前保存工作内容。</p>', '7', 1, NULL, '[1]', b'0', DATE_SUB(NOW(), INTERVAL 1 DAY), b'1', 3, 1, DATE_SUB(NOW(), INTERVAL 1 DAY), 0),
-(910000000000000002, '密码策略已更新', '<p>新密码需满足长度与复杂度要求，下次登录时请按提示完成修改。</p>', '6', 1, NULL, '[1]', b'0', DATE_SUB(NOW(), INTERVAL 2 DAY), b'1', 3, 1, DATE_SUB(NOW(), INTERVAL 2 DAY), 0),
-(910000000000000003, '国密传输链路启用说明', '<p>平台默认启用 SM2/SM3/SM4 国密能力，浏览器需支持现代加密套件。</p>', '6', 1, NULL, '[1]', b'0', DATE_SUB(NOW(), INTERVAL 3 DAY), b'0', 3, 1, DATE_SUB(NOW(), INTERVAL 3 DAY), 0),
-(910000000000000004, '工作总览公告滚动上线', '<p>工作总览与运营数据中枢已支持公告无缝滚动展示，欢迎体验并提出反馈。</p>', '3', 1, NULL, '[1]', b'0', DATE_SUB(NOW(), INTERVAL 4 DAY), b'0', 3, 1, DATE_SUB(NOW(), INTERVAL 4 DAY), 0),
-(910000000000000005, '本周五下午例行巡检', '<p>运维将于周五 14:00-16:00 巡检核心服务，如遇异常请联系值班人员。</p>', '7', 1, NULL, '[1]', b'0', DATE_SUB(NOW(), INTERVAL 5 DAY), b'0', 3, 1, DATE_SUB(NOW(), INTERVAL 5 DAY), 0),
-(910000000000000006, '关于国庆假期值班安排', '<p>假期值班表已发布，请各部门负责人及时查阅并转发至组内成员。</p>', '1', 1, NULL, '[1]', b'0', DATE_SUB(NOW(), INTERVAL 6 DAY), b'0', 3, 1, DATE_SUB(NOW(), INTERVAL 6 DAY), 0),
-(910000000000000007, '文件存储容量扩容完成', '<p>对象存储与本地存储容量已扩容，大文件上传超时问题已优化。</p>', '7', 1, NULL, '[1]', b'0', DATE_SUB(NOW(), INTERVAL 7 DAY), b'0', 3, 1, DATE_SUB(NOW(), INTERVAL 7 DAY), 0),
-(910000000000000008, '角色权限模型调整公告', '<p>部分菜单权限码已整理，如发现菜单缺失请联系管理员重新授权。</p>', '1', 1, NULL, '[1]', b'0', DATE_SUB(NOW(), INTERVAL 8 DAY), b'0', 3, 1, DATE_SUB(NOW(), INTERVAL 8 DAY), 0),
-(910000000000000009, '登录双因素验证试行', '<p>高权限账号将逐步启用二次验证，请提前绑定可用邮箱。</p>', '6', 1, NULL, '[1]', b'0', DATE_SUB(NOW(), INTERVAL 9 DAY), b'0', 3, 1, DATE_SUB(NOW(), INTERVAL 9 DAY), 0),
-(910000000000000010, '运营数据中枢视觉升级', '<p>大屏动效与面板样式已对齐运维大屏规范，刷新页面即可体验。</p>', '3', 1, NULL, '[1]', b'0', DATE_SUB(NOW(), INTERVAL 10 DAY), b'0', 3, 1, DATE_SUB(NOW(), INTERVAL 10 DAY), 0),
-(910000000000000011, '接口限流策略说明', '<p>公开接口增加频率限制，异常调用将被短暂熔断，请勿短时间高频请求。</p>', '7', 1, NULL, '[1]', b'0', DATE_SUB(NOW(), INTERVAL 11 DAY), b'0', 3, 1, DATE_SUB(NOW(), INTERVAL 11 DAY), 0),
-(910000000000000012, '新员工入职资料清单', '<p>请人事与部门管理员按清单完成账号开通、角色分配与培训确认。</p>', '4', 1, NULL, '[1]', b'0', DATE_SUB(NOW(), INTERVAL 12 DAY), b'0', 3, 1, DATE_SUB(NOW(), INTERVAL 12 DAY), 0),
-(910000000000000013, '数据库备份演练通知', '<p>本月备份恢复演练定于周日凌晨执行，演练期间只读查询不受影响。</p>', '7', 1, NULL, '[1]', b'0', DATE_SUB(NOW(), INTERVAL 13 DAY), b'0', 3, 1, DATE_SUB(NOW(), INTERVAL 13 DAY), 0),
-(910000000000000014, '浏览器兼容性建议', '<p>推荐使用 Chrome / Edge / 国产信创浏览器最新版本访问管理后台。</p>', '1', 1, NULL, '[1]', b'0', DATE_SUB(NOW(), INTERVAL 14 DAY), b'0', 3, 1, DATE_SUB(NOW(), INTERVAL 14 DAY), 0),
-(910000000000000015, '消息中心未读提醒优化', '<p>未读公告与站内信角标刷新频率已优化，减少无效轮询。</p>', '3', 1, NULL, '[1]', b'0', DATE_SUB(NOW(), INTERVAL 15 DAY), b'0', 3, 1, DATE_SUB(NOW(), INTERVAL 15 DAY), 0),
-(910000000000000016, '季度安全意识培训', '<p>请全体员工于本月底前完成在线安全培训并提交测验结果。</p>', '6', 1, NULL, '[1]', b'0', DATE_SUB(NOW(), INTERVAL 16 DAY), b'0', 3, 1, DATE_SUB(NOW(), INTERVAL 16 DAY), 0),
-(910000000000000017, '定时任务监控告警上线', '<p>调度中心失败任务将同步推送到消息中心，请相关负责人关注。</p>', '7', 1, NULL, '[1]', b'0', DATE_SUB(NOW(), INTERVAL 17 DAY), b'0', 3, 1, DATE_SUB(NOW(), INTERVAL 17 DAY), 0),
-(910000000000000018, '客户满意度调研邀请', '<p>本季度调研已开启，欢迎提交使用体验与改进建议。</p>', '8', 1, NULL, '[1]', b'0', DATE_SUB(NOW(), INTERVAL 18 DAY), b'0', 3, 1, DATE_SUB(NOW(), INTERVAL 18 DAY), 0),
-(910000000000000019, '日志留存周期调整', '<p>操作日志默认留存周期调整为 180 天，超期数据将按策略归档。</p>', '2', 1, NULL, '[1]', b'0', DATE_SUB(NOW(), INTERVAL 19 DAY), b'0', 3, 1, DATE_SUB(NOW(), INTERVAL 19 DAY), 0),
-(910000000000000020, '信创环境适配进展同步', '<p>已完成主流国产 OS 与浏览器兼容验证，问题反馈请提交工单。</p>', '3', 1, NULL, '[1]', b'0', DATE_SUB(NOW(), INTERVAL 20 DAY), b'0', 3, 1, DATE_SUB(NOW(), INTERVAL 20 DAY), 0);
 
 -- ========== plugin\plugin_tenant.sql ==========
 
@@ -5299,14 +5271,7 @@ UPDATE `sys_menu` SET `sort` = 11, `update_time` = NOW() WHERE `id` = 2000  AND 
 UPDATE `sys_menu` SET `sort` = 12, `update_time` = NOW() WHERE `id` = 3000  AND `deleted` = 0;
 UPDATE `sys_menu` SET `sort` = 14, `update_time` = NOW() WHERE `id` = 8000  AND `deleted` = 0;
 
--- 部署健康检查标记：仅当本文件整份执行完才出现，供 docker-compose MySQL healthcheck 使用
-CREATE TABLE IF NOT EXISTS `_itls_init_done` (
-  `id` tinyint NOT NULL PRIMARY KEY,
-  `finished_at` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='init.sql 导入完成标记';
-REPLACE INTO `_itls_init_done` (`id`, `finished_at`) VALUES (1, NOW());
 
-SET FOREIGN_KEY_CHECKS = 1;
 
 -- 库存串行锚点：业务事务按 tenant/warehouse/goods 排序锁定，不能作为可清理测试数据删除。
 CREATE TABLE IF NOT EXISTS psi_stock_mutation_lock (
@@ -5315,3 +5280,16 @@ CREATE TABLE IF NOT EXISTS psi_stock_mutation_lock (
     goods_id bigint NOT NULL,
     PRIMARY KEY (tenant_id, warehouse_id, goods_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='库存变更串行锚点（包括零库存维度）';
+
+-- 正式默认品牌，不引用上传目录或在用库配置。
+UPDATE sys_option SET default_value='/brand-logo.png' WHERE code='SITE_LOGO';
+UPDATE sys_option SET default_value='/favicon.png' WHERE code='SITE_FAVICON';
+
+-- 部署健康检查标记：仅当本文件整份执行完才出现，供 docker-compose MySQL healthcheck 使用
+CREATE TABLE IF NOT EXISTS `_itls_init_done` (
+  `id` tinyint NOT NULL PRIMARY KEY,
+  `finished_at` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='init.sql 导入完成标记';
+REPLACE INTO `_itls_init_done` (`id`, `finished_at`) VALUES (1, NOW());
+
+SET FOREIGN_KEY_CHECKS = 1;

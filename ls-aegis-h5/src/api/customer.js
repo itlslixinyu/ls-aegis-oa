@@ -108,3 +108,8 @@ export function logout(token) {
     headers: { 'h5-token': token }
   })
 }
+
+/** 当前客户尚未确认的维修结果，服务端按会话归属分页。 */
+export function getPendingConfirmations(params) {
+  return request({ url: '/eoms/h5/repair/todos', method: 'get', params })
+}

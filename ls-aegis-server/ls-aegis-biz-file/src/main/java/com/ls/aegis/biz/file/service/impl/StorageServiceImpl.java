@@ -16,10 +16,11 @@
 
 package com.ls.aegis.biz.file.service.impl;
 
+import com.ls.aegis.biz.file.util.FileUrlUtils;
+
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.core.util.URLUtil;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.dromara.x.file.storage.core.FileStorageProperties;
@@ -248,11 +249,7 @@ public class StorageServiceImpl extends BaseServiceImpl<StorageMapper, StorageDO
      * 后端实际提供的路径始终是 {@code /file/}。</p>
      */
     private String resolveLocalHandlerPath(String domain) {
-        String path = URLUtil.url(domain).getPath();
-        if (StrUtil.startWith(path, "/api/")) {
-            path = StrUtil.removePrefix(path, "/api");
-        }
-        return StrUtil.appendIfMissing(StrUtil.prependIfMissing(path, StringConstants.SLASH), StringConstants.SLASH);
+        return FileUrlUtils.localHandlerPath(domain);
     }
 
     /**

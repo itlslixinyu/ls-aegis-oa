@@ -29,14 +29,12 @@
     </section>
 
     <!-- 底部导航 -->
-    <van-tabbar v-model="activeTabBar" route>
-      <van-tabbar-item to="/customer/workbench" icon="apps-o">工作台</van-tabbar-item>
-      <van-tabbar-item to="/customer/profile" icon="manager-o">我的</van-tabbar-item>
-    </van-tabbar>
+    <AppTabbar />
   </div>
 </template>
 
 <script setup>
+import AppTabbar from '@/components/AppTabbar.vue'
 import { APP_VERSION } from '@/utils/version'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -49,7 +47,6 @@ const router = useRouter()
 const userStore = useUserStore()
 const systemStore = useSystemStore()
 
-const activeTabBar = ref(1)
 const stats = ref({
   total: 0,
   wait: 0,

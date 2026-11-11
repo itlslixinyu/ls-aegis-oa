@@ -1,6 +1,12 @@
 // 客户端构建专用页面，身份及接口仍使用平台共用底座。
 export default [
   {
+    path: '/customer/todos',
+    name: 'CustomerTodos',
+    component: () => import('@/views/customer/Todos.vue'),
+    meta: { title: '我的待办', requireH5Token: true, role: 'customer' }
+  },
+  {
     path: '/customer/auth',
     name: 'CustomerAuth',
     component: () => import('@/views/customer/Auth.vue'),
