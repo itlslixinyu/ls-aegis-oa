@@ -1,9 +1,9 @@
 ---
 name: itls-code-review
-description: 检查 ITLS 性能优化和跨域改动中的真实缺陷，验证请求并发、加载依赖、查询规模及统一平台的数据边界。
+description: 检查 LS·Aegis 雷铄 OA 安全应用构建平台 性能优化和跨域改动中的真实缺陷，验证请求并发、加载依赖、查询规模及统一平台的数据边界。
 ---
 
-# ITLS 代码与性能检查
+# LS·Aegis 雷铄 OA 安全应用构建平台 代码与性能检查
 
 H5组件加载改动后执行 `node scripts/quality/h5_module_audit.mjs --check`，真实构建客户/工程师两种模式；检查模板组件已解析、未保留Vant整套注册入口、Toast/Dialog/Notify函数式样式齐全，且不包含另一角色的业务页面。产物体积变化不等同页面交互验收。
 

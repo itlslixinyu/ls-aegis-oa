@@ -1,6 +1,6 @@
 ---
 name: dependency-clean
-description: 复核ITLS Maven/npm依赖的编译、运行、peer和动态消费关系；conservative仅提出依赖方案，不编辑任何manifest或锁文件。
+description: 复核LS·Aegis 雷铄 OA 安全应用构建平台 Maven/npm依赖的编译、运行、peer和动态消费关系；conservative仅提出依赖方案，不编辑任何manifest或锁文件。
 ---
 
 # 依赖消费复核

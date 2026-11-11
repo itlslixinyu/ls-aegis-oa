@@ -1,6 +1,6 @@
 ---
 name: itls-repo-organize
-description: 整理 LS·Aegis 项目本地目录、合并与重编文档，并准备 ls-aegis-oa 新仓库的可验证发布内容；用于仓库整理和文档迁移，不用于日常业务代码修复。
+description: 整理 LS·Aegis 雷铄 OA 安全应用构建平台 项目本地目录、合并与重编文档，并准备 ls-aegis-oa 新仓库的可验证发布内容；用于仓库整理和文档迁移，不用于日常业务代码修复。
 ---
 
 # 本地目录与新仓库整理

@@ -1,6 +1,6 @@
 ---
 name: vue-unused-scan
-description: 检查ITLS PC及双H5的未使用声明和加载入口，结合ESLint与真实Vite模块图分类，保留动态组件、权限和副作用。
+description: 检查LS·Aegis 雷铄 OA 安全应用构建平台 PC及双H5的未使用声明和加载入口，结合ESLint与真实Vite模块图分类，保留动态组件、权限和副作用。
 ---
 
 # Vue 未使用项扫描

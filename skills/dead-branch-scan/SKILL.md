@@ -1,6 +1,6 @@
 ---
 name: dead-branch-scan
-description: 证明ITLS固定死分支的常量来源并区分环境、权限及运维开关；conservative仅简化无副作用且已证明固定的低风险分支。
+description: 证明LS·Aegis 雷铄 OA 安全应用构建平台固定死分支的常量来源并区分环境、权限及运维开关；conservative仅简化无副作用且已证明固定的低风险分支。
 ---
 
 # 固定分支扫描

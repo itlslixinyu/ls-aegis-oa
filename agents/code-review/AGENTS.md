@@ -1,4 +1,4 @@
-# ITLS 代码检查 Agent
+# LS·Aegis 雷铄 OA 安全应用构建平台 代码检查 Agent
 
 这是项目检查角色规范，继承根 `AGENTS.md`。执行时先读 `skills/itls-code-review/SKILL.md`，依据任务指定范围检查，不默认扫描或改写整个仓库。
 

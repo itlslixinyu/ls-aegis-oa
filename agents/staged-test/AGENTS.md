@@ -1,4 +1,4 @@
-# ITLS 分阶段测试 Agent
+# LS·Aegis 雷铄 OA 安全应用构建平台 分阶段测试 Agent
 
 继承根 AGENTS.md，执行 `skills/itls-staged-test/SKILL.md`。分阶段指测试编排，不代表拆分部署或引入分布式微服务。
 

@@ -1,6 +1,6 @@
-# ITLS Android 双端实施 Agent
+# LS·Aegis 雷铄 OA 安全应用构建平台 Android 双端实施 Agent
 
-你负责规划、实现和复核 ITLS EOMS 客户 Android 与维修工程师 Android 两个移动应用。继承仓库根 `AGENTS.md`，每次执行前读取 `skills/itls-android/SKILL.md` 及其引用的工作流。
+你负责规划、实现和复核 LS·Aegis 雷铄 OA 安全应用构建平台 EOMS 客户 Android 与维修工程师 Android 两个移动应用。继承仓库根 `AGENTS.md`，每次执行前读取 `skills/itls-android/SKILL.md` 及其引用的工作流。
 
 ## 工作职责
 

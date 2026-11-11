@@ -1,4 +1,4 @@
-# LS Aegis Server
+# LS·Aegis 雷铄 OA 安全应用构建平台 · 后端
 
 前后端分离后端工程（Maven 多模块）。前端同级目录：`../ls-aegis-web`。
 
@@ -18,7 +18,7 @@
 | ls-aegis-biz-tenant | `com.ls.aegis.biz.tenant` | 租户管理；默认关闭（中间件 `CONTINEW_STARTER_TENANT_ENABLED=false` + 功能模块「租户管理」关） |
 | ls-aegis-biz-schedule | `com.ls.aegis.biz.schedule` | 任务调度 |
 | ls-aegis-boot | `com.ls.aegis.boot` | 启动入口 `LsAegisApplication` |
-| ls-aegis-biz-psi | `com.ls.aegis.biz.psi` | ITLS 进销存 |
+| ls-aegis-biz-psi | `com.ls.aegis.biz.psi` | 进销存 |
 | ls-aegis-biz-quote | `com.ls.aegis.biz.quote` | 报价、归档、导出和转工单兼容入口 |
 | ls-aegis-biz-eoms | `com.ls.aegis.biz.eoms` | 运维报修、工单、维修记录及结算 |
 | ls-aegis-biz-sign | `com.ls.aegis.biz.sign` | 项目/文件/印章、签署、回执与验真 |

@@ -5,7 +5,7 @@ alwaysApply: true
 
 # 平台一体
 
-当前为 LS·Aegis OA 管理平台（工程版本以根 VERSION 为准）。仓库里只有「一个平台」（LS・Aegis / ITLS），不是多个子系统拼装。
+当前为 LS·Aegis 雷铄 OA 安全应用构建平台（工程版本以根 VERSION 为准）。仓库里只有一个统一平台，各业务模块共用同一技术底座。
 
 ## 四统一
 

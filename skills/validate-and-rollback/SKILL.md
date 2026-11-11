@@ -1,6 +1,6 @@
 ---
 name: validate-and-rollback
-description: 为ITLS低风险清理建立逐批基线、编译测试启动门禁、精确回滚与patch；已有启动阻塞时禁止实施清理，不覆盖用户修改。
+description: 为LS·Aegis 雷铄 OA 安全应用构建平台低风险清理建立逐批基线、编译测试启动门禁、精确回滚与patch；已有启动阻塞时禁止实施清理，不覆盖用户修改。
 ---
 
 # 校验与精确回滚

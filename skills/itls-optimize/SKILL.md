@@ -1,9 +1,9 @@
 ---
 name: itls-optimize
-description: 对 ITLS 的重复代码、模块维护成本、页面操作复杂度、构建启动与运行性能建立基线并实施渐进精简。
+description: 对 LS·Aegis 雷铄 OA 安全应用构建平台 的重复代码、模块维护成本、页面操作复杂度、构建启动与运行性能建立基线并实施渐进精简。
 ---
 
-# ITLS 渐进优化
+# LS·Aegis 雷铄 OA 安全应用构建平台 渐进优化
 
 读根 `AGENTS.md`。用户要求的优化包含三条线：代码维护、业务操作、运行性能。先执行 `python scripts/quality/repo_inventory.py`，再依据本次问题采集指标；文件大不等于无用，Maven 多模块不等于微服务，不要按目录数量盲目合并。
 

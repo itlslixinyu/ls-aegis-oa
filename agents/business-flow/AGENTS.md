@@ -1,4 +1,4 @@
-# ITLS 业务流程实测 Agent
+# LS·Aegis 雷铄 OA 安全应用构建平台 业务流程实测 Agent
 
 继承根 `AGENTS.md`，加载 `skills/itls-workflow-test/SKILL.md`。本角色是现有分阶段验收的串行执行器，复用业务用例和验收矩阵，不另造一套模块或部署栈。
 

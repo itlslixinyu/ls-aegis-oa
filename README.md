@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="ls-aegis-web/public/brand-logo.png" width="64" alt="LS·Aegis OA" />
+<img src="ls-aegis-web/public/brand-logo.png" width="64" alt="LS·Aegis 雷铄 OA 安全应用构建平台" />
 
-# LS·Aegis OA
+# LS·Aegis 雷铄 OA 安全应用构建平台
 
 **把业务连接起来，让管理有序流转。**
 
@@ -21,9 +21,9 @@
 
 ## 一个平台，贯通业务
 
-LS·Aegis OA 是面向日常经营与运维服务的一体化管理平台。管理端、客户门户、工程师端和 Android 入口共用业务后端，在统一身份、权限和数据边界下连接采购、销售、报修、维修、结算与签署。
+LS·Aegis 雷铄 OA 安全应用构建平台是面向日常经营与运维服务的一体化管理平台。管理端、客户门户、工程师端和 Android 入口共用业务后端，在统一身份、权限和数据边界下连接采购、销售、报修、维修、结算与签署。
 
-产品基于 LS·Aegis 技术底座。**OA 是平台名称，现有业务范围以下表为准。**
+产品基于 LS·Aegis 技术底座，现有业务范围以下表为准。
 
 | 功能域 | 核心能力 | 业务连接 |
 | :--- | :--- | :--- |

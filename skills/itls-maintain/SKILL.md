@@ -1,9 +1,9 @@
 ---
 name: itls-maintain
-description: 开发、修复和运行 LS Aegis ITLS 仓库，处理 PC、H5、Spring Boot、MySQL 与 Redis 的项目约定和变更验证。
+description: 开发、修复和运行 LS·Aegis 雷铄 OA 安全应用构建平台 仓库，处理 PC、H5、Spring Boot、MySQL 与 Redis 的项目约定和变更验证。
 ---
 
-# ITLS 开发维护
+# LS·Aegis 雷铄 OA 安全应用构建平台 开发维护
 
 升版后执行 `node scripts/quality/version_consistency.mjs`，核对根VERSION、PC/H5及锁文件根信息、Maven/application和生产镜像默认标签；普通修复仍按用户授权决定是否升版。
 

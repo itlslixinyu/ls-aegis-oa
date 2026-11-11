@@ -1,9 +1,9 @@
 ---
 name: itls-android
-description: 规划、实现和验收 ITLS EOMS 客户与维修工程师 Android 双端，覆盖平台认证、维修流程、接口契约、设备能力和后台财务库存闭环。
+description: 规划、实现和验收 LS·Aegis 雷铄 OA 安全应用构建平台 EOMS 客户与维修工程师 Android 双端，覆盖平台认证、维修流程、接口契约、设备能力和后台财务库存闭环。
 ---
 
-# LS·Aegis OA Android 双端
+# LS·Aegis 雷铄 OA 安全应用构建平台 Android 双端
 
 先读仓库根 `AGENTS.md`、[双端架构](../../android-demo/README.md) 和 [Android 实施 Agent](../../agents/android-apps/AGENTS.md)。这是项目显式路由的 skill，不假定 IDE 会自动发现它。
 

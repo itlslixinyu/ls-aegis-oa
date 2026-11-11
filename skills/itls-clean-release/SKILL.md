@@ -1,6 +1,6 @@
 ---
 name: itls-clean-release
-description: 统一LS·Aegis正式Logo、Android双端名称和欢迎区布局，整理并验证无演示业务数据的全新MySQL初始化文件；不用于清空在用环境。
+description: 统一LS·Aegis 雷铄 OA 安全应用构建平台正式Logo、Android双端名称和欢迎区布局，整理并验证无演示业务数据的全新MySQL初始化文件；不用于清空在用环境。
 ---
 
 # 品牌与干净初始化

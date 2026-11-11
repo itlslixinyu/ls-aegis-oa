@@ -1,6 +1,6 @@
 ---
 name: doc-comment-clean
-description: 核实ITLS过时普通注释与废弃TODO的事实依据并生成逐项清单；保留许可、安全、国密、协议和对外API说明。
+description: 核实LS·Aegis 雷铄 OA 安全应用构建平台过时普通注释与废弃TODO的事实依据并生成逐项清单；保留许可、安全、国密、协议和对外API说明。
 ---
 
 # 过时注释核对

@@ -1,4 +1,4 @@
-# LS Aegis Web
+# LS·Aegis 雷铄 OA 安全应用构建平台 · PC 管理端
 
 Vue3 + Arco Design 前端工程，与后端 `ls-aegis-server` 同级，不放在后端源码内。
 

@@ -1,9 +1,9 @@
 ---
 name: itls-staged-test
-description: 按国家标准框架编排 ITLS 在用环境的逐模块验收、数据清理复核及最终跨模块联合测试，记录证据和阶段退出条件。
+description: 按国家标准框架编排 LS·Aegis 雷铄 OA 安全应用构建平台 在用环境的逐模块验收、数据清理复核及最终跨模块联合测试，记录证据和阶段退出条件。
 ---
 
-# ITLS 分阶段测试
+# LS·Aegis 雷铄 OA 安全应用构建平台 分阶段测试
 
 读根 AGENTS.md、本技能的 [验收矩阵](references/acceptance.md) 和 [国家标准依据](references/standards.md)。用户已授权在指定在用实例测试，范围授权持续有效，不逐项重复询问；缺少地址、身份或业务验收指标时只询问缺失信息。2026-11-05 已确认目标为本机 PC5173/API8000，H5默认5174/5175；其当前 dev profile 与公网生产不同，报告必须如实标注。
 

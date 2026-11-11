@@ -1,4 +1,4 @@
-# Android应用架构
+# LS·Aegis 雷铄 OA 安全应用构建平台 · Android 应用架构
 
 ## 双端模块
 

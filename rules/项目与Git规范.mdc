@@ -38,7 +38,7 @@ alwaysApply: true
 
 ### 版本文件（以根目录为准）
 
-1. 根目录 `VERSION` 为唯一权威版本；当前新项目基线为 LS·Aegis OA 1.0，工程版本 `1.0.0`。文件缺失时应报错，不猜测或回退生成其他版本。
+1. 根目录 `VERSION` 为唯一权威版本；当前项目名称为 LS·Aegis 雷铄 OA 安全应用构建平台，工程版本 `1.0.0`。文件缺失时应报错，不猜测或回退生成其他版本。
 2. 同步：`ls-aegis-web/package.json` 的 `version`
 3. 同步：`ls-aegis-server/pom.xml` 的 `<revision>`
 4. 同步两端 H5 共用的 `ls-aegis-h5/package.json`、锁文件根版本和后端 `application.version`。

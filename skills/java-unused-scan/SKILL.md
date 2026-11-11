@@ -1,6 +1,6 @@
 ---
 name: java-unused-scan
-description: 对ITLS Java源码执行未使用代码证据扫描与风险分类；conservative仅允许低风险import及无副作用私有变量，不自动删除方法或类。
+description: 对LS·Aegis 雷铄 OA 安全应用构建平台 Java源码执行未使用代码证据扫描与风险分类；conservative仅允许低风险import及无副作用私有变量，不自动删除方法或类。
 ---
 
 # Java 无用代码扫描

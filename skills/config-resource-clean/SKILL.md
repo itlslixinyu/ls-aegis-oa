@@ -1,6 +1,6 @@
 ---
 name: config-resource-clean
-description: 盘点ITLS环境配置、部署资源、图片及脚本的真实消费者并分类；conservative只输出复核或归档建议，不移动或删除文件。
+description: 盘点LS·Aegis 雷铄 OA 安全应用构建平台环境配置、部署资源、图片及脚本的真实消费者并分类；conservative只输出复核或归档建议，不移动或删除文件。
 ---
 
 # 配置与资源盘点
