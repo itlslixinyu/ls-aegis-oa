@@ -3,7 +3,7 @@
     <van-nav-bar title="我的" />
     <section class="profile-card">
       <div class="profile-avatar">{{ avatarText }}</div>
-      <div><div class="profile-name">{{ customerName }}</div><div class="profile-no">客户编号：{{ customerNo || '-' }}</div></div>
+      <div class="profile-info"><SingleLineHeading class="profile-name" :text="customerName" :max-size="21" /><div class="profile-no">客户编号：{{ customerNo || '-' }}</div></div>
     </section>
     <section class="profile-stats">
       <div class="profile-stat profile-stat--total"><b>{{ stats.total || 0 }}</b><span>全部报修</span></div>
@@ -35,6 +35,7 @@
 
 <script setup>
 import AppTabbar from '@/components/AppTabbar.vue'
+import SingleLineHeading from '@/components/SingleLineHeading.vue'
 import { APP_VERSION } from '@/utils/version'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -280,4 +281,6 @@ onMounted(() => {
 .profile-avatar { width:58px; height:58px; display:grid; place-items:center; border-radius:18px; background:rgba(255,255,255,.2); font-size:24px; font-weight:700; }
 .profile-name { font-size:21px; font-weight:700; }.profile-no { margin-top:7px; font-size:12px; opacity:.82; }.profile-spacer { flex:1; min-height:30px; }.account-section { margin:0 16px; }.account-section .block-title { margin:0 0 10px; font-size:16px; font-weight:700; }.account-section :deep(.van-cell-group) { overflow:hidden; border-radius:18px; }.account-section .version { padding:18px 0 0; }
 .profile-stats { margin:14px 16px 0; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }.profile-stat { min-height:76px; padding:10px 4px; display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:14px; background:#fff; box-shadow:0 6px 16px rgba(31,48,80,.06); }.profile-stat b { font-size:20px; line-height:1; }.profile-stat span { margin-top:8px; color:#7b8798; font-size:10px; white-space:nowrap; }.profile-stat--total b { color:#315ec4; }.profile-stat--wait b { color:#e99b39; }.profile-stat--confirm b { color:#4b7ee1; }.profile-stat--order b { color:#34a978; }.profile-stat--cancel b { color:#8b96a8; }
+.profile-info { flex: 1; min-width: 0; }
+.profile-avatar { flex-shrink: 0; }
 </style>

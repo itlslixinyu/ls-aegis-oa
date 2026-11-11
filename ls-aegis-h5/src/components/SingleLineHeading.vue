@@ -5,10 +5,11 @@
 <script setup>
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { fitHeadingSize } from '@/utils/fitHeading'
-const props = defineProps({ text: { type: String, required: true } })
+const props = defineProps({ text: { type: String, required: true }, maxSize: { type: Number, default: 23 } })
+const emit = defineEmits(['size-change'])
 const container = ref(null)
 const label = ref(null)
-const fontSize = ref(23)
+const fontSize = ref(props.maxSize)
 let observer
 let frame
 let disposed = false
@@ -17,10 +18,11 @@ function scheduleFit() {
   cancelAnimationFrame(frame)
   frame = requestAnimationFrame(() => {
     if (!container.value || !label.value) return
-    fontSize.value = fitHeadingSize(label.value.getBoundingClientRect().width, fontSize.value, container.value.clientWidth)
+    fontSize.value = fitHeadingSize(label.value.getBoundingClientRect().width, fontSize.value, container.value.clientWidth, 12, props.maxSize)
+    emit('size-change', fontSize.value)
   })
 }
-watch(() => props.text, () => nextTick(scheduleFit))
+watch(() => [props.text, props.maxSize], () => nextTick(scheduleFit))
 onMounted(() => {
   observer = new ResizeObserver(scheduleFit)
   observer.observe(container.value)
