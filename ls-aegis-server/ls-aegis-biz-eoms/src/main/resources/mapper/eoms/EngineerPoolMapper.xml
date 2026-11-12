@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.eoms.mapper.repair.EngineerPoolMapper">
+    <select id="list" resultType="com.ls.aegis.biz.eoms.domain.h5.EngineerPoolItem">
+        select a.id as apply_id, a.repair_no, a.fault_type, a.fault_desc, a.urgent_level, a.apply_time
+        from eoms_repair_apply a
+        where a.tenant_id=#{tenantId} and a.del_flag='0' and a.apply_time &lt;= #{cutoff}
+          and a.status in ('WAIT','CONFIRM','ORDER')
+          and not exists (select 1 from eoms_repair_order o where o.apply_id=a.id
+            and o.tenant_id=#{tenantId} and o.del_flag='0'
+            and (o.status != 'WAIT_ACCEPT' or o.accept_time is not null))
+          and (a.status != 'ORDER' or exists (select 1 from eoms_repair_order o where o.apply_id=a.id
+            and o.tenant_id=#{tenantId} and o.del_flag='0' and o.status='WAIT_ACCEPT' and o.accept_time is null))
+        order by a.apply_time asc, a.id asc
+    </select>
+    <select id="lockApply" resultMap="com.ls.aegis.biz.eoms.mapper.repair.RepairApplyMapper.RepairApplyResult">
+        select * from eoms_repair_apply where id=#{id} and tenant_id=#{tenantId} and del_flag='0' for update
+    </select>
+    <select id="lockOrders" resultMap="com.ls.aegis.biz.eoms.mapper.repair.RepairOrderMapper.RepairOrderResult">
+        select * from eoms_repair_order where apply_id=#{applyId} and tenant_id=#{tenantId} and del_flag='0'
+        order by id for update
+    </select>
+    <update id="markConverted">
+        update eoms_repair_apply set status='ORDER',update_by=#{actor},update_time=CURRENT_TIMESTAMP
+        where id=#{id} and tenant_id=#{tenantId} and del_flag='0' and status=#{expected}
+    </update>
+</mapper>

@@ -2,7 +2,7 @@ const { test } = require('node:test')
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const source = fs.readFileSync('ls-aegis-h5/src/utils/uploadImage.js', 'utf8')
-const normalize = new Function('File', source.replace('export ', '') + '\nreturn normalizeUploadImageFile')(File)
+const normalize = new Function('File', source.replace(/export /g, '') + '\nreturn normalizeUploadImageFile')(File)
 
 test('camera blob receives JPEG extension without changing uploaded bytes', async () => {
   const file = new File([new Uint8Array([1,2,3,255])], 'blob', { type: 'image/jpeg' })

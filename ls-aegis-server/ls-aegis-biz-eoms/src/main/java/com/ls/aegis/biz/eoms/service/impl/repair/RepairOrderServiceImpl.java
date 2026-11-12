@@ -187,9 +187,8 @@ public class RepairOrderServiceImpl implements IRepairOrderService
         RepairOrder after = new RepairOrder();
         after.setId(orderId);
         after.setEngineerId(engineerId);
-        // 派单即接单：派单后状态自动变为已接单
-        after.setStatus(EomsConstants.ORDER_STATUS_ACCEPTED);
-        after.setAcceptTime(new Date());
+        // 派单仅指定负责人；实际接单由工程师确认或工单池领取完成。
+        after.setStatus(EomsConstants.ORDER_STATUS_WAIT_ACCEPT);
         after.setUpdateBy(getCurrentUsername());
         if (StringUtils.isNotEmpty(remark))
         {
@@ -198,7 +197,7 @@ public class RepairOrderServiceImpl implements IRepairOrderService
         int rows = repairOrderMapper.updateRepairOrder(after);
 
         before.setEngineerId(engineerId);
-        before.setStatus(EomsConstants.ORDER_STATUS_ACCEPTED);
+        before.setStatus(EomsConstants.ORDER_STATUS_WAIT_ACCEPT);
         before.setAcceptTime(after.getAcceptTime());
         if (StringUtils.isNotEmpty(remark))
         {
@@ -254,6 +253,14 @@ public class RepairOrderServiceImpl implements IRepairOrderService
     @Transactional(rollbackFor = Exception.class)
     public int startProcess(Long orderId, String remark, String longitude, String latitude)
     {
+        return startProcess(orderId, remark, longitude, latitude, null);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int startProcess(Long orderId, String remark, String longitude, String latitude, String location)
+    {
+        com.ls.aegis.biz.eoms.utils.Coordinates.optional(longitude, latitude);
         RepairOrder before = mustExist(orderId);
         String oldStatus = before.getStatus();
         if (!EomsConstants.ORDER_STATUS_ACCEPTED.equals(oldStatus))
@@ -270,12 +277,12 @@ public class RepairOrderServiceImpl implements IRepairOrderService
         {
             after.setRemark(remark);
         }
-        // 签到位置：记录经纬度并逆地理编码为中文地址
+        // 签到位置：记录坐标和手机系统地址，无地址仅回退坐标
         if (StringUtils.isNotEmpty(longitude) && StringUtils.isNotEmpty(latitude))
         {
             after.setSignInLongitude(longitude);
             after.setSignInLatitude(latitude);
-            after.setSignInAddress(geoUtils.reverseGeocode(longitude, latitude));
+            after.setSignInAddress(positionAddress(longitude, latitude, location));
         }
         int rows = repairOrderMapper.updateRepairOrder(after);
 
@@ -305,6 +312,14 @@ public class RepairOrderServiceImpl implements IRepairOrderService
     @Transactional(rollbackFor = Exception.class)
     public int submitSettlement(Long orderId, String remark, String longitude, String latitude)
     {
+        return submitSettlement(orderId, remark, longitude, latitude, null);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int submitSettlement(Long orderId, String remark, String longitude, String latitude, String location)
+    {
+        com.ls.aegis.biz.eoms.utils.Coordinates.optional(longitude, latitude);
         RepairOrder before = mustExist(orderId);
         String oldStatus = before.getStatus();
         if (EomsConstants.ORDER_STATUS_WAIT_SETTLEMENT.equals(oldStatus)) {
@@ -332,12 +347,12 @@ public class RepairOrderServiceImpl implements IRepairOrderService
         {
             after.setRemark(remark);
         }
-        // 签退位置：记录经纬度并逆地理编码为中文地址
+        // 签退位置：记录坐标和手机系统地址，无地址仅回退坐标
         if (StringUtils.isNotEmpty(longitude) && StringUtils.isNotEmpty(latitude))
         {
             after.setSignOutLongitude(longitude);
             after.setSignOutLatitude(latitude);
-            after.setSignOutAddress(geoUtils.reverseGeocode(longitude, latitude));
+            after.setSignOutAddress(positionAddress(longitude, latitude, location));
         }
         int rows = repairOrderMapper.updateRepairOrder(after);
 
@@ -446,6 +461,13 @@ public class RepairOrderServiceImpl implements IRepairOrderService
             before.setRemark(remark);
         }
         return rows;
+    }
+
+    private String positionAddress(String longitude, String latitude, String location) {
+        if (location == null || location.isBlank()) return geoUtils.reverseGeocode(longitude, latitude);
+        String address = location.replaceAll("[\\r\\n\\t]+", " ").trim();
+        int length = address.codePointCount(0, address.length());
+        return length > 500 ? address.substring(0, address.offsetByCodePoints(0, 500)) : address;
     }
 
     /**
@@ -557,5 +579,7 @@ public class RepairOrderServiceImpl implements IRepairOrderService
             throw new ServiceException("撤销关闭审计保存失败");
         return 1;
     }
+
+
 
 }

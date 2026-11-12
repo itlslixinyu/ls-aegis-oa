@@ -8,15 +8,14 @@
         <van-tab title="待接单" name="WAIT_ACCEPT" />
         <van-tab title="已接单" name="ACCEPTED" />
         <van-tab title="维修中" name="PROCESSING" />
-        <van-tab title="待结算" name="WAIT_SETTLEMENT" />
-        <van-tab title="已完成" name="FINISHED" />
+        <van-tab title="已完成" name="COMPLETED" />
       </van-tabs>
       <van-list v-model:loading="loading" :finished="finished" :finished-text="list.length ? '没有更多了' : ''" @load="onLoad">
         <div v-if="!list.length && finished" class="empty-panel"><van-empty image="search" description="暂无维修任务" /></div>
         <van-cell v-for="item in list" :key="item.id" is-link class="item-card" @click="goDetail(item.id)">
-          <template #title><div class="item-title"><strong>{{ item.orderNo }}</strong><van-tag :type="getTagType(item.status)">{{ getOrderStatusText(item.status) }}</van-tag></div></template>
+          <template #title><div class="item-title"><strong>{{ item.orderNo }}</strong><van-tag :type="getTagType(item.status)">{{ getEngineerStatusText(item.status) }}</van-tag></div></template>
           <template #label>
-            <div class="item-meta">维修地址：{{ item.address || '-' }}</div>
+            <div class="item-meta">报修客户：{{ item.customerName || '未记录' }}</div>
             <div class="item-meta">接单时间：{{ formatDateTime(item.acceptTime) }}</div>
             <div v-if="item.startTime" class="item-meta">开始时间：{{ formatDateTime(item.startTime) }}</div>
           </template>
@@ -31,15 +30,16 @@
 
 <script setup>
 import AppTabbar from '@/components/AppTabbar.vue'
+import { getEngineerStatusText, engineerStatusFilter } from '@/utils/engineerStatus'
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { getTaskList } from '@/api/engineer'
-import { getOrderStatusText, formatDateTime, orderStatusMap } from '@/utils/dict'
+import { formatDateTime, orderStatusMap } from '@/utils/dict'
 
 const router = useRouter()
 const route = useRoute()
 
-const activeTab = ref(typeof route.query.status === 'string' ? route.query.status : '')
+const activeTab = ref(engineerStatusFilter(typeof route.query.status === 'string' ? route.query.status : ''))
 const list = ref([])
 const loading = ref(false)
 const finished = ref(false)

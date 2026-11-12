@@ -2,16 +2,17 @@
   <GiPageLayout>
     <a-card title="印章提取工具" :bordered="false">
       <a-space wrap style="margin-bottom: 16px">
-        <a-upload :auto-upload="false" accept="image/*" :show-file-list="false" @change="onFileChange">
+        <a-upload :auto-upload="false" :disabled="extracting || saving" accept="image/png,image/jpeg,image/gif" :show-file-list="false" @change="onFileChange">
           <template #upload-button>
             <a-button>选择文件</a-button>
           </template>
         </a-upload>
         <span class="file-name">{{ selectedFileName || '未选择文件' }}</span>
         <a-button type="primary" :disabled="!selectedFile" :loading="extracting" @click="doExtract">印章提取</a-button>
-        <a-input v-model="customFileName" placeholder="请输入文件名" style="width: 180px" />
+        <a-input v-model="customFileName" :disabled="saving" placeholder="请输入文件名" style="width: 180px" />
         <a-select
           v-model="sealCategory"
+          :disabled="extracting || saving"
           placeholder="印章类型"
           style="width: 180px"
           :options="extractCategoryOptions"
@@ -110,6 +111,7 @@ const extracting = ref(false)
 const saving = ref(false)
 const customFileName = ref('')
 const sealCategory = ref('公章')
+watch(sealCategory, () => { extractPreview.value = ''; currentExtractRecordId.value = null })
 
 const {
   tableData: dataList,
@@ -128,22 +130,32 @@ const columns: TableInstance['columns'] = [
   { title: '操作', dataIndex: 'action', slotName: 'action', width: SignCol.actionM },
 ]
 
+let imageReadVersion = 0
+let disposed = false
+let previewVersion = 0
 const onFileChange = (fileList: any[]) => {
+  if (disposed || extracting.value || saving.value) return
   const fileItem = fileList?.[fileList.length - 1]
   const file = fileItem?.file as File | undefined
   if (!file) return
+  if (!['image/png', 'image/jpeg', 'image/jpg', 'image/gif'].includes(file.type)) { Message.error('请选择JPG/PNG/GIF图片'); return }
+  if (!file.size || file.size > 10 * 1024 * 1024) { Message.error('图片不能为空且不能超过10MB'); return }
+  const version = ++imageReadVersion
   selectedFile.value = file
   selectedFileName.value = file.name
   extractPreview.value = ''
   currentExtractRecordId.value = null
   const reader = new FileReader()
   reader.onload = (e) => {
+    if (disposed || version !== imageReadVersion) return
     originalPreview.value = String(e.target?.result || '')
   }
+  reader.onerror = () => { if (!disposed && version === imageReadVersion) Message.error('图片读取失败，请重新选择') }
   reader.readAsDataURL(file)
 }
 
 const doExtract = async () => {
+  if (extracting.value || saving.value) return
   if (!selectedFile.value) {
     Message.warning('请先选择文件')
     return
@@ -154,6 +166,7 @@ const doExtract = async () => {
     fd.append('file', selectedFile.value)
     if (sealCategory.value) fd.append('sealCategory', sealCategory.value)
     const res = await extractSealPreview(fd)
+    if (disposed) return
     Message.success('提取成功，请输入文件名后点击「保存」')
     if (res.data?.extractImageBase64) {
       extractPreview.value = `data:image/png;base64,${res.data.extractImageBase64}`
@@ -165,6 +178,7 @@ const doExtract = async () => {
 }
 
 const doSave = async () => {
+  if (saving.value || extracting.value) return
   if (!selectedFile.value) {
     Message.warning('请先选择文件')
     return
@@ -180,6 +194,7 @@ const doSave = async () => {
     fd.append('fileName', customFileName.value.trim())
     if (sealCategory.value) fd.append('sealCategory', sealCategory.value)
     const res = await extractSealSave(fd)
+    if (disposed) return
     Message.success('保存成功')
     currentExtractRecordId.value = res.data?.recordId ?? null
     search()
@@ -213,23 +228,27 @@ const previewTitle = ref('')
 const previewUrl = ref('')
 
 const previewExtract = async (row: ExtractRecordResp) => {
+  const version = ++previewVersion
   previewTitle.value = '提取图片预览'
   previewVisible.value = true
   if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
   previewUrl.value = ''
   try {
-    previewUrl.value = await fetchSignImageObjectUrl(getExtractImageResource(row.id))
+    const url = await fetchSignImageObjectUrl(getExtractImageResource(row.id))
+    if (disposed || version !== previewVersion) { URL.revokeObjectURL(url); return }
+    previewUrl.value = url
   } catch {
-    Message.warning('图片加载失败')
+    if (!disposed && version === previewVersion) Message.warning('图片加载失败')
   }
 }
 
 const onPreviewClose = () => {
+  previewVersion++
   if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
   previewUrl.value = ''
 }
 
-onBeforeUnmount(() => onPreviewClose())
+onBeforeUnmount(() => { disposed = true; imageReadVersion++; onPreviewClose() })
 </script>
 
 <style scoped>

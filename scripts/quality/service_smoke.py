@@ -12,12 +12,15 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-def check(base, path, kind):
+def check(base, path, kind, method='GET', payload=None):
     url = base.rstrip('/') + path
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
     try:
         try:
-            response = opener.open(url, timeout=10)
+            request = urllib.request.Request(url, method=method,
+                data=None if payload is None else json.dumps(payload).encode('utf-8'),
+                headers={'Content-Type': 'application/json'} if payload is not None else {})
+            response = opener.open(request, timeout=10)
         except urllib.error.HTTPError as exc:
             response = exc
         with response:
@@ -61,6 +64,8 @@ def main():
         (args.customer, '/auth/gm/public-key', 'json'),
         (args.engineer, '/', 'html'),
         (args.engineer, '/auth/gm/public-key', 'json'),
+        (args.customer, '/user/profile/password', 'denied', 'PATCH', {}),
+        (args.engineer, '/user/profile/password', 'denied', 'PATCH', {}),
     ]
     results = [check(*case) for case in cases]
     print(f'L0 结果：{sum(results)}/{len(results)}；未执行登录后的业务闭环。')

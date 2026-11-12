@@ -22,7 +22,8 @@ import com.ls.aegis.common.api.system.SysOptionApi;
 
 /**
  * 地理位置工具类
- * 基于百度地图 Web 服务 API 实现逆地理编码（经纬度转中文地址）。
+ * 当前外部地图调用已停用，Android负责系统地址解析，本类仅提供兼容坐标回退。
+ * 历史供应商实现与配置保留用于兼容，不会读取密钥或发起地图请求。
  *
  * 配置项存储在 sys_option（category=EOMS，系统配置「运维报修」页签）：
  *   GEO_BAIDU_AK          百度地图 Web 服务 AK（必填，为空时降级为坐标字符串）
@@ -53,6 +54,9 @@ public class GeoUtils
     @Autowired
     private SysOptionApi sysOptionApi;
 
+    /** 外部地图已按产品要求停用，仅保留兼容接口与本地坐标回退。 */
+    public static boolean externalGeocodingEnabled() { return false; }
+
     /**
      * 测试已保存的百度地图 AK 是否可用
      *
@@ -62,6 +66,11 @@ public class GeoUtils
     public BaiduAkTestResp testBaiduAk(String longitude, String latitude)
     {
         BaiduAkTestResp resp = new BaiduAkTestResp();
+        if (!externalGeocodingEnabled()) {
+            resp.setSuccess(false);
+            resp.setMessage("外部地图API已停用，使用Android系统地址解析");
+            return resp;
+        }
         String ak = getConfigValue(EomsConstants.OPTION_CODE_GEO_BAIDU_AK);
         if (StringUtils.isBlank(ak))
         {
@@ -112,6 +121,7 @@ public class GeoUtils
         }
 
         Coordinates.require(longitude, latitude);
+        if (!externalGeocodingEnabled()) return latitude + "," + longitude;
         String ak = getConfigValue(EomsConstants.OPTION_CODE_GEO_BAIDU_AK);
         // 未配置 AK，降级为坐标字符串
         if (StringUtils.isBlank(ak))

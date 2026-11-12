@@ -12,6 +12,10 @@
 
 ## 任务路由
 
+- 用户无法协助期间的遗留修复、业务补全与次日交付：读 `skills/itls-overnight-delivery/SKILL.md`，角色见 `agents/overnight-delivery/AGENTS.md`；复用既有逐功能测试矩阵，按最新真机/确认偏好推进并保存断点。
+
+- 全平台图片上传流程：读 `skills/itls-image-upload/SKILL.md`，角色见 `agents/image-upload/AGENTS.md`；覆盖客户报修、工程师维修及PC图片入口，按选图至业务关联的全链路验证。
+
 - 正式品牌、双端命名和干净MySQL安装交付：读 `skills/itls-clean-release/SKILL.md`，角色见 `agents/clean-release/AGENTS.md`；安装文件整理不能替代或隐含在用数据清理。
 
 - 开发、修复、启动：读 `skills/itls-maintain/SKILL.md`。
@@ -27,6 +31,10 @@
 
 ## 必须保留的业务约束
 
+- 工单池按客户报修提交满十分钟且无人实际接单判断，不依赖后台先确认。新派单只指定工程师，实际接单需工程师确认或领取；存量已接单任务不回退。工单池同租户启用工程师可见，领取须原子转单并只允许一个成功者。
+
+- 运维地址解析优先使用Android系统服务。用户已停用平台外部地图API，系统解析失败只能回退坐标，不得恢复旧百度地图自动调用；签到/签退既有坐标必填和权限规则仍保留。
+
 - 库存数量和成本通过 PSI 单据服务变更，禁止 EOMS 直接写库存。
 - 维修结算生成应收，实际收款才产生实收；重试不能重复出库、重复应收或重复收款。
 - 数据权限必须覆盖部门、本人、客户归属和租户（启用时）；按钮隐藏不能代替后端鉴权。
@@ -37,6 +45,8 @@
 - PC 业务 API 从 `@/apis/psi`、`@/apis/eoms`、`@/apis/sign`、`@/apis/quote` 导入；顶层 `@/apis` 保留平台接口，避免同名财务模型和方法互相覆盖。
 
 ## SQL、资料与验证
+
+- 用户已授权按正常语义版本持续发版：修复升补丁，新增兼容业务能力升次版本；当前交付平台和两端App同步版本，Android安装码随新包递增，完成验证后再发布，不以改版本替代验收。
 
 - `ls-aegis-server/sql/init.sql` 是全新安装唯一 SQL。已上线库新增 Liquibase patch 并登记 master；不改已执行 changeset 正文。种子变更同步源脚本和全量 SQL。
 - MySQL 使用 UTF-8 无 BOM、`utf8mb4_general_ci`；含中文 SQL 用文件复制后 `mysql --default-character-set=utf8mb4 < 文件`，不用 PowerShell 管道传 SQL。

@@ -18,12 +18,20 @@ export function getInfo() {
   return getUserInfo()
 }
 
+/** Platform self-service password update; transport values must be SM2 ciphertext. */
+export function updatePassword(data) {
+  return request({ url: '/user/profile/password', method: 'patch', data })
+}
+
 export function logout() {
   return authLogout()
 }
 
 /** 工程师任务列表（平台分页 page/size） */
 export function getTaskList(params) {
+  if (params?.status === 'COMPLETED') {
+    params = { ...params, status: undefined, serviceCompleted: true }
+  }
   return request({
     url: '/eoms/engineer/tasks',
     method: 'get',
@@ -46,25 +54,29 @@ export function acceptTask(id, remark) {
   })
 }
 
-export function startTask(id, remark, longitude, latitude) {
+export function startTask(id, remark, longitude, latitude, location) {
   return request({
     url: `/eoms/engineer/start/${id}`,
     method: 'post',
-    params: { remark, longitude, latitude }
+    params: { remark, longitude, latitude, location }
   })
 }
 
-export function uploadRepairPhoto(file, orderId, photoType, longitude, latitude) {
+export function uploadRepairPhoto(file, orderId, photoType, longitude, latitude, options = {}) {
   const formData = new FormData()
   formData.append('file', normalizeUploadImageFile(file))
   formData.append('orderId', orderId)
   formData.append('photoType', photoType)
   if (longitude) formData.append('longitude', longitude)
   if (latitude) formData.append('latitude', latitude)
+  if (options.location) formData.append('location', options.location)
+  if (options.remark) formData.append('remark', options.remark)
   return request({
     url: '/eoms/engineer/upload',
     method: 'post',
-    data: formData
+    data: formData,
+    signal: options.signal,
+    onUploadProgress: options.onUploadProgress
   })
 }
 
@@ -76,11 +88,11 @@ export function submitRecord(data) {
   })
 }
 
-export function finishTask(id, remark, longitude, latitude) {
+export function finishTask(id, remark, longitude, latitude, location) {
   return request({
     url: `/eoms/engineer/finish/${id}`,
     method: 'post',
-    params: { remark, longitude, latitude }
+    params: { remark, longitude, latitude, location }
   })
 }
 
@@ -89,4 +101,19 @@ export function getProfile() {
     url: '/eoms/engineer/profile',
     method: 'get'
   })
+}
+
+/** Tenant-wide open reports; claiming atomically creates or takes over the unaccepted task. */
+export function getPoolList(params) {
+  return request({ url: '/eoms/engineer/pool', method: 'get', params })
+}
+export function claimPoolTask(applyId) {
+  return request({ url: `/eoms/engineer/pool/${applyId}/claim`, method: 'post' })
+}
+
+export function getMaterialOptions(orderId, keyword = '') {
+  return request({ url: `/eoms/engineer/task/${orderId}/material-options`, method: 'get', params: { keyword } })
+}
+export function getTaskMaterials(orderId) {
+  return request({ url: `/eoms/engineer/task/${orderId}/materials`, method: 'get' })
 }

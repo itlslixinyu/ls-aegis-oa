@@ -147,6 +147,7 @@ http.interceptors.response.use(
     return Promise.reject(new Error(msg || '服务器端错误'))
   },
   async (error: AxiosError) => {
+    if (axios.isCancel(error)) return Promise.reject(error)
     const skipErrorMessage = Boolean(error.config?.skipErrorMessage)
     if (!error.response) {
       if (!skipErrorMessage) {

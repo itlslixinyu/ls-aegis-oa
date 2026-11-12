@@ -5,8 +5,23 @@
 import axios from 'axios'
 import { showToast, showFailToast } from 'vant'
 import { useUserStore } from '@/store/user'
+import { isEngineerPasswordExpired } from '@/utils/engineerPassword'
 
 const pendingMap = new Map()
+let passwordRedirectPending = false
+
+function handleEngineerPasswordExpiry(config, body) {
+  if (!isEngineerPasswordExpired(body)) return false
+  const session = config?.authSession
+  const store = useUserStore()
+  if (session?.kind !== 'engineer' || !session.token || store.engineerToken !== session.token || store.engineerSessionVersion !== session.version) return false
+  store.updateEngineerInfo({ ...(store.engineerInfo || {}), pwdExpired: true })
+  if (!window.location.pathname.endsWith('/engineer/password') && !passwordRedirectPending) {
+    passwordRedirectPending = true
+    window.location.replace('/engineer/password')
+  }
+  return true
+}
 
 function generateCancelKey(config) {
   const method = (config.method || '').toLowerCase()
@@ -114,6 +129,7 @@ service.interceptors.request.use(
     if (isTokenRequired && config.url) {
       const needAuth =
         config.url.startsWith('/eoms/engineer/') ||
+        config.url.startsWith('/user/profile/') ||
         config.url.startsWith('/auth/')
       if (needAuth && userStore.engineerToken) {
         config.headers['Authorization'] = 'Bearer ' + userStore.engineerToken
@@ -144,6 +160,7 @@ service.interceptors.response.use(
       if (isBizSuccess(res)) {
         return res
       }
+      if (handleEngineerPasswordExpiry(response.config, res)) return Promise.reject(new Error(res.msg || '请先修改密码'))
       if (response.config.skipErrorToast) return Promise.reject(new Error(res.msg || '操作失败'))
       // H5 客户令牌失效
       if (res.code === 10007 || res.code === '10007') {
@@ -171,6 +188,8 @@ service.interceptors.response.use(
     if (error.config) {
       removePendingKey(error.config)
     }
+    if (axios.isCancel(error)) return Promise.reject(error)
+    if (handleEngineerPasswordExpiry(error.config, error.response?.data)) return Promise.reject(error)
     // 预览等静默请求：不要弹 toast，也不要因 401 清掉 H5 登录态
     if (error.config?.skipErrorToast) {
       return Promise.reject(error)

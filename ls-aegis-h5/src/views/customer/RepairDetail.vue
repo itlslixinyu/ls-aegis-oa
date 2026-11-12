@@ -23,6 +23,7 @@
       </van-cell>
       <van-cell title="联系人" :value="apply.contactName || '-'" />
       <van-cell title="联系电话" :value="apply.contactPhone || '-'" />
+      <van-cell v-if="apply.reportAddress" title="报修地址" :value="apply.reportAddress" />
       <van-cell title="故障类型" :value="apply.faultType || '-'" />
       <van-cell title="紧急程度">
         <template #value>
@@ -78,7 +79,6 @@
           </van-tag>
         </template>
       </van-cell>
-      <van-cell title="维修地址" :value="order.address || '-'" />
       <van-cell title="接单时间" :value="formatDateTime(order.acceptTime)" />
       <van-cell title="开始时间" :value="formatDateTime(order.startTime)" />
       <van-cell title="完成时间" :value="formatDateTime(order.finishTime)" />

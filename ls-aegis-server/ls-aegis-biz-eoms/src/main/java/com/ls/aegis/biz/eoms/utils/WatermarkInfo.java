@@ -16,6 +16,9 @@ public class WatermarkInfo
     /** 任务名称（如"单据签署"、"现场勘查"） */
     private String taskName;
 
+    /** 已验证客户身份中的客户名称，不作为任务名称展示。 */
+    private String customerName;
+
     /** 执行人（操作员姓名） */
     private String executor;
 
@@ -24,6 +27,9 @@ public class WatermarkInfo
 
     /** 服务地址 */
     private String serviceAddress;
+
+    private String addressLabel;
+    private String executorLabel;
 
     /** 项目名称 */
     private String projectName;
@@ -75,6 +81,10 @@ public class WatermarkInfo
         this.taskName = taskName;
     }
 
+    public String getCustomerName() { return customerName; }
+
+    public void setCustomerName(String customerName) { this.customerName = customerName; }
+
     public String getExecutor()
     {
         return executor;
@@ -104,6 +114,11 @@ public class WatermarkInfo
     {
         this.serviceAddress = serviceAddress;
     }
+
+    public String getAddressLabel() { return addressLabel; }
+    public void setAddressLabel(String addressLabel) { this.addressLabel = addressLabel; }
+    public String getExecutorLabel() { return executorLabel; }
+    public void setExecutorLabel(String executorLabel) { this.executorLabel = executorLabel; }
 
     public String getProjectName()
     {

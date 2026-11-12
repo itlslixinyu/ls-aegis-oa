@@ -16,6 +16,12 @@ public class RepairOrder extends XmlMapperDO implements EomsDataScopeHelper.Dept
 {
     private static final long serialVersionUID = 1L;
 
+    /** Customer-submitted location, separate from service sign-in/out and legacy order address. */
+    private String reportAddress;
+    public String getReportAddress() { return reportAddress; }
+    public void setReportAddress(String value) { reportAddress = value; }
+
+
     /** 租户ID（DataScope） */
     private Long tenantId;
 

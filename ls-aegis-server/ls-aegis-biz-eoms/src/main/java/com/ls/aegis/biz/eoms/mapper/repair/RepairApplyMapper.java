@@ -59,4 +59,6 @@ public interface RepairApplyMapper
     public int deleteRepairApplyByIds(Long[] ids);
     com.ls.aegis.biz.eoms.domain.RepairApply lockApply(Long id);
     int restoreAfterOrderDelete(Long id);
+    int transitionStatus(@org.apache.ibatis.annotations.Param("apply") RepairApply apply,
+                         @org.apache.ibatis.annotations.Param("expected") String expected);
 }

@@ -49,6 +49,8 @@ public class EngineerController
 
     @Autowired
     private IRepairRecordService repairRecordService;
+    @Autowired
+    private com.ls.aegis.biz.eoms.service.h5.EngineerRecordService engineerRecordService;
 
     @Autowired
     private GeoUtils geoUtils;
@@ -77,9 +79,11 @@ public class EngineerController
      */
     @SaCheckPermission("eoms:order:query")
     @GetMapping("/tasks")
-    public R<PageResp<RepairOrder>> tasks(RepairOrder repairOrder, @Valid PageQuery pageQuery)
+    public R<PageResp<RepairOrder>> tasks(RepairOrder repairOrder, @Valid PageQuery pageQuery, @RequestParam(defaultValue = "false") boolean serviceCompleted)
     {
         repairOrder.setEngineerId(currentUserId());
+        repairOrder.getParams().put("engineerCompleted", serviceCompleted);
+        if (serviceCompleted) repairOrder.setStatus(null);
         return R.ok(PageQueryHelper.page(pageQuery, () -> repairOrderService.selectRepairOrderList(repairOrder)));
     }
 
@@ -134,7 +138,8 @@ public class EngineerController
     public R<Void> start(@PathVariable Long id,
                             @RequestParam(required = false) String remark,
                             @RequestParam(required = false) String longitude,
-                            @RequestParam(required = false) String latitude)
+                            @RequestParam(required = false) String latitude,
+                            @RequestParam(required = false) String location)
     {
         Coordinates.require(longitude, latitude);
         RepairOrder order = repairOrderService.selectRepairOrderById(id);
@@ -146,7 +151,7 @@ public class EngineerController
         {
             return R.fail("1", "签到失败：未获取到定位信息，请开启定位后重试");
         }
-        if (repairOrderService.startProcess(id, remark, longitude, latitude) <= 0)
+        if (repairOrderService.startProcess(id, remark, longitude, latitude, location) <= 0)
         {
             return R.fail("1", "开始维修失败");
         }
@@ -162,31 +167,38 @@ public class EngineerController
                                         @RequestParam Long orderId,
                                         @RequestParam String photoType,
                                         @RequestParam(required = false) String longitude,
-                                        @RequestParam(required = false) String latitude)
+                                        @RequestParam(required = false) String latitude,
+                                        @RequestParam(required = false) String location,
+                                        @RequestParam(required = false) String remark)
     {
         try
         {
             Coordinates.optional(longitude, latitude);
-            if (!WatermarkUtils.isSupportedImage(file))
-            {
-                return R.fail("1", "仅支持 jpg/jpeg/png 格式的图片");
-            }
+            if (!("processing".equals(photoType) || "completed".equals(photoType))) return R.fail("1", "照片类型无效");
+            com.ls.aegis.biz.eoms.utils.RepairPhotoPolicy.validate(file);
             RepairOrder order = repairOrderService.selectRepairOrderById(orderId);
             if (order == null || !currentUserId().equals(order.getEngineerId()))
             {
                 return R.fail("1", "工单不存在或您无权操作此工单");
             }
+            if (!"PROCESSING".equals(order.getStatus())) return R.fail("1", "仅维修中的工单可上传维修照片");
             String engineerName = currentDisplayName();
             boolean processing = "processing".equals(photoType);
             WatermarkInfo info = new WatermarkInfo();
-            info.setTitle(engineerName + "（维修" + (processing ? "中" : "完成") + "）");
+            info.setTitle(processing ? "维修资料" : "完成资料");
+            info.setCustomerName(order.getCustomerName());
             info.setTaskName(order.getOrderNo());
+            info.setExecutorLabel("维修人员");
+            info.setAddressLabel("服务地址");
             info.setExecutor(engineerName);
+            info.setRemark(remark);
             // 维修中 → 维修时间；维修完成 → 维修完毕时间
             info.setWorkTimeLabel(processing ? "维修时间" : "维修完毕时间");
             if (longitude != null && !longitude.isEmpty() && latitude != null && !latitude.isEmpty())
             {
-                String addr = geoUtils.reverseGeocode(longitude, latitude);
+                String addr = location == null ? "" : location.replaceAll("[\\r\\n\\t]+", " ").trim();
+                if (addr.length() > 512) addr = addr.substring(0, 512);
+                if (addr.isEmpty()) addr = geoUtils.reverseGeocode(longitude, latitude);
                 info.setServiceAddress(addr);
             }
             info.setLongitude(longitude);
@@ -214,7 +226,7 @@ public class EngineerController
     @Log(module = "工程师-提交维修记录")
     @SaCheckPermission("eoms:order:update")
     @PostMapping("/record")
-    public R<Void> submitRecord(@Validated @RequestBody RepairRecord repairRecord)
+    public R<Void> submitRecord(@Validated @RequestBody com.ls.aegis.biz.eoms.domain.h5.EngineerRecordRequest repairRecord)
     {
         if (repairRecord.getRepairOrderId() == null)
         {
@@ -226,11 +238,22 @@ public class EngineerController
             return R.fail("1", "工单不存在或您无权操作此工单");
         }
         repairRecord.setCreateBy(UserContextHolder.getUsername());
-        if (repairRecordService.insertRepairRecord(repairRecord) <= 0)
+        if (engineerRecordService.submit(repairRecord) <= 0)
         {
             return R.fail("1", "提交维修记录失败");
         }
         return R.ok();
+    }
+
+    @GetMapping("/task/{id}/material-options")
+    @SaCheckPermission("eoms:order:query")
+    public R<Map<String,Object>> materialOptions(@PathVariable Long id,@RequestParam(defaultValue="") String keyword) {
+        return R.ok(engineerRecordService.options(id,keyword));
+    }
+    @GetMapping("/task/{id}/materials")
+    @SaCheckPermission("eoms:order:query")
+    public R<List<com.ls.aegis.biz.eoms.domain.h5.EngineerMaterialView>> materials(@PathVariable Long id) {
+        return R.ok(engineerRecordService.materials(id));
     }
 
     /**
@@ -242,7 +265,8 @@ public class EngineerController
     public R<Void> finish(@PathVariable Long id,
                              @RequestParam(required = false) String remark,
                              @RequestParam(required = false) String longitude,
-                             @RequestParam(required = false) String latitude)
+                             @RequestParam(required = false) String latitude,
+                             @RequestParam(required = false) String location)
     {
         Coordinates.require(longitude, latitude);
         RepairOrder order = repairOrderService.selectRepairOrderById(id);
@@ -254,7 +278,7 @@ public class EngineerController
         {
             return R.fail("1", "签退失败：未获取到定位信息，请开启定位后重试");
         }
-        if (repairOrderService.submitSettlement(id, remark, longitude, latitude) <= 0)
+        if (repairOrderService.submitSettlement(id, remark, longitude, latitude, location) <= 0)
         {
             return R.fail("1", "完成维修失败");
         }

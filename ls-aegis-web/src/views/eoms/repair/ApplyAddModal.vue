@@ -11,6 +11,8 @@
     <GiForm ref="formRef" v-model="form" :columns="columns" layout="vertical">
       <template #photos>
         <PlatformFileField
+          v-if="visible"
+          ref="photosRef"
           v-model="form.photos"
           multiple
           variant="drag"
@@ -42,6 +44,7 @@ const { eoms_fault_type, eoms_urgent_level } = useDict('eoms_fault_type', 'eoms_
 const visible = ref(false)
 const title = '新增报修'
 const formRef = ref<InstanceType<typeof GiForm>>()
+const photosRef = ref<InstanceType<typeof PlatformFileField>>()
 const customerOptions = ref<{ label: string, value: string }[]>([])
 
 const [form, resetForm] = useResetReactive({
@@ -103,6 +106,7 @@ const reset = () => {
 }
 
 const save = async () => {
+  if (photosRef.value?.isUploading()) { Message.warning('请等待照片上传完成'); return false }
   try {
     const valid = await formRef.value?.formRef?.validate()
     if (valid) return false

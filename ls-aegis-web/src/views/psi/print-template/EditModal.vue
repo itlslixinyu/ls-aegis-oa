@@ -40,6 +40,8 @@
         <a-col :span="24">
           <a-form-item label="Word 套打模板">
             <PlatformFileField
+              v-if="visible"
+              ref="attachmentRef"
               v-model="form.fileId"
               accept=".docx"
               variant="drag"
@@ -89,6 +91,7 @@ const printBizTypeOptions = computed(() => dictSelectOptions(psi_print_biz_type.
 
 const dataId = ref('')
 const visible = ref(false)
+const attachmentRef = ref<InstanceType<typeof PlatformFileField>>()
 const isUpdate = computed(() => !!dataId.value)
 const title = computed(() => (isUpdate.value ? '修改打印模板' : '新增打印模板'))
 
@@ -109,6 +112,7 @@ const reset = () => {
 }
 
 const save = async () => {
+  if (attachmentRef.value?.isUploading()) { Message.warning('请等待附件上传完成'); return false }
   try {
     if (!form.templateName || !form.bizType) {
       Message.warning('请填写模板名称与业务类型')

@@ -104,6 +104,7 @@ import { useSystemStore } from '@/store/system'
 import policeBadge from '@/assets/images/police-badge.png'
 import SystemLogo from '@/components/SystemLogo.vue'
 import SingleLineHeading from '@/components/SingleLineHeading.vue'
+import { engineerLandingPath } from '@/utils/engineerPassword'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -207,11 +208,11 @@ async function onSubmit() {
           dept: info.deptName ? { deptName: info.deptName } : undefined
         },
         roles: info.roles || [],
-        permissions: info.permissions || []
+        permissions: info.permissions || [],
+        pwdExpired: Boolean(info.pwdExpired)
       })
       showSuccessToast('登录成功')
-      // 登录后先进入维修工作台，再由状态按钮进入任务列表。
-      window.location.replace('/engineer/workbench')
+      window.location.replace(engineerLandingPath(info))
     } else {
       userStore.clearEngineerToken()
       showFailToast('获取用户信息失败')
@@ -230,7 +231,7 @@ async function onSubmit() {
 
 onMounted(async () => {
   if (userStore.engineerToken) {
-    window.location.replace('/engineer/workbench')
+    window.location.replace(engineerLandingPath(userStore.engineerInfo))
     return
   }
   await loadGmPublicKey()

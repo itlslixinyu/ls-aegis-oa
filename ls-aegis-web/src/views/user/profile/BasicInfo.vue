@@ -3,7 +3,8 @@
     <div class="body">
       <section>
         <a-upload
-          accept="image/*"
+          accept="image/png,image/jpeg,image/gif,image/webp"
+          :disabled="uploading"
           :show-file-list="false"
           list-type="picture-card"
           :show-upload-button="true"
@@ -86,7 +87,7 @@
     </a-row>
     <div style="text-align: center; padding-top: 30px">
       <a-space>
-        <a-button type="primary" @click="handleUpload">确定</a-button>
+        <a-button type="primary" :loading="uploading" @click="handleUpload">确定</a-button>
         <a-button @click="reset">取消</a-button>
       </a-space>
     </div>
@@ -121,22 +122,39 @@ const options = reactive({
   outputType: 'png',
 })
 const visible = ref(false)
+const uploading = ref(false)
+let disposed = false
+let readVersion = 0
+let uploadController: AbortController | undefined
 // 打开裁剪框
 const onBeforeUpload = (file: File): boolean => {
-  const reader = new FileReader()
-  reader.readAsDataURL(file)
-  reader.onload = () => {
-    if (typeof reader.result === 'string') options.img = reader.result
+  if (uploading.value) return false
+  if (!['image/png', 'image/jpeg', 'image/gif', 'image/webp'].includes(file.type)) {
+    Message.error('请选择JPG/PNG/GIF/WebP图片'); return false
   }
-  visible.value = true
+  if (!file.size || file.size > 10 * 1024 * 1024) {
+    Message.error('图片不能为空且不能超过10MB'); return false
+  }
+  const version = ++readVersion
+  const reader = new FileReader()
+  reader.onload = () => {
+    if (disposed || version !== readVersion) return
+    if (typeof reader.result === 'string') { options.img = reader.result; visible.value = true }
+  }
+  reader.onerror = () => { if (!disposed && version === readVersion) Message.error('图片读取失败，请重新选择') }
+  reader.readAsDataURL(file)
   return false
 }
 
 // 重置
 const reset = () => {
+  readVersion++
+  uploadController?.abort()
+  uploading.value = false
   options.img = ''
   visible.value = false
 }
+onBeforeUnmount(() => { disposed = true; reset() })
 
 const previews: any = ref({})
 const previewStyle: any = ref({})
@@ -156,19 +174,35 @@ const handleRealTime = (data: any) => {
 const cropperRef = ref()
 // 上传头像（裁剪固定输出 png，文件名与后端后缀校验一致）
 const handleUpload = async () => {
+  if (uploading.value || !options.img || !cropperRef.value) return
+  uploading.value = true
+  const version = readVersion
+  const controller = new AbortController()
+  uploadController = controller
+  try {
   cropperRef.value.getCropBlob(async (data: Blob) => {
     try {
+      if (disposed || version !== readVersion || controller.signal.aborted) return
+      if (!data?.size || data.size > 10 * 1024 * 1024) { Message.error('裁剪图片无效或超过10MB'); return }
       const formData = new FormData()
       formData.append('avatarFile', data, 'avatar.png')
-      const res = await uploadAvatar(formData)
+      const res = await uploadAvatar(formData, { signal: controller.signal })
+      if (disposed || version !== readVersion || controller.signal.aborted) return
       userInfo.value.avatar = res.data.avatar
       await userStore.getInfo()
+      if (disposed || version !== readVersion || controller.signal.aborted) return
       reset()
       Message.success('更新成功')
     } catch {
       // 错误由请求拦截器提示
+    } finally {
+      if (uploadController === controller) uploading.value = false
     }
   })
+  } catch {
+    uploading.value = false
+    Message.error('图片裁剪失败，请重新选择')
+  }
 }
 
 const BasicInfoUpdateModalRef = ref<InstanceType<typeof BasicInfoUpdateModal>>()

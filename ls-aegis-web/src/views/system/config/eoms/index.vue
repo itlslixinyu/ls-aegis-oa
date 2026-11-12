@@ -25,6 +25,7 @@
         </a-row>
 
         <h4 class="section-title">地理位置</h4>
+        <a-alert type="info" style="margin-bottom: 16px">外部地图API已停用。Android使用系统地址解析，不支持或解析失败时保留坐标，不调用外部地图服务。</a-alert>
         <a-form-item
           field="GEO_BAIDU_AK"
           :label="labelOf('GEO_BAIDU_AK')"
@@ -32,9 +33,10 @@
         >
           <a-input-password
             v-model="form.GEO_BAIDU_AK"
+            disabled
             :default-visibility="true"
             :invisible-button="isUpdate"
-            :placeholder="akConfigured ? '已保存，不修改请留空' : '未配置则定位降级为坐标'"
+            placeholder="外部地图API已停用，无需配置AK"
             autocomplete="off"
             @visibility-change="onAkVisibilityChange"
           />
@@ -44,16 +46,16 @@
             v-permission="['system:eomsConfig:get', 'system:eomsConfig:update']"
             type="outline"
             :loading="testingAk"
-            :disabled="false"
+            :disabled="true"
             @click="onTestBaiduAk"
           >
             <template #icon><icon-thunderbolt /></template>
             测试地图 AK
           </a-button>
-          <span class="ak-test-tip">获取浏览器当前位置，用已保存 AK 做逆地理编码验证</span>
+          <span class="ak-test-tip">外部地图测试已停用</span>
         </a-form-item>
         <a-form-item field="GEO_BAIDU_REGEO_URL" :label="labelOf('GEO_BAIDU_REGEO_URL')" :help="descOf('GEO_BAIDU_REGEO_URL')">
-          <a-input v-model="form.GEO_BAIDU_REGEO_URL" placeholder="逆地理编码接口地址" />
+          <a-input v-model="form.GEO_BAIDU_REGEO_URL" disabled placeholder="外部地图API已停用" />
         </a-form-item>
 
         <h4 class="section-title">现场水印</h4>

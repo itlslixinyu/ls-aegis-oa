@@ -212,3 +212,11 @@ __pycache__/
 /Docs/Reports-README.md
 /Docs/releases/maintenance.md
 /ls-aegis-web/CHANGELOG.md
+
+# Mobile packages and signing stores remain local
+*.apk
+*.aab
+*.jks
+*.keystore
+*.p12
+*.pfx

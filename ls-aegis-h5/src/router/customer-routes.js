@@ -39,7 +39,13 @@ export default [
   {
     path: '/customer/repairs',
     name: 'CustomerRepairs',
-    component: () => import('@/views/customer/Repairs.vue'),
+    // 兼容旧书签和旧版本入口，统一进入现行列表并保留状态筛选。
+    redirect: to => ({
+      path: ['WAIT', 'CONFIRM', 'ORDER', 'CANCEL'].includes(to.query.status)
+        ? `/customer/repairs/status/${to.query.status}`
+        : '/customer/repairs/all',
+      query: Object.fromEntries(Object.entries(to.query).filter(([key]) => key !== 'status'))
+    }),
     meta: { title: '我的报修', requireH5Token: true, role: 'customer' }
   },
   {

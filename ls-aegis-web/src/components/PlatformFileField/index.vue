@@ -8,6 +8,7 @@
       :accept="accept"
       :multiple="multiple"
       :custom-request="handleUpload"
+      :on-before-upload="beforeUpload"
       :disabled="uploading"
       class="platform-file-field__upload-drag"
     >
@@ -90,6 +91,7 @@
         :accept="accept"
         :multiple="multiple"
         :custom-request="handleUpload"
+        :on-before-upload="beforeUpload"
         :disabled="uploading"
       >
         <a-button type="outline" :loading="uploading">
@@ -188,6 +190,9 @@ const emit = defineEmits<{
 
 const { width } = useWindowSize()
 const uploading = ref(false)
+const uploadControllers = new Set<AbortController>()
+let disposed = false
+let pendingIds: string[] | undefined
 const openingId = ref('')
 let openRequestVersion = 0
 const invalidateOpen = () => { openRequestVersion++; openingId.value = '' }
@@ -276,6 +281,7 @@ const resolveMeta = async (ids: string[]) => {
 }
 
 watch(idList, (ids) => {
+  pendingIds = undefined
   if (ids.length) {
     void resolveMeta(ids)
   }
@@ -377,6 +383,7 @@ const openFile = async (id: string) => {
 
 const handleUpload = (options: RequestOption) => {
   const controller = new AbortController()
+  uploadControllers.add(controller)
   ;(async () => {
     const { onError, onSuccess, fileItem } = options
     uploading.value = true
@@ -384,10 +391,16 @@ const handleUpload = (options: RequestOption) => {
     formData.append('parentPath', props.parentPath)
     formData.append('file', fileItem.file as Blob)
     try {
-      const res = await uploadCommon(formData)
+      const res = await uploadCommon(formData, {
+        signal: controller.signal,
+        onUploadProgress: event => {
+          if (!disposed && !controller.signal.aborted) options.onProgress?.(event.total ? Math.min(99, event.loaded / event.total * 100) : 0, event.event)
+        },
+      })
+      if (disposed || controller.signal.aborted) return
       const id = res.data?.id
-      if (id == null) {
-        throw new Error('上传成功但未返回文件 ID')
+      if ((typeof id === 'number' && !Number.isSafeInteger(id)) || !/^[1-9][0-9]{0,18}$/.test(String(id ?? ''))) {
+        throw new Error('上传响应未返回有效文件 ID')
       }
       const idStr = String(id)
       const raw = fileItem.file as File | undefined
@@ -395,7 +408,9 @@ const handleUpload = (options: RequestOption) => {
         rememberMeta(idStr, raw.name)
       }
       if (props.multiple) {
-        const next = idList.value.includes(idStr) ? idList.value : [...idList.value, idStr]
+        const base = pendingIds ?? idList.value
+        const next = base.includes(idStr) ? base : [...base, idStr]
+        pendingIds = next
         emitIds(next)
       } else {
         emitIds([idStr])
@@ -409,9 +424,10 @@ const handleUpload = (options: RequestOption) => {
       Message.success('上传成功')
       onSuccess(res)
     } catch (e) {
-      onError(e)
+      if (!disposed && !controller.signal.aborted) onError(e)
     } finally {
-      uploading.value = false
+      uploadControllers.delete(controller)
+      uploading.value = uploadControllers.size > 0
     }
   })()
   return {
@@ -421,13 +437,30 @@ const handleUpload = (options: RequestOption) => {
   }
 }
 
+const beforeUpload = (file: File) => {
+  if (!file.size || file.size > 10 * 1024 * 1024) {
+    Message.error('文件不能为空且不能超过10MB'); return false
+  }
+  const rules = props.accept.split(',').map(value => value.trim().toLowerCase()).filter(Boolean)
+  const name = file.name.toLowerCase()
+  const type = file.type.toLowerCase()
+  if (rules.length && !rules.some(rule => rule.startsWith('.') ? name.endsWith(rule) : rule.endsWith('/*') ? type.startsWith(rule.slice(0, -1)) : type === rule)) {
+    Message.error('文件格式不符合当前入口要求'); return false
+  }
+  return true
+}
+
+defineExpose({ isUploading: () => uploading.value })
+
 const removeOne = (id: string) => {
   delete nameMap[id]
   delete extMap[id]
-  emitIds(idList.value.filter((x) => x !== id))
+  pendingIds = (pendingIds ?? idList.value).filter((x) => x !== id)
+  emitIds(pendingIds)
 }
 
 const clear = () => {
+  pendingIds = []
   idList.value.forEach((id) => {
     delete nameMap[id]
     delete extMap[id]
@@ -436,6 +469,9 @@ const clear = () => {
 }
 
 onUnmounted(() => {
+  disposed = true
+  uploadControllers.forEach(controller => controller.abort())
+  uploadControllers.clear()
   invalidateOpen()
   filePreviewRef.value?.onClose?.(false)
   closeImagePreview()

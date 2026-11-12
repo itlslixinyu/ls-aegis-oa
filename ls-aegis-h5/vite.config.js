@@ -66,6 +66,7 @@ export default defineConfig(({ mode }) => {
       proxy: {
         '/eoms': { ...apiProxy },
         '/auth': { ...apiProxy },
+        '/user/profile': { ...apiProxy },
         '/captcha': { ...apiProxy },
         '/profile': { ...apiProxy },
         '/file': { ...apiProxy },

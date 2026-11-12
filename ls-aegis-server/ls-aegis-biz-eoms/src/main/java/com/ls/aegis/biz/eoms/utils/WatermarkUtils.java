@@ -1,12 +1,13 @@
 package com.ls.aegis.biz.eoms.utils;
 
 import java.awt.AlphaComposite;
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
-import java.awt.geom.Ellipse2D;
+import java.awt.geom.RoundRectangle2D;
 import java.awt.geom.GeneralPath;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -39,7 +40,7 @@ import com.ls.aegis.compat.common.utils.StringUtils;
  * 图片水印工具类
  *
  * 在图片底部烧录半透明水印条，包含：标题/任务名称/执行人/备注/服务地址/项目名称/时间（标签按阶段）。
- * 水印不可篡改，符合企业审计要求。
+ * 水印直接绘入图片像素；不等同于数字签名或防篡改证明。
  * 输出统一为高质量 JPEG（0.95），兼容 PNG/JPG/JPEG 输入。
  *
  * @author EOMS
@@ -54,15 +55,15 @@ public class WatermarkUtils
     private static final float JPEG_QUALITY = 0.95f;
 
     /** 卡片宽度占图片宽度比例（左右留白） */
-    private static final float CARD_WIDTH_RATIO = 0.85f;
+    private static final float CARD_WIDTH_RATIO = 0.82f;
     /** 卡片距离底部边距占图片高度比例 */
     private static final float CARD_BOTTOM_RATIO = 0.03f;
     /** 卡片最小字号 */
     private static final int MIN_FONT_SIZE = 12;
     /** 卡片最大字号 */
     private static final int MAX_FONT_SIZE = 36;
-    /** 卡片背景透明度（值越小越透明，0.5~0.7 可透出背景图片） */
-    private static final float CARD_ALPHA = 0.55f;
+    /** 轻量半透明底板，保留现场照片纹理。 */
+    private static final float CARD_ALPHA = 0.24f;
     /** 卡片圆角半径占字号比例 */
     private static final float CARD_RADIUS_RATIO = 1.2f;
 
@@ -97,13 +98,13 @@ public class WatermarkUtils
     private static volatile Font CJK_BASE_FONT;
 
     /** 标签颜色（纯黑色，确保文字清晰可读） */
-    private static final Color LABEL_COLOR = Color.BLACK;
+    private static final Color LABEL_COLOR = new Color(67, 80, 98);
     /** 值颜色（纯黑色，确保文字清晰可读） */
-    private static final Color VALUE_COLOR = Color.BLACK;
-    /** 标题/品牌颜色（纯黑色粗体） */
-    private static final Color TITLE_COLOR = Color.BLACK;
-    /** 图标填充颜色（蓝色定位图标） */
-    private static final Color ICON_COLOR = new Color(30, 136, 229);
+    private static final Color VALUE_COLOR = new Color(23, 36, 58);
+    /** 标题颜色（深色透明标题栏中的白色文字） */
+    private static final Color TITLE_COLOR = Color.WHITE;
+    /** 资料盾牌图标颜色 */
+    private static final Color ICON_COLOR = new Color(36, 164, 226);
     /** 卡片背景颜色 */
     private static final Color CARD_BG_COLOR = Color.WHITE;
 
@@ -330,196 +331,28 @@ public class WatermarkUtils
                 log.info("图片尺寸已缩放至 {}x{}", width, height);
             }
 
-            // Step 2: 计算水印卡片参数
-            // 根据图片宽度计算基准字号
-            int baseFontSize = Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, width / 45));
-            int titleFontSize = (int) (baseFontSize * 1.25);
-            int lineHeight = (int) (baseFontSize * 1.45);
-            int padding = (int) (baseFontSize * 1.4);
-            int titleHeight = (int) (titleFontSize * 1.5);
-
-            // 收集水印行（label-value 对）
-            java.util.List<String[]> lines = new java.util.ArrayList<>();
-            String taskName = info.getTaskName();
-            String executor = info.getExecutor();
-            String remark = info.getRemark();
-            String serviceAddress = info.getServiceAddress();
-            String projectName = info.getProjectName();
-            String workTime = info.getWorkTime();
-            if (workTime == null || workTime.isEmpty())
-            {
-                workTime = LocalDateTime.now().format(TIME_FMT);
-            }
-            String workTimeLabel = info.getWorkTimeLabel();
-            if (workTimeLabel == null || workTimeLabel.isBlank())
-            {
-                workTimeLabel = "施工时间";
+            // Camera JPEGs may store rotation/mirroring only in EXIF. Normalize after scaling,
+            // before placing the watermark, so its baseline follows the displayed photograph.
+            BufferedImage orientedImage = JpegOrientation.apply(originalImage, JpegOrientation.read(fileBytes));
+            if (orientedImage != originalImage) {
+                originalImage.flush();
+                originalImage = orientedImage;
+                width = originalImage.getWidth();
+                height = originalImage.getHeight();
             }
 
-            if (taskName != null && !taskName.isEmpty())
-            {
-                lines.add(new String[]{"任务名称", taskName});
-            }
-            if (executor != null && !executor.isEmpty())
-            {
-                lines.add(new String[]{"执行人", executor});
-            }
-            if (remark != null && !remark.isEmpty())
-            {
-                lines.add(new String[]{"备注", remark});
-            }
-            if (serviceAddress != null && !serviceAddress.isEmpty())
-            {
-                lines.add(new String[]{"服务地址", serviceAddress});
-            }
-            if (projectName != null && !projectName.isEmpty())
-            {
-                lines.add(new String[]{"项目名称", projectName});
-            }
-            if (workTime != null && !workTime.isEmpty())
-            {
-                lines.add(new String[]{workTimeLabel, workTime});
-            }
-
-            // 如果没有任何有效行，至少显示地址和时间
-            if (lines.isEmpty())
-            {
-                if (info.getServiceAddress() != null && !info.getServiceAddress().isEmpty())
-                {
-                    lines.add(new String[]{"服务地址", info.getServiceAddress()});
-                }
-                lines.add(new String[]{workTimeLabel, workTime});
-                if (info.getLongitude() != null && !info.getLongitude().isEmpty()
-                        && info.getLatitude() != null && !info.getLatitude().isEmpty())
-                {
-                    lines.add(new String[]{"坐标", info.getLongitude() + ", " + info.getLatitude()});
-                }
-            }
-
-            // 计算卡片尺寸
-            int cardWidth = (int) (width * CARD_WIDTH_RATIO);
-            int cardX = (width - cardWidth) / 2;
-            int lineCount = lines.size();
-            int cardContentHeight = titleHeight + padding + lineCount * lineHeight + padding;
-            int cornerRadius = (int) (baseFontSize * CARD_RADIUS_RATIO);
-            int bottomMargin = (int) (height * CARD_BOTTOM_RATIO);
-            int cardY = height - cardContentHeight - bottomMargin;
-            if (cardY < 0)
-            {
-                cardY = 0;
-            }
-
-            // Step 3: 创建新图片（与原图等尺寸，卡片叠加在底部）
             BufferedImage watermarked = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
             Graphics2D g = watermarked.createGraphics();
-            try
-            {
+            try {
                 g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-                g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-
-                // 填充白色背景（防止 PNG 透明区域变黑）
                 g.setColor(Color.WHITE);
                 g.fillRect(0, 0, width, height);
-
-                // 绘制原图
                 g.drawImage(originalImage, 0, 0, width, height, null);
-
-                // ========== 绘制圆角卡片（半透明白色） ==========
-                g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, CARD_ALPHA));
-                g.setColor(CARD_BG_COLOR);
-                g.fillRoundRect(cardX, cardY, cardWidth, cardContentHeight, cornerRadius, cornerRadius);
-                g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
-
-                int cursorY = cardY + padding;
-
-                // ========== 绘制标题行（定位图标 + 标题文字） ==========
-                String title = info.getTitle();
-                if (title == null || title.isEmpty())
-                {
-                    title = "现场照片";
-                }
-
-                // 1) 绘制蓝色定位图标（水滴形）
-                int pinW = (int) (titleFontSize * 1.1);
-                int pinH = (int) (titleFontSize * 1.35);
-                int pinX = cardX + padding;
-                int pinY = cursorY;
-                drawLocationPin(g, pinX, pinY, pinW, pinH, ICON_COLOR);
-
-                // 2) 绘制标题文字（黑色粗体）
-                Font titleFont = createCJKFont(Font.BOLD, titleFontSize);
-                g.setFont(titleFont);
-                FontMetrics titleFm = g.getFontMetrics(titleFont);
-                int titleX = pinX + pinW + (int) (padding * 0.6);
-                int titleBaseline = cursorY + pinH / 2 + titleFm.getAscent() / 2 - titleFm.getDescent() / 2;
-                g.setColor(TITLE_COLOR);
-                String safeTitle = truncateString(titleFm, title, cardWidth - (titleX - cardX) - padding);
-                g.drawString(safeTitle, titleX, titleBaseline);
-
-                // 3) 标题与内容分隔线（浅灰色细线）
-                cursorY += titleHeight;
-                g.setColor(new Color(220, 220, 230, 180));
-                int sepLineY = cursorY - padding / 2;
-                g.drawLine(cardX + padding, sepLineY, cardX + cardWidth - padding, sepLineY);
-
-                // ========== 绘制 label-value 信息行 ==========
-                Font labelFont = createCJKFont(Font.PLAIN, baseFontSize);
-                g.setFont(labelFont);
-                FontMetrics fm = g.getFontMetrics(labelFont);
-
-                // 计算标签对齐宽度
-                int labelWidth = 0;
-                for (String[] line : lines)
-                {
-                    int w = fm.stringWidth(line[0] + "：");
-                    if (w > labelWidth)
-                    {
-                        labelWidth = w;
-                    }
-                }
-                int maxLabelWidth = (int) ((cardWidth - padding * 2) * 0.25);
-                if (labelWidth > maxLabelWidth)
-                {
-                    labelWidth = maxLabelWidth;
-                }
-
-                int valueMaxWidth = cardWidth - padding * 2 - labelWidth;
-
-                for (String[] line : lines)
-                {
-                    String label = line[0] + "：";
-                    String value = line[1];
-                    int baselineY = cursorY + fm.getAscent();
-
-                    g.setColor(LABEL_COLOR);
-                    g.drawString(label, cardX + padding, baselineY);
-
-                    g.setColor(VALUE_COLOR);
-                    String displayValue = truncateString(fm, value, valueMaxWidth);
-                    // 如果值很长，尝试换行（最多显示2行，超出截断）
-                    if (fm.stringWidth(value) > valueMaxWidth)
-                    {
-                        List<String> wrapped = wrapString(fm, value, valueMaxWidth, 2);
-                        for (int i = 0; i < wrapped.size(); i++)
-                        {
-                            g.drawString(wrapped.get(i), cardX + padding + labelWidth, baselineY + i * lineHeight);
-                        }
-                        if (wrapped.size() > 1)
-                        {
-                            cursorY += (wrapped.size() - 1) * lineHeight;
-                        }
-                    }
-                    else
-                    {
-                        g.drawString(displayValue, cardX + padding + labelWidth, baselineY);
-                    }
-                    cursorY += lineHeight;
-                }
-            }
-            finally
-            {
+                drawWatermarkCard(g, width, height, info);
+            } finally {
                 g.dispose();
+                originalImage.flush();
             }
 
             // Step 4: 以高质量 JPEG 输出
@@ -654,130 +487,152 @@ public class WatermarkUtils
         return baos.toByteArray();
     }
 
-    /**
-     * 绘制定位水滴图标（类似 Google Maps / 高德 的 pin）
-     * 绘制区域：(x, y) 为左上角，宽 pinW，高 pinH
-     */
-    private static void drawLocationPin(Graphics2D g, int x, int y, int pinW, int pinH, Color color)
-    {
-        int centerX = x + pinW / 2;
-        int circleR = pinW / 2;
-        int circleCy = y + circleR;
+    record WatermarkLine(String label, List<String> values) {}
+    record CardLayout(int x, int y, int width, int height, int padding, int fontSize,
+                      int lineHeight, int headerHeight, int labelWidth, List<WatermarkLine> lines) {}
 
-        // 上半部分：圆形（主体圆的下半部分 + 水滴尖角）
-        GeneralPath path = new GeneralPath();
-        // 圆形主体：使用贝塞尔曲线绘制圆
-        double k = 0.5522847498;
-        path.moveTo(centerX, y);
-        // 右半圆
-        path.curveTo(centerX + circleR * k, y,
-                x + pinW, circleCy - circleR * k,
-                x + pinW, circleCy);
-        // 右下角过渡 -> 水滴尖
-        path.lineTo(centerX, y + pinH);
-        // 水滴尖 -> 左下角过渡
-        path.lineTo(x, circleCy);
-        // 左半圆
-        path.curveTo(x, circleCy - circleR * k,
-                centerX - circleR * k, y,
-                centerX, y);
-        path.closePath();
-
-        // 填充水滴
-        g.setColor(color);
-        g.fill(path);
-
-        // 内部白色小圆（高光点）
-        int innerR = (int) (circleR * 0.35);
-        int innerCx = centerX - (int) (circleR * 0.1);
-        int innerCy = circleCy - (int) (circleR * 0.15);
-        g.setColor(Color.WHITE);
-        g.fill(new Ellipse2D.Double(
-                innerCx - innerR, innerCy - innerR, innerR * 2, innerR * 2));
+    static List<String[]> watermarkFields(WatermarkInfo info) {
+        List<String[]> fields = new ArrayList<>();
+        String address = info.getServiceAddress();
+        boolean coordinates = address != null && address.trim().matches("[-+]?\\d+(?:\\.\\d+)?\\s*,\\s*[-+]?\\d+(?:\\.\\d+)?");
+        String addressLabel = info.getAddressLabel();
+        if (addressLabel == null || addressLabel.isBlank()) addressLabel = coordinates ? "定位坐标" : "服务地址";
+        else if (coordinates) addressLabel = addressLabel.replace("地址", "坐标");
+        addField(fields, addressLabel, address);
+        addField(fields, "报修客户", info.getCustomerName());
+        addField(fields, "任务名称", info.getTaskName());
+        addField(fields, "项目名称", info.getProjectName());
+        addField(fields, info.getWorkTimeLabel() == null || info.getWorkTimeLabel().isBlank() ? "施工时间" : info.getWorkTimeLabel(),
+            info.getWorkTime() == null || info.getWorkTime().isBlank() ? LocalDateTime.now().format(TIME_FMT) : info.getWorkTime());
+        addField(fields, info.getExecutorLabel() == null || info.getExecutorLabel().isBlank() ? "执行人" : info.getExecutorLabel(), info.getExecutor());
+        addField(fields, "备注", info.getRemark());
+        return fields;
     }
 
-    /**
-     * 字符串截断显示（超出最大宽度时末尾加省略号）
-     */
-    private static String truncateString(FontMetrics fm, String text, int maxWidth)
-    {
-        if (text == null || text.isEmpty() || maxWidth <= 0)
-        {
-            return text;
-        }
-        if (fm.stringWidth(text) <= maxWidth)
-        {
-            return text;
-        }
-        String ellipsis = "...";
-        int ellipsisWidth = fm.stringWidth(ellipsis);
-        int textWidth = maxWidth - ellipsisWidth;
-        if (textWidth <= 0)
-        {
-            return ellipsis;
-        }
-        int idx = 0;
-        int currentWidth = 0;
-        while (idx < text.length())
-        {
-            int cw = fm.charWidth(text.charAt(idx));
-            if (currentWidth + cw > textWidth)
-            {
-                break;
+    private static void addField(List<String[]> fields, String label, String value) {
+        if (value != null && !value.isBlank()) fields.add(new String[]{label, value.replaceAll("[\\r\\n\\t]+", " ").trim()});
+    }
+
+    /** Measure wrapped rows before positioning the card; keep even tiny images bounded. */
+    static CardLayout cardLayout(Graphics2D g, int width, int height, List<String[]> fields) {
+        int marginX = Math.min(Math.max(1, Math.round(width * 0.035f)), width / 4);
+        int marginY = Math.min(Math.max(1, Math.round(height * CARD_BOTTOM_RATIO)), height / 4);
+        int cardWidth = Math.max(1, Math.min(width - marginX * 2, Math.round(width * CARD_WIDTH_RATIO)));
+        int availableHeight = Math.max(1, height - marginY * 2);
+        int fontSize = Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, width / 45));
+        while (true) {
+            int padding = Math.min(Math.max(2, Math.round(fontSize * 0.85f)), Math.max(0, cardWidth / 8));
+            int lineHeight = Math.max(1, Math.round(fontSize * 1.6f));
+            int headerHeight = Math.max(1, Math.round(fontSize * 2.6f));
+            FontMetrics fm = g.getFontMetrics(createCJKFont(Font.PLAIN, fontSize));
+            int contentWidth = Math.max(1, cardWidth - padding * 2);
+            int labelWidth = 0;
+            for (String[] field : fields) labelWidth = Math.max(labelWidth, fm.stringWidth(field[0] + "："));
+            labelWidth = Math.min(labelWidth + Math.max(1, fontSize / 3), contentWidth * 2 / 5);
+            List<WatermarkLine> rows = new ArrayList<>();
+            int rowCount = 0;
+            for (String[] field : fields) {
+                List<String> values = wrapString(fm, field[1], Math.max(1, contentWidth - labelWidth), fontSize > 8 ? 2 : 1);
+                rows.add(new WatermarkLine(field[0], values));
+                rowCount += values.size();
             }
-            currentWidth += cw;
-            idx++;
+            int measuredHeight = headerHeight + padding * 2 + rowCount * lineHeight;
+            if (measuredHeight <= availableHeight || fontSize <= 8) {
+                int cardHeight = Math.min(measuredHeight, availableHeight);
+                return new CardLayout(marginX, height - marginY - cardHeight, cardWidth, cardHeight,
+                    padding, fontSize, lineHeight, headerHeight, labelWidth, rows);
+            }
+            fontSize--;
         }
-        return text.substring(0, idx) + ellipsis;
     }
 
-    /**
-     * 字符串按宽度换行（最多 maxLines 行，超出末尾加省略号）
-     */
-    private static List<String> wrapString(FontMetrics fm, String text, int maxWidth, int maxLines)
-    {
-        List<String> result = new ArrayList<>();
-        if (text == null || text.isEmpty() || maxWidth <= 0)
-        {
-            result.add(text);
-            return result;
-        }
-
-        StringBuilder currentLine = new StringBuilder();
-        int currentWidth = 0;
-
-        for (int i = 0; i < text.length(); i++)
-        {
-            char ch = text.charAt(i);
-            int cw = fm.charWidth(ch);
-
-            if (currentWidth + cw > maxWidth && currentLine.length() > 0)
-            {
-                result.add(currentLine.toString());
-                currentLine = new StringBuilder();
-                currentWidth = 0;
-
-                if (result.size() >= maxLines)
-                {
-                    // 剩余内容合并为一行并截断
-                    StringBuilder rest = new StringBuilder();
-                    for (int j = i; j < text.length(); j++)
-                    {
-                        rest.append(text.charAt(j));
-                    }
-                    String lastLine = truncateString(fm, rest.toString(), maxWidth);
-                    result.set(result.size() - 1, lastLine);
-                    return result;
+    private static void drawWatermarkCard(Graphics2D source, int width, int height, WatermarkInfo info) {
+        CardLayout c = cardLayout(source, width, height, watermarkFields(info));
+        Graphics2D g = (Graphics2D) source.create();
+        try {
+            int radius = Math.max(2, Math.round(c.fontSize() * CARD_RADIUS_RATIO));
+            g.clip(new RoundRectangle2D.Float(c.x(), c.y(), c.width(), c.height(), radius, radius));
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, CARD_ALPHA));
+            g.setColor(CARD_BG_COLOR);
+            g.fillRect(c.x(), c.y(), c.width(), c.height());
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.32f));
+            g.setColor(new Color(29, 48, 75));
+            g.fillRect(c.x(), c.y(), c.width(), c.headerHeight());
+            g.setComposite(AlphaComposite.SrcOver);
+            int iconSize = Math.max(1, c.headerHeight() - c.padding());
+            drawDocumentBadge(g, c.x() + c.padding(), c.y() + (c.headerHeight() - iconSize) / 2, iconSize);
+            Font titleFont = createCJKFont(Font.BOLD, Math.max(1, Math.round(c.fontSize() * 1.15f)));
+            g.setFont(titleFont);
+            FontMetrics titleMetrics = g.getFontMetrics();
+            String title = info.getTitle() == null || info.getTitle().isBlank() ? "现场资料" : info.getTitle();
+            int titleX = c.x() + c.padding() + iconSize + c.padding() / 2;
+            g.setColor(TITLE_COLOR);
+            g.drawString(truncateString(titleMetrics, title, Math.max(1, c.x() + c.width() - c.padding() - titleX)),
+                titleX, c.y() + (c.headerHeight() - titleMetrics.getHeight()) / 2 + titleMetrics.getAscent());
+            g.setFont(createCJKFont(Font.PLAIN, c.fontSize()));
+            FontMetrics fm = g.getFontMetrics();
+            int cursorY = c.y() + c.headerHeight() + c.padding();
+            for (WatermarkLine line : c.lines()) {
+                g.setColor(LABEL_COLOR);
+                g.drawString(truncateString(fm, line.label() + "：", c.labelWidth()), c.x() + c.padding(), cursorY + fm.getAscent());
+                g.setColor(VALUE_COLOR);
+                for (String value : line.values()) {
+                    g.drawString(value, c.x() + c.padding() + c.labelWidth(), cursorY + fm.getAscent());
+                    cursorY += c.lineHeight();
                 }
             }
+        } finally { g.dispose(); }
+    }
 
-            currentLine.append(ch);
-            currentWidth += cw;
+    /** Small vector badge: an Aegis shield with layered records and a confirmation tick. */
+    private static void drawDocumentBadge(Graphics2D source, int x, int y, int size) {
+        Graphics2D g = (Graphics2D) source.create();
+        try {
+            g.translate(x, y); g.scale(size / 32.0, size / 32.0);
+            g.setColor(ICON_COLOR); g.fillRoundRect(0, 0, 32, 32, 10, 10);
+            GeneralPath shield = new GeneralPath();
+            shield.moveTo(16, 5); shield.lineTo(25, 9); shield.lineTo(24, 19);
+            shield.quadTo(22, 25, 16, 28); shield.quadTo(10, 25, 8, 19);
+            shield.lineTo(7, 9); shield.closePath();
+            g.setColor(Color.WHITE); g.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.draw(shield);
+            g.drawLine(12, 11, 20, 11); g.drawLine(12, 15, 18, 15);
+            GeneralPath tick = new GeneralPath(); tick.moveTo(12, 20); tick.lineTo(15, 23); tick.lineTo(21, 18); g.draw(tick);
+        } finally { g.dispose(); }
+    }
+
+    private static String truncateString(FontMetrics fm, String text, int maxWidth) {
+        if (text == null || text.isEmpty() || maxWidth <= 0) return "";
+        if (fm.stringWidth(text) <= maxWidth) return text;
+        String ellipsis = "…";
+        if (fm.stringWidth(ellipsis) > maxWidth) return "";
+        int end = 0;
+        while (end < text.length()) {
+            int next = end + Character.charCount(text.codePointAt(end));
+            if (fm.stringWidth(text.substring(0, next) + ellipsis) > maxWidth) break;
+            end = next;
         }
+        return text.substring(0, end) + ellipsis;
+    }
 
-        if (currentLine.length() > 0)
-        {
-            result.add(currentLine.toString());
+    static List<String> wrapString(FontMetrics fm, String text, int maxWidth, int maxLines) {
+        List<String> result = new ArrayList<>();
+        if (text == null || text.isEmpty() || maxWidth <= 0 || maxLines <= 0) return List.of("");
+        int start = 0;
+        while (start < text.length() && result.size() < maxLines) {
+            if (result.size() == maxLines - 1) {
+                result.add(truncateString(fm, text.substring(start), maxWidth));
+                break;
+            }
+            int end = start;
+            while (end < text.length()) {
+                int next = end + Character.charCount(text.codePointAt(end));
+                if (fm.stringWidth(text.substring(start, next)) > maxWidth) break;
+                end = next;
+            }
+            if (end == start) { result.add(truncateString(fm, text.substring(start), maxWidth)); break; }
+            result.add(text.substring(start, end));
+            start = end;
         }
         return result;
     }

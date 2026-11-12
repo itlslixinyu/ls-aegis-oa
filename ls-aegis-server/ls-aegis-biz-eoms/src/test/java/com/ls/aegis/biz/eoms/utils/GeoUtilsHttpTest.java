@@ -34,14 +34,22 @@ class GeoUtilsHttpTest {
  String call(){return geo.reverseGeocode("116.481488","39.990464");}
  void result(String json){body="{\"status\":0,\"result\":"+json+"}";}
  @ParameterizedTest @NullAndEmptySource @ValueSource(strings={" "}) void noAkDoesNotMakeHttpRequest(String absent){when(options.getValue(EomsConstants.OPTION_CATEGORY,EomsConstants.OPTION_CODE_GEO_BAIDU_AK)).thenReturn(absent);assertEquals("39.990464,116.481488",call());assertEquals(0,calls.get());assertFalse(geo.testBaiduAk("0","0").isSuccess());}
- @Test void validAddressAndEncodedParameters(){result("{\"formatted_address\":\"合成地址\"}");assertEquals("合成地址",call());String decoded=URLDecoder.decode(query.get(),StandardCharsets.UTF_8);assertTrue(decoded.contains("location=39.990464,116.481488"));assertTrue(query.get().contains("ak=SYNTHETIC%26secret%3Dmarker"));assertTrue(decoded.contains("coordtype=wgs84ll"));assertTrue(geo.testBaiduAk("0","0").isSuccess());}
+ @Test void configuredProviderCannotBeCalledEvenWithValidSavedKey(){
+  result("{\"formatted_address\":\"合成地址\"}");
+  assertFalse(GeoUtils.externalGeocodingEnabled());
+  assertEquals("39.990464,116.481488",call());
+  var test=geo.testBaiduAk("116.481488","39.990464");
+  assertFalse(test.isSuccess());assertTrue(test.getMessage().contains("已停用"));
+  assertEquals(0,calls.get());verifyNoInteractions(options);
+ }
+
  @ParameterizedTest @ValueSource(strings={"not-json","{}","{\"status\":1,\"message\":\"SENSITIVE_PROVIDER_BODY\"}","{\"status\":0,\"result\":{}}"})
  void malformedOrBusinessFailureFallsBackWithoutSensitiveLog(String response){body=response;assertEquals("39.990464,116.481488",call());assertFalse(geo.testBaiduAk("0","0").isSuccess());for(var entry:logs.list){String text=entry.getFormattedMessage();assertFalse(text.contains("SYNTHETIC"));assertFalse(text.contains("116.481488"));assertFalse(text.contains("39.990464"));assertFalse(text.contains("SENSITIVE_PROVIDER_BODY"));}}
  @ParameterizedTest @ValueSource(ints={302,401,429,500})
- void unsuccessfulHttpNeverBecomesAnAddress(int http){status=http;result("{\"formatted_address\":\"不应接受\"}");assertEquals("39.990464,116.481488",call());assertEquals(1,calls.get());}
+ void unsuccessfulHttpNeverBecomesAnAddress(int http){status=http;result("{\"formatted_address\":\"不应接受\"}");assertEquals("39.990464,116.481488",call());assertEquals(0,calls.get());}
  @ParameterizedTest @ValueSource(booleans={false,true})
  void timeoutBoundsBothHeadersAndBody(boolean bodyDelay){delayedBody=bodyDelay;delay=4500;result("{\"formatted_address\":\"迟到地址\"}");assertTimeoutPreemptively(Duration.ofSeconds(4),()->assertEquals("39.990464,116.481488",call()));}
- @Test void nearestResidentialPoiWinsUnsortedAndInvalidDistancesAreIgnored(){result("{\"addressComponent\":{\"province\":\"省\",\"city\":\"市\"},\"pois\":[{\"tag\":\"住宅区\",\"name\":\"远\",\"distance\":100},{\"tag\":\"住宅区\",\"name\":\"非法\",\"distance\":-1},{\"tag\":\"内部楼栋\",\"name\":\"近\",\"distance\":0,\"direction\":\"内\"}]}");assertEquals("省市近",call());}
- @Test void addressPriorityAndEmptyPoiFallback(){result("{\"pois\":[null,{\"tag\":\"住宅区\",\"name\":\"无距离\"}],\"formatted_address_poi\":\"兴趣点地址\",\"formatted_address\":\"街道地址\"}");assertEquals("兴趣点地址",call());}
+ @Test void nearestResidentialPoiWinsUnsortedAndInvalidDistancesAreIgnored(){result("{\"addressComponent\":{\"province\":\"省\",\"city\":\"市\"},\"pois\":[{\"tag\":\"住宅区\",\"name\":\"远\",\"distance\":100},{\"tag\":\"住宅区\",\"name\":\"非法\",\"distance\":-1},{\"tag\":\"内部楼栋\",\"name\":\"近\",\"distance\":0,\"direction\":\"内\"}]}");assertEquals("省市近",ReflectionTestUtils.invokeMethod(geo,"buildAddressFromResult",com.alibaba.fastjson2.JSON.parseObject(body).getJSONObject("result")));}
+ @Test void addressPriorityAndEmptyPoiFallback(){result("{\"pois\":[null,{\"tag\":\"住宅区\",\"name\":\"无距离\"}],\"formatted_address_poi\":\"兴趣点地址\",\"formatted_address\":\"街道地址\"}");assertEquals("兴趣点地址",ReflectionTestUtils.invokeMethod(geo,"buildAddressFromResult",com.alibaba.fastjson2.JSON.parseObject(body).getJSONObject("result")));}
  @Test void invalidCoordinatesNeverReachHttp(){assertThrows(RuntimeException.class,()->geo.reverseGeocode("NaN","0"));assertFalse(geo.testBaiduAk("181","0").isSuccess());assertEquals(0,calls.get());}
 }

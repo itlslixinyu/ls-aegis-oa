@@ -297,23 +297,38 @@ const handleMulDelete = () => {
   })
 }
 // 上传
+const uploadControllers = new Set<AbortController>()
+let uploadDisposed = false
+onBeforeUnmount(() => {
+  uploadDisposed = true
+  uploadControllers.forEach((controller) => controller.abort())
+  uploadControllers.clear()
+})
 const handleUpload = (options: RequestOption) => {
   const controller = new AbortController()
+  uploadControllers.add(controller)
   ;(async function requestWrap() {
     const { onProgress, onError, onSuccess, fileItem, name = 'file' } = options
-    onProgress(20)
+    onProgress(0)
     const formData = new FormData()
     formData.append('parentPath', queryForm.parentPath ?? '/')
     formData.append(name as string, fileItem.file as Blob)
     try {
-      const res = await uploadFile(formData)
+      const res = await uploadFile(formData, {
+        signal: controller.signal,
+        onUploadProgress: (event) => {
+          if (!uploadDisposed && !controller.signal.aborted && event.total) onProgress(Math.min(99, Math.floor(event.loaded / event.total * 100)))
+        },
+      })
+      if (uploadDisposed || controller.signal.aborted) return
       Message.success('上传成功')
       onSuccess(res)
       search()
     } catch (error) {
-      onError(error)
+      if (!uploadDisposed && !controller.signal.aborted) onError(error)
     } finally {
-      mittBus.emit('file-total-refresh')
+      uploadControllers.delete(controller)
+      if (!uploadDisposed && !controller.signal.aborted) mittBus.emit('file-total-refresh')
     }
   })()
   return {

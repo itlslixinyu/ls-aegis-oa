@@ -35,7 +35,7 @@
                 <template v-else>
                   <div class="seal-source-card__badge">UP</div>
                   <div class="seal-source-card__title">点击或拖拽上传印章图片</div>
-                  <div class="seal-source-card__desc">支持 JPG、PNG、GIF 格式，最大 50MB</div>
+                  <div class="seal-source-card__desc">支持 JPG、PNG、GIF 格式，最大 10MB</div>
                 </template>
               </div>
             </template>
@@ -131,6 +131,9 @@ const formRef = ref<InstanceType<typeof GiForm>>()
 const deptOptions = ref<{ label: string, value: string }[]>([])
 const sealPreviewUrl = ref('')
 const sealPreviewOwned = ref(false)
+let disposed = false
+let imageGeneration = 0
+let pickerGeneration = 0
 const uploadFile = ref<File | null>(null)
 const selectedExtractId = ref<string | number | null>(null)
 
@@ -199,6 +202,7 @@ const columns: ColumnItem[] = reactive([
 ])
 
 const setSealPreviewUrl = (url: string, owned = true) => {
+  if (disposed && url) { if (owned) URL.revokeObjectURL(url); return }
   if (sealPreviewUrl.value && sealPreviewOwned.value) URL.revokeObjectURL(sealPreviewUrl.value)
   sealPreviewUrl.value = url
   sealPreviewOwned.value = !!url && owned
@@ -245,8 +249,8 @@ const onFileChange = (fileList: any[]) => {
     Message.error('只能上传 JPG/PNG/GIF 图片')
     return
   }
-  if (file.size / 1024 / 1024 >= 50) {
-    Message.error('图片大小不能超过 50MB')
+  if (!file.size || file.size > 10 * 1024 * 1024) {
+    Message.error('图片大小不能超过 10MB')
     return
   }
   uploadFile.value = file
@@ -255,12 +259,18 @@ const onFileChange = (fileList: any[]) => {
 }
 
 const openExtractPicker = async () => {
+  const generation = ++pickerGeneration
   extractPickerVisible.value = true
   extractListLoading.value = true
-  extractList.value.forEach((i) => i.imageUrl && URL.revokeObjectURL(i.imageUrl))
+  extractList.value.forEach((item) => {
+    if (!item.imageUrl) return
+    if (item.imageUrl === sealPreviewUrl.value) sealPreviewOwned.value = true
+    else URL.revokeObjectURL(item.imageUrl)
+  })
+  extractList.value = []
   try {
     const res = await getExtractList({ page: 1, size: 50 })
-    extractList.value = await Promise.all(
+    const images = await Promise.all(
       (res.data?.list || []).map(async (item) => {
         let imageUrl = ''
         try {
@@ -273,6 +283,11 @@ const openExtractPicker = async () => {
         }
       }),
     )
+    if (disposed || generation !== pickerGeneration) {
+      images.forEach(item => { if (item.imageUrl) URL.revokeObjectURL(item.imageUrl) })
+      return
+    }
+    extractList.value = images
   } finally {
     extractListLoading.value = false
   }
@@ -287,6 +302,8 @@ const selectFromExtract = (item: { id: string | number, imageUrl?: string }) => 
 }
 
 const reset = () => {
+  imageGeneration++
+  pickerGeneration++
   formRef.value?.formRef?.resetFields()
   resetForm()
   clearSealImage()
@@ -338,9 +355,11 @@ const onAdd = async () => {
 
 const onUpdate = async (id: string | number) => {
   reset()
+  const generation = imageGeneration
   dataId.value = id
   await loadDeptOptions()
   const { data } = await getSeal(String(id))
+  if (disposed || generation !== imageGeneration) return
   Object.assign(form, {
     ...data,
     deptId: toBizId(data.deptId),
@@ -349,17 +368,28 @@ const onUpdate = async (id: string | number) => {
   ensureSelectOpt(deptOptions.value, form.deptId, (data as any).deptName)
   try {
     const cert = await getSealCertInfo(String(id))
+    if (disposed || generation !== imageGeneration) return
     Object.assign(form, cert.data || {})
   } catch { /* ignore */ }
   if (data.sealFilePath) {
     try {
-      setSealPreviewUrl(await fetchSignImageObjectUrl(getSealImageResource(String(id))), true)
+      const url = await fetchSignImageObjectUrl(getSealImageResource(String(id)))
+      if (disposed || generation !== imageGeneration) { URL.revokeObjectURL(url); return }
+      setSealPreviewUrl(url, true)
     } catch {
       Message.error('印章图片加载失败')
     }
   }
   visible.value = true
 }
+
+onBeforeUnmount(() => {
+  disposed = true
+  imageGeneration++
+  pickerGeneration++
+  clearSealImage()
+  extractList.value.forEach(item => { if (item.imageUrl) URL.revokeObjectURL(item.imageUrl) })
+})
 
 defineExpose({ onAdd, onUpdate })
 </script>

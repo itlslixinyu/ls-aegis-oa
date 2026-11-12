@@ -82,6 +82,8 @@
         <a-col :span="24">
           <a-form-item label="合同附件">
             <PlatformFileField
+              v-if="visible"
+              ref="attachmentRef"
               v-model="form.fileId"
               :disabled="readonly"
               multiple
@@ -124,6 +126,7 @@ const emit = defineEmits<{ (e: 'save-success'): void }>()
 const { width } = useWindowSize()
 
 const visible = ref(false)
+const attachmentRef = ref<InstanceType<typeof PlatformFileField>>()
 const readonly = ref(false)
 const dataId = ref('')
 const isUpdate = computed(() => !!dataId.value && !readonly.value)
@@ -180,6 +183,7 @@ const reset = () => {
 }
 
 const save = async () => {
+  if (attachmentRef.value?.isUploading()) { Message.warning('请等待附件上传完成'); return false }
   if (readonly.value) return true
   try {
     if (!form.name || !form.unitId || form.taxInclusiveAmount == null || !form.signDate) {

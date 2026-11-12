@@ -36,14 +36,13 @@ import { getTaskList } from '@/api/engineer'
 const router = useRouter()
 const userStore = useUserStore()
 const systemStore = useSystemStore()
-const counts = ref({ WAIT_ACCEPT: 0, ACCEPTED: 0, PROCESSING: 0, WAIT_SETTLEMENT: 0, FINISHED: 0 })
+const counts = ref({ WAIT_ACCEPT: 0, ACCEPTED: 0, PROCESSING: 0, COMPLETED: 0 })
 const engineerName = computed(() => userStore.engineerInfo?.user?.nickName || userStore.engineerInfo?.user?.userName || '工程师')
 const statuses = [
   { label: '待接单', help: '查看等待接单的任务', status: 'WAIT_ACCEPT', icon: 'clock-o', tone: 'orange' },
   { label: '已接单', help: '查看已接受的任务', status: 'ACCEPTED', icon: 'todo-list-o', tone: 'blue' },
   { label: '维修中', help: '继续处理中的维修任务', status: 'PROCESSING', icon: 'setting-o', tone: 'purple' },
-  { label: '待结算', help: '查看等待结算的任务', status: 'WAIT_SETTLEMENT', icon: 'balance-list-o', tone: 'green' },
-  { label: '已完成', help: '查看已完成的维修记录', status: 'FINISHED', icon: 'completed', tone: 'gray' }
+  { label: '已完成', help: '查看已完成的维修记录', status: 'COMPLETED', icon: 'completed', tone: 'green' }
 ]
 function goTasks(status) { router.push(status ? `/engineer/tasks/status/${status}` : '/engineer/tasks') }
 onMounted(async () => {

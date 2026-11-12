@@ -1,3 +1,4 @@
+import type { AxiosRequestConfig } from 'axios'
 import http from '@/utils/http'
 import type { LabelValueState } from '@/types/global'
 import type { WeatherNowResp } from './type'
@@ -36,8 +37,8 @@ export function getWeatherNow(params?: { lat?: number, lon?: number }) {
 }
 
 /** @desc 上传文件 */
-export function upload(data: FormData) {
-  return http.post(`${BASE_URL}/file`, data)
+export function upload(data: FormData, options: Pick<AxiosRequestConfig, 'signal' | 'onUploadProgress'> = {}) {
+  return http.post(`${BASE_URL}/file`, data, options)
 }
 
 /** @desc 查询文件元数据（需登录） */

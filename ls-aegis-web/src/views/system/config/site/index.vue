@@ -145,6 +145,7 @@ const options = ref<OptionResp[]>([])
 const loading = ref(false)
 const saving = ref(false)
 const uploading = ref('')
+let uploadController: AbortController | undefined
 const editing = ref(false)
 const appStore = useAppStore()
 const query = { category: 'SITE' }
@@ -210,6 +211,8 @@ async function uploadSiteImage({ code, imageSize }: SiteField, event: Event) {
   input.value = ''
   if (!file || !imageSize || !editing.value || uploading.value || saving.value) return
   uploading.value = code
+  const controller = new AbortController()
+  uploadController = controller
   try {
     const converted = await convertSiteImage(file, imageSize).catch((error: unknown) => {
       Message.warning(error instanceof Error ? error.message : '图片转换失败，请换一张图片')
@@ -217,8 +220,8 @@ async function uploadSiteImage({ code, imageSize }: SiteField, event: Event) {
     if (!converted || !editing.value) return
     const body = new FormData()
     body.append('file', converted)
-    const { data } = await uploadFile(body)
-    if (!editing.value) return
+    const { data } = await uploadFile(body, { signal: controller.signal })
+    if (!editing.value || controller.signal.aborted) return
     if (!data?.url) {
       Message.error('上传响应未返回图片地址')
       return
@@ -255,6 +258,7 @@ function confirmReset() {
 
 onMounted(load)
 onBeforeUnmount(() => {
+  uploadController?.abort()
   editing.value = false
   for (const field of imageFields) setPreviewSource(field.code, '')
 })

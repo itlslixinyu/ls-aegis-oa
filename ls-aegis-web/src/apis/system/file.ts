@@ -1,3 +1,4 @@
+import type { AxiosRequestConfig } from 'axios'
 import type * as T from './type'
 import http from '@/utils/http'
 
@@ -7,8 +8,8 @@ const BASE_URL = '/system/file'
 const RECYCLE_URL = `${BASE_URL}/recycle`
 
 /** @desc 上传文件 */
-export function uploadFile(data: FormData) {
-  return http.post<{ url: string }>(`${BASE_URL}/upload`, data)
+export function uploadFile(data: FormData, options: Pick<AxiosRequestConfig, 'signal' | 'onUploadProgress'> = {}) {
+  return http.post<{ url: string }>(`${BASE_URL}/upload`, data, options)
 }
 
 /** @desc 查询文件列表 */

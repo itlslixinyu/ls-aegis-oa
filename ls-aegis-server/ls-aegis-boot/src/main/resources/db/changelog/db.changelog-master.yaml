@@ -283,3 +283,6 @@ databaseChangeLog:
 
   - include:
       file: db/changelog/mysql/patch_oa_copyright.sql
+
+  - include:
+      file: db/changelog/mysql/patch_oa_service_pool.sql

@@ -110,6 +110,7 @@ export async function loadBizDicts() {
 }
 
 export function getApplyStatusText(status) {
+  if (status === 'WAIT') return '等待接单'
   return applyStatusMap[status]?.text || status
 }
 

@@ -4,7 +4,7 @@
 
     <section class="profile-card"><div class="profile-avatar">{{ engineerName.slice(0, 1) }}</div><div class="profile-info"><SingleLineHeading class="profile-name" :text="engineerName" :max-size="21" /><div class="profile-no">{{ engineerDept }}</div></div></section>
 
-    <section class="profile-stats"><div class="profile-stat"><b>{{ stats.total || 0 }}</b><span>总任务</span></div><div class="profile-stat profile-stat--orange"><b>{{ stats.waitAccept || 0 }}</b><span>待接单</span></div><div class="profile-stat profile-stat--blue"><b>{{ stats.accepted || 0 }}</b><span>已接单</span></div><div class="profile-stat profile-stat--purple"><b>{{ stats.processing || 0 }}</b><span>维修中</span></div><div class="profile-stat profile-stat--green"><b>{{ stats.waitSettlement || 0 }}</b><span>待结算</span></div><div class="profile-stat profile-stat--green"><b>{{ stats.finished || 0 }}</b><span>已完成</span></div><div class="profile-stat profile-stat--gray"><b>{{ stats.closed || 0 }}</b><span>已关闭</span></div></section>
+    <section class="profile-stats"><div class="profile-stat"><b>{{ stats.total || 0 }}</b><span>总任务</span></div><div class="profile-stat profile-stat--orange"><b>{{ stats.waitAccept || 0 }}</b><span>待接单</span></div><div class="profile-stat profile-stat--blue"><b>{{ stats.accepted || 0 }}</b><span>已接单</span></div><div class="profile-stat profile-stat--purple"><b>{{ stats.processing || 0 }}</b><span>维修中</span></div><div class="profile-stat profile-stat--green"><b>{{ Number(stats.finished || 0) + Number(stats.waitSettlement || 0) }}</b><span>已完成</span></div><div class="profile-stat profile-stat--gray"><b>{{ stats.closed || 0 }}</b><span>已关闭</span></div></section>
 
     <div class="profile-spacer"></div>
 
@@ -12,7 +12,7 @@
     <div class="account-section">
       <div class="block-title">账户</div>
       <van-cell-group inset>
-        <van-cell title="修改密码" icon="lock" is-link @click="showComingSoon" />
+        <van-cell title="修改密码" icon="lock" is-link @click="router.push('/engineer/password')" />
         <van-cell title="意见反馈" icon="comment-o" is-link @click="showComingSoon" />
         <van-cell title="关于系统" icon="info-o" is-link @click="showAbout" />
         <van-cell

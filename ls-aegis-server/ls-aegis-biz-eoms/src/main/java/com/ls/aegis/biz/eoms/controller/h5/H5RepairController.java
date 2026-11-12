@@ -85,17 +85,14 @@ public class H5RepairController
         {
             Coordinates.optional(longitude, latitude);
             H5CustomerInfo authenticatedCustomer = customerSession(request);
-            if (!WatermarkUtils.isSupportedImage(file))
-            {
-                return R.fail("1", "仅支持 jpg/jpeg/png 格式的图片");
-            }
+            com.ls.aegis.biz.eoms.utils.RepairPhotoPolicy.validate(file);
             log.debug("H5现场照片上传，客户身份校验完成");
-            H5CustomerInfo customerInfo = (H5CustomerInfo) request.getAttribute(H5TokenInterceptor.ATTR_CUSTOMER_INFO);
-            String customerName = customerInfo != null ? customerInfo.getCustomerName() : null;
             WatermarkInfo info = new WatermarkInfo();
-            info.setTitle(customerName != null && !customerName.isEmpty() ? customerName
-                    : (title != null && !title.isEmpty() ? title : "现场照片"));
-            info.setTaskName(customerName != null && !customerName.isEmpty() ? customerName : taskName);
+            info.setTitle("报修资料");
+            info.setCustomerName(authenticatedCustomer.getCustomerName());
+            info.setTaskName(taskName);
+            info.setExecutorLabel("报修人");
+            info.setAddressLabel("报修地址");
             info.setExecutor(executor);
             info.setRemark(remark);
             String addr = serviceAddress != null && !serviceAddress.isEmpty() ? serviceAddress : location;

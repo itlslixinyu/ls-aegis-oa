@@ -44,7 +44,7 @@ const systemStore = useSystemStore()
 const counts = ref({ WAIT: 0, CONFIRM: 0, ORDER: 0, CANCEL: 0 })
 const customerName = computed(() => userStore.customerInfo?.customerName || userStore.customerInfo?.name || '客户')
 const statuses = [
-  { label: '待处理', help: '等待平台处理', status: 'WAIT', icon: 'clock-o', tone: 'orange' },
+  { label: '等待接单', help: '等待接单与服务安排', status: 'WAIT', icon: 'clock-o', tone: 'orange' },
   { label: '已确认', help: '查看已确认记录', status: 'CONFIRM', icon: 'passed', tone: 'blue' },
   { label: '已转工单', help: '查看维修进度', status: 'ORDER', icon: 'records-o', tone: 'green' },
   { label: '已取消', help: '查看已取消记录', status: 'CANCEL', icon: 'close', tone: 'gray' }

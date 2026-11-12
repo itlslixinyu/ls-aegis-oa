@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.eoms.mapper.repair.EngineerMaterialMapper">
+    <select id="goods" resultType="com.ls.aegis.biz.eoms.domain.h5.MaterialCatalogItem">
+        select cast(id as char) as id,goods_name as name,spec,unit from psi_goods
+        where tenant_id=#{tenant} and deleted=0 and status=1
+          and (goods_name like concat('%',#{keyword},'%') or goods_code like concat('%',#{keyword},'%'))
+        order by goods_name,id limit 30
+    </select>
+    <select id="warehouses" resultType="com.ls.aegis.biz.eoms.domain.h5.MaterialCatalogItem">
+        select cast(id as char) as id,warehouse_name as name from psi_warehouse
+        where tenant_id=#{tenant} and deleted=0 and status=1 order by is_default desc,id limit 100
+    </select>
+    <select id="good" resultType="com.ls.aegis.biz.eoms.domain.h5.MaterialCatalogItem">
+        select cast(id as char) as id,goods_name as name,spec,unit,sale_price,purchase_price from psi_goods
+        where id=#{id} and tenant_id=#{tenant} and deleted=0 and status=1
+    </select>
+    <select id="materials" resultType="com.ls.aegis.biz.eoms.domain.h5.EngineerMaterialView">
+        select cast(m.id as char) as id,m.material_name,g.spec as specification,w.warehouse_name,m.quantity,m.remark
+        from eoms_repair_material m join eoms_repair_order o on m.repair_order_id=o.id
+        left join psi_goods g on g.id=m.material_id and g.tenant_id=o.tenant_id and g.deleted=0
+        left join psi_warehouse w on w.id=m.warehouse_id and w.tenant_id=o.tenant_id and w.deleted=0
+        where o.id=#{orderId} and o.tenant_id=#{tenant} and o.del_flag='0' and m.del_flag='0' order by m.id
+    </select>
+</mapper>

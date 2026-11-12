@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 import secrets
 import subprocess
@@ -23,6 +24,8 @@ def docker(*args, check=True):
 
 def cleanup(state):
     run_id = state['runId']
+    if not re.fullmatch(r'[a-f0-9]{10}', run_id):
+        raise RuntimeError('拒绝清理运行号不匹配的隔离环境')
     # 访问失败时保留 manifest，避免丢失仍在运行的隔离环境记录。
     docker('info', '--format', '{{.ServerVersion}}')
     for cid in reversed(state.get('containers', [])):
@@ -40,6 +43,11 @@ def cleanup(state):
             if label != run_id:
                 raise RuntimeError('拒绝清理标签不匹配的网络')
             docker('network', 'rm', state['network'])
+    if state.get('h5ProxyConfig'):
+        owned = LOCAL / f'business-h5-proxy-{run_id}.conf'
+        if Path(state['h5ProxyConfig']).resolve() != owned.resolve():
+            raise RuntimeError('拒绝清理路径不匹配的代理夹具配置')
+        owned.unlink(missing_ok=True)
     MANIFEST.unlink(missing_ok=True)
 
 
@@ -48,6 +56,7 @@ def main():
     p.add_argument('--keep', action='store_true', help='保留隔离环境供复核，完成后用 --cleanup 清理')
     p.add_argument('--reuse', action='store_true')
     p.add_argument('--cleanup', action='store_true')
+    p.add_argument('--h5-proxy', action='store_true', help='密码恢复流程同时验证真实H5 Nginx代理')
     p.add_argument('--jar-dir', type=Path, default=ROOT / 'ls-aegis-server/ls-aegis-boot/target',
                    help='候选 JAR 目录；允许先验证新包，再更新开发后端')
     args = p.parse_args()
@@ -58,6 +67,8 @@ def main():
         return 0
     if args.reuse:
         state = json.loads(MANIFEST.read_text(encoding='utf-8'))
+        if args.h5_proxy and not state.get('h5Url'):
+            raise RuntimeError('当前隔离环境没有H5代理，请重新创建带--h5-proxy的环境')
     else:
         if MANIFEST.exists():
             raise RuntimeError('已有隔离环境，请使用 --reuse 或先 --cleanup')
@@ -120,6 +131,18 @@ def main():
             time.sleep(2)
         else:
             raise RuntimeError('隔离后端启动超时')
+        if args.h5_proxy:
+            config = LOCAL / f'business-h5-proxy-{run_id}.conf'
+            text = (ROOT / 'ls-aegis-h5/docker/nginx.conf').read_text(encoding='utf-8')
+            assert text.count('server ls-aegis-server:18000;') == 1
+            config.write_text(text.replace('server ls-aegis-server:18000;', 'server backend:8000;'), encoding='utf-8')
+            state['h5ProxyConfig'] = str(config)
+            MANIFEST.write_text(json.dumps(state), encoding='utf-8')
+            version = (ROOT / 'VERSION').read_text().strip()
+            state['h5Proxy'] = start('h5-proxy', '-p', '127.0.0.1::80', '--mount',
+                f'type=bind,source={config},target=/etc/nginx/conf.d/default.conf,readonly', f'ls-aegis-h5-engineer:{version}')
+            state['h5Url'] = 'http://127.0.0.1:' + docker('port', state['h5Proxy'], '80/tcp').rsplit(':', 1)[1]
+            MANIFEST.write_text(json.dumps(state), encoding='utf-8')
     print('开始隔离业务 API 测试：' + state['url'], flush=True)
     try:
         return subprocess.run(['node', str(ROOT / 'scripts/quality/business_flows.mjs')],

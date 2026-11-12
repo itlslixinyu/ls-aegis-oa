@@ -15,6 +15,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="engineerId"    column="engineer_id"    />
         <result property="customerName"    column="customer_name"    />
         <result property="engineerName"    column="engineer_name"    />
+        <result property="reportAddress" column="report_address" />
         <result property="status"    column="status"    />
         <result property="acceptTime"    column="accept_time"    />
         <result property="startTime"    column="start_time"    />
@@ -42,7 +43,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select o.id, o.order_no, o.apply_id, o.quote_id, o.customer_id, o.engineer_id,
                c.unit_name as customer_name,
                u.nickname as engineer_name,
-               a.repair_no as apply_no,
+               a.repair_no as apply_no, a.report_address,
                q.quote_no as quote_no,
                o.status, o.accept_time, o.start_time, o.finish_time, o.address,
                o.sign_in_longitude, o.sign_in_latitude, o.sign_in_address,
@@ -87,6 +88,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			<if test="status != null and status != ''">
 				AND o.status = #{status}
 			</if>
+            <if test="params.engineerCompleted == true">
+                AND o.status in ('WAIT_SETTLEMENT','FINISHED')
+            </if>
 			<if test="customerName != null and customerName != ''">
 				AND c.unit_name like concat('%', #{customerName}, '%')
 			</if>

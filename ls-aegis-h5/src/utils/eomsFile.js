@@ -10,6 +10,8 @@ const objectUrlCache = new Map()
 
 /** @type {HTMLElement | null} */
 let activePreviewEl = null
+let activePreviewCleanup = null
+let activePreviewOwner = null
 
 function extractFileId(urlOrId) {
   if (!urlOrId) return ''
@@ -135,17 +137,20 @@ export async function fetchEomsFileObjectUrl(urlOrId) {
 /**
  * 上传成功后绑定水印预览；预览失败不影响上传成功（保留本地缩略图）
  */
-export async function bindUploaderWatermarkPreview(fileItem, fileIdOrUrl) {
-  if (!fileItem || !fileIdOrUrl) return
+export async function bindUploaderWatermarkPreview(fileItem, fileIdOrUrl, isActive = () => true) {
+  if (!fileItem || !fileIdOrUrl || !isActive()) return false
   try {
     if (needsAuthFetch(fileIdOrUrl) || extractFileId(fileIdOrUrl)) {
-      fileItem.url = await fetchEomsFileObjectUrl(fileIdOrUrl)
-    } else if (fileIdOrUrl) {
-      fileItem.url = fileIdOrUrl
+      const url = await fetchEomsFileObjectUrl(fileIdOrUrl)
+      if (!isActive()) { releaseEomsFileObjectUrl(fileIdOrUrl); return false }
+      fileItem.url = url
+      return true
     }
-  } catch (e) {
-    console.warn('水印图预览失败，已保留本地缩略图', e)
+    if (isActive()) fileItem.url = fileIdOrUrl
+  } catch {
+    // Keep the local thumbnail; the upload itself has already succeeded.
   }
+  return false
 }
 
 /** 释放一次 ObjectURL 引用（refs 归零时 revoke） */
@@ -190,9 +195,11 @@ export function revokeObjectUrls(urls) {
 }
 
 function closeActivePreview() {
-  if (!activePreviewEl) return
   const el = activePreviewEl
-  activePreviewEl = null
+  const cleanup = activePreviewCleanup
+  activePreviewEl = null; activePreviewCleanup = null; activePreviewOwner = null
+  cleanup?.()
+  if (!el) return
   el.classList.add('eoms-img-preview--closing')
   const onDone = () => {
     el.removeEventListener('transitionend', onDone)
@@ -205,7 +212,7 @@ function closeActivePreview() {
 /**
  * 自建全屏预览：绕开 Vant ImagePreview 竖图 width:auto;height:100% 在 WebView 下压成细白条的问题。
  */
-function mountEomsImagePreview(images, startIndex, onClose) {
+function mountEomsImagePreview(images, startIndex, onClose, owner) {
   closeActivePreview()
 
   let index = startIndex
@@ -235,11 +242,7 @@ function mountEomsImagePreview(images, startIndex, onClose) {
     indexEl.style.display = images.length > 1 ? 'block' : 'none'
   }
 
-  const destroy = () => {
-    document.removeEventListener('keydown', onKey)
-    closeActivePreview()
-    onClose?.()
-  }
+  const destroy = () => closeActivePreview()
 
   const onKey = (e) => {
     if (e.key === 'Escape') destroy()
@@ -282,6 +285,8 @@ function mountEomsImagePreview(images, startIndex, onClose) {
 
   document.body.appendChild(root)
   activePreviewEl = root
+  activePreviewOwner = owner
+  activePreviewCleanup = () => { document.removeEventListener('keydown', onKey); onClose?.() }
   requestAnimationFrame(() => root.classList.add('eoms-img-preview--open'))
   render()
 }
@@ -289,15 +294,21 @@ function mountEomsImagePreview(images, startIndex, onClose) {
 /**
  * 带鉴权大图预览（自建全屏层，避免 Vant 竖图细条）
  */
-export async function openEomsImagePreview(urls, startIndex = 0) {
+export async function openEomsImagePreview(urls, startIndex = 0, options = {}) {
   const list = Array.isArray(urls) ? urls : [urls]
   if (!list.length) return
   const resolved = await resolveEomsPhotoList(list)
   const images = resolved.filter(Boolean)
+  if (options.isActive && !options.isActive()) { releaseEomsPhotoList(list); return }
   if (!images.length) return
-  const safeIndex = Math.min(Math.max(0, startIndex), images.length - 1)
+  const selected = resolved[Math.min(Math.max(0, startIndex), resolved.length - 1)]
+  const safeIndex = selected ? Math.max(0, images.indexOf(selected)) : 0
   mountEomsImagePreview(images, safeIndex, () => {
     // 关闭动画后再释放，避免白条/残影
     setTimeout(() => releaseEomsPhotoList(list), 500)
-  })
+  }, options.owner)
+}
+
+export function closeEomsImagePreview(owner) {
+  if (owner === undefined || owner === activePreviewOwner) closeActivePreview()
 }

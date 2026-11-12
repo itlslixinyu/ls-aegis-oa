@@ -11,6 +11,6 @@
 | [数据与密钥](operations/data-and-recovery.md) | 持久化边界、备份关系与恢复顺序 |
 | [接口与数据一致性](architecture/contracts.md) | 身份、授权、响应、幂等及文件访问契约 |
 | [Android应用架构](../android-demo/README.md) | 双端模块、WebView入口和平台对接 |
-| [版本说明](releases/1.0.0.md) | 当前版本范围与升级要求 |
+| [版本说明](releases/1.2.0.md) | 当前版本范围与升级要求 |
 
 工程协作规范由根[AGENTS.md](../AGENTS.md)路由；数据库受限迁移和国密模块的专项说明在相关源码目录就近维护。

@@ -1,6 +1,18 @@
 // 工程师构建专用页面，身份及接口仍使用平台共用底座。
 export default [
   {
+    path: '/engineer/pool',
+    name: 'EngineerPool',
+    component: () => import('@/views/engineer/Pool.vue'),
+    meta: { title: '工单池', requireAuth: true, role: 'engineer' }
+  },
+  {
+    path: '/engineer/password',
+    name: 'EngineerPassword',
+    component: () => import('@/views/engineer/Password.vue'),
+    meta: { title: '修改密码', requireAuth: true, role: 'engineer' }
+  },
+  {
     path: '/engineer/todos',
     name: 'EngineerTodos',
     component: () => import('@/views/engineer/Todos.vue'),

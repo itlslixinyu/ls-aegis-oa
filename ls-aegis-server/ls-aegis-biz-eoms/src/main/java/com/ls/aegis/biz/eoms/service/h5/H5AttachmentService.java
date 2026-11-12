@@ -89,6 +89,10 @@ public class H5AttachmentService {
         var clean = new RepairApply();
         clean.setCustomerId(customer.getCustomerId()); clean.setTenantId(customer.getTenantId()); clean.setDeptId(dept); clean.setCreateUser(0L);
         clean.setContactName(name); clean.setContactPhone(phone);
+        String address = supplied.getReportAddress() == null ? "" : supplied.getReportAddress().trim();
+        if (address.length() > 500) throw new ServiceException("报修地址最多500字");
+        clean.setReportAddress(address);
+
         clean.setFaultType(faultType); clean.setFaultDesc(description); clean.setUrgentLevel(urgent);
         clean.setPhotos(String.join(",", ids)); clean.setRemark(supplied.getRemark());
         clean.setStatus("WAIT"); clean.setDelFlag("0"); clean.setSource("H5"); clean.setCreateBy("H5客户"); clean.setApplyTime(new Date());

@@ -7,7 +7,7 @@
     </section>
     <section class="profile-stats">
       <div class="profile-stat profile-stat--total"><b>{{ stats.total || 0 }}</b><span>全部报修</span></div>
-      <div class="profile-stat profile-stat--wait"><b>{{ stats.wait || 0 }}</b><span>待处理</span></div>
+      <div class="profile-stat profile-stat--wait"><b>{{ stats.wait || 0 }}</b><span>等待接单</span></div>
       <div class="profile-stat profile-stat--confirm"><b>{{ stats.confirm || 0 }}</b><span>已确认</span></div>
       <div class="profile-stat profile-stat--order"><b>{{ stats.order || 0 }}</b><span>已转工单</span></div>
       <div class="profile-stat profile-stat--cancel"><b>{{ stats.cancel || 0 }}</b><span>已取消</span></div>
@@ -95,7 +95,7 @@ async function loadStats() {
 }
 
 function goRepairs() {
-  router.push('/customer/repairs')
+  router.push('/customer/repairs/all')
 }
 
 function goApply() {
@@ -103,11 +103,11 @@ function goApply() {
 }
 
 function goWaitRepairs() {
-  router.push({ path: '/customer/repairs', query: { status: 'WAIT' } })
+  router.push('/customer/repairs/status/WAIT')
 }
 
 function goOrderRepairs() {
-  router.push({ path: '/customer/repairs', query: { status: 'ORDER' } })
+  router.push('/customer/repairs/status/ORDER')
 }
 
 function showAbout() {

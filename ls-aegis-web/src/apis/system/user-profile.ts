@@ -1,10 +1,11 @@
+import type { AxiosRequestConfig } from 'axios'
 import http from '@/utils/http'
 
 const BASE_URL = '/user/profile'
 
 /** @desc 上传头像 */
-export function uploadAvatar(data: FormData) {
-  return http.patch(`${BASE_URL}/avatar`, data)
+export function uploadAvatar(data: FormData, options: Pick<AxiosRequestConfig, 'signal'> = {}) {
+  return http.patch(`${BASE_URL}/avatar`, data, options)
 }
 
 /** @desc 修改用户基本信息 */

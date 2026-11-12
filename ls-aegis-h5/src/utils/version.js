@@ -1,3 +1,4 @@
 import { version } from '../../package.json'
 
-export const APP_VERSION = version
+// Display the installed shell version; release builds keep platform and both apps synchronized.
+export const APP_VERSION = globalThis.navigator?.userAgent?.match(/\bLSAegisApp\/(\d+\.\d+\.\d+)(?=\s|$)/)?.[1] || version

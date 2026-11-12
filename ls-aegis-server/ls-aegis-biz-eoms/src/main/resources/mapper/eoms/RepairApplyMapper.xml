@@ -10,6 +10,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="customerId"    column="customer_id"    />
         <result property="customerNo"    column="customer_no"    />
         <result property="customerName"    column="customer_name"    />
+        <result property="reportAddress" column="report_address" />
         <result property="contactName"    column="contact_name"    />
         <result property="contactPhone"    column="contact_phone"    />
         <result property="faultType"    column="fault_type"    />
@@ -33,7 +34,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectRepairApplyVo">
-        select a.id, a.repair_no, a.customer_id, a.contact_name, a.contact_phone, a.fault_type, a.fault_desc,
+        select a.id, a.repair_no, a.customer_id, a.report_address, a.contact_name, a.contact_phone, a.fault_type, a.fault_desc,
                a.photos, a.urgent_level, a.contract_id, a.status, a.apply_time, a.source,
                a.create_by, a.create_user, a.create_time, a.update_by, a.update_time, a.remark, a.del_flag,
                a.tenant_id, a.dept_id,
@@ -99,7 +100,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="(" suffix=")" suffixOverrides=",">
 			<if test="repairNo != null and repairNo != ''">repair_no,</if>
 			<if test="customerId != null">customer_id,</if>
-			<if test="contactName != null and contactName != ''">contact_name,</if>
+			<if test="reportAddress != null">report_address,</if>
+            <if test="contactName != null and contactName != ''">contact_name,</if>
 			<if test="contactPhone != null and contactPhone != ''">contact_phone,</if>
 			<if test="faultType != null and faultType != ''">fault_type,</if>
 			<if test="faultDesc != null and faultDesc != ''">fault_desc,</if>
@@ -122,7 +124,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="values (" suffix=")" suffixOverrides=",">
 			<if test="repairNo != null and repairNo != ''">#{repairNo},</if>
 			<if test="customerId != null">#{customerId},</if>
-			<if test="contactName != null and contactName != ''">#{contactName},</if>
+			<if test="reportAddress != null">#{reportAddress},</if>
+            <if test="contactName != null and contactName != ''">#{contactName},</if>
 			<if test="contactPhone != null and contactPhone != ''">#{contactPhone},</if>
 			<if test="faultType != null and faultType != ''">#{faultType},</if>
 			<if test="faultDesc != null and faultDesc != ''">#{faultDesc},</if>
@@ -149,6 +152,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <set>
             <if test="repairNo != null and repairNo != ''">repair_no = #{repairNo},</if>
             <if test="customerId != null">customer_id = #{customerId},</if>
+            <if test="reportAddress != null">report_address = #{reportAddress},</if>
             <if test="contactName != null and contactName != ''">contact_name = #{contactName},</if>
             <if test="contactPhone != null and contactPhone != ''">contact_phone = #{contactPhone},</if>
             <if test="faultType != null and faultType != ''">fault_type = #{faultType},</if>
@@ -185,5 +189,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update eoms_repair_apply set status='CONFIRM', update_time=CURRENT_TIMESTAMP
         where id=#{id} and del_flag='0' and status='ORDER'
         and not exists (select 1 from eoms_repair_order where apply_id=#{id} and del_flag='0')
+    </update>
+    <update id="transitionStatus">
+        update eoms_repair_apply set status=#{apply.status},update_by=#{apply.updateBy},update_time=CURRENT_TIMESTAMP
+        <if test="apply.remark != null">,remark=#{apply.remark}</if>
+        where id=#{apply.id} and del_flag='0' and status=#{expected}
     </update>
 </mapper>

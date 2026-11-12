@@ -17,11 +17,11 @@
       <van-cell title="工单状态">
         <template #value>
           <van-tag :type="getTagType(order.status)" size="medium">
-            {{ getOrderStatusText(order.status) }}
+            {{ getEngineerStatusText(order.status) }}
           </van-tag>
         </template>
       </van-cell>
-      <van-cell title="维修地址" :value="order.address || '-'" />
+      <van-cell v-if="order.reportAddress" title="报修地址" :value="order.reportAddress" />
       <van-cell title="接单时间" :value="formatDateTime(order.acceptTime)" />
       <van-cell title="开始时间" :value="formatDateTime(order.startTime)" />
       <van-cell v-if="order.signInAddress" title="签到地址">
@@ -68,7 +68,7 @@
             <span v-if="order.status === 'WAIT_ACCEPT'" class="action-tip">待接单</span>
             <span v-else-if="order.status === 'ACCEPTED'" class="action-tip">已接单，请开始维修</span>
             <span v-else-if="order.status === 'PROCESSING'" class="action-tip">维修中，可提交记录或完成维修</span>
-            <span v-else-if="order.status === 'WAIT_SETTLEMENT'" class="action-tip">已完成，待结算</span>
+            <span v-else-if="order.status === 'WAIT_SETTLEMENT'" class="action-tip">维修已完成</span>
             <span v-else-if="order.status === 'FINISHED'" class="action-tip">工单已完成</span>
             <span v-else-if="order.status === 'CLOSED'" class="action-tip">工单已关闭</span>
           </template>
@@ -85,15 +85,9 @@
         <van-button round block type="primary" @click="onStart" :loading="actionLoading">开始维修</van-button>
       </div>
 
-      <!-- 提交记录 + 完成维修按钮 -->
-      <div v-if="order.status === 'PROCESSING'" class="btn-row" :class="{ double: !records.length }">
-        <van-button v-if="!records.length" round type="default" @click="goRecord">提交维修记录</van-button>
-        <van-button round block type="success" @click="onFinish" :loading="actionLoading">完成维修</van-button>
-      </div>
-
       <!-- 尚无记录时可补充入口（已接单/维修中） -->
       <div
-        v-if="!records.length && (order.status === 'ACCEPTED' || order.status === 'PROCESSING')"
+        v-if="!records.length && order.status === 'PROCESSING'"
         class="btn-row"
       >
         <van-button round block plain type="primary" @click="goRecord">
@@ -107,7 +101,7 @@
       <div class="block-title">
         维修记录（{{ records.length }}条）
         <van-button
-          v-if="!records.length && (order.status === 'ACCEPTED' || order.status === 'PROCESSING')"
+          v-if="!records.length && order.status === 'PROCESSING'"
           size="mini"
           type="primary"
           plain
@@ -135,6 +129,7 @@
               <div v-if="record.checkProcess"><span class="rec-label">检测过程：</span>{{ record.checkProcess }}</div>
               <div v-if="record.solution"><span class="rec-label">解决方案：</span>{{ record.solution }}</div>
               <div v-if="record.result"><span class="rec-label">维修结果：</span>{{ record.result }}</div>
+              <div v-if="record.remark"><span class="rec-label">备注：</span>{{ record.remark }}</div>
               <!-- 维修中照片 -->
                 <div v-if="getPhotoList(record.processingPhotoUrls || record.processingPhotos).length" class="record-photos">
                 <div class="photo-label">维修中照片：</div>
@@ -173,6 +168,12 @@
       </van-cell-group>
     </div>
 
+    <RepairMaterialsSummary v-if="order.id" :order-id="order.id" />
+    <section v-if="order.status === 'PROCESSING'" class="action-section finish-section">
+      <p class="action-tip">请核对维修记录、使用配件和照片后再完成维修</p>
+      <van-button round block type="success" :disabled="!records.length" :loading="actionLoading" @click="onFinish">完成维修</van-button>
+      <p v-if="!records.length" class="action-tip">请先填写并提交维修记录</p>
+    </section>
     <div class="bottom-space"></div>
 
     <!-- 操作弹窗（接单/签到/签退） -->
@@ -193,9 +194,8 @@
             <p class="sign-sub">请确保已开启定位权限</p>
           </div>
         </div>
-        <!-- 备注（接单/完成维修保留，开始维修去除） -->
+        <!-- 操作备注随本次接单、签到或签退提交 -->
         <van-field
-          v-if="currentAction !== 'start'"
           v-model="actionRemark"
           type="textarea"
           label="操作备注"
@@ -211,10 +211,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { getEngineerStatusText } from '@/utils/engineerStatus'
+import { ref, computed, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showSuccessToast, showFailToast } from 'vant'
 import EomsAuthImage from '@/components/EomsAuthImage.vue'
+import RepairMaterialsSummary from '@/components/RepairMaterialsSummary.vue'
 import { openEomsImagePreview } from '@/utils/eomsFile'
 import {
   getTaskDetail,
@@ -222,9 +224,10 @@ import {
   startTask,
   finishTask
 } from '@/api/engineer'
-import { getOrderStatusText, formatDateTime, orderStatusMap } from '@/utils/dict'
+import { formatDateTime, orderStatusMap } from '@/utils/dict'
 import { toBizId } from '@/utils/biz-id'
 import { getCurrentPosition } from '@/utils/geolocation'
+import { getNativeAddress } from '@/utils/nativeAddress'
 
 const route = useRoute()
 const router = useRouter()
@@ -235,6 +238,8 @@ const actionLoading = ref(false)
 const showRemarkDialog = ref(false)
 const actionRemark = ref('')
 const currentAction = ref('') // accept / start / finish
+let pageActive = true
+onBeforeUnmount(() => { pageActive = false })
 
 const remarkDialogTitle = ref('')
 
@@ -251,10 +256,12 @@ function getLocation() {
       return
     }
     getCurrentPosition(
-      (position) => {
+      async (position) => {
+        const location = await getNativeAddress(position)
         resolve({
           longitude: String(position.coords.longitude.toFixed(6)),
-          latitude: String(position.coords.latitude.toFixed(6))
+          latitude: String(position.coords.latitude.toFixed(6)),
+          location
         })
       },
       (err) => {
@@ -342,6 +349,7 @@ function onFinish() {
 /** 操作弹窗关闭前回调 */
 async function beforeRemarkClose(action) {
   if (action !== 'confirm') return true
+  if (!pageActive || actionLoading.value) return false
   actionLoading.value = true
   try {
     const id = order.value.id
@@ -357,7 +365,8 @@ async function beforeRemarkClose(action) {
         showFailToast('签到失败：无法获取定位，请检查定位权限后重试')
         return false
       }
-      res = await startTask(id, '', loc.longitude, loc.latitude)
+      if (!pageActive) return false
+      res = await startTask(id, actionRemark.value, loc.longitude, loc.latitude, loc.location)
     } else if (currentAction.value === 'finish') {
       // 签退：先获取定位，失败则阻止提交
       let loc
@@ -367,14 +376,15 @@ async function beforeRemarkClose(action) {
         showFailToast('签退失败：无法获取定位，请检查定位权限后重试')
         return false
       }
-      res = await finishTask(id, actionRemark.value, loc.longitude, loc.latitude)
+      if (!pageActive) return false
+      res = await finishTask(id, actionRemark.value, loc.longitude, loc.latitude, loc.location)
     }
     // 拦截器已保证成功才 resolve（平台 R code===0）
     if (res) {
       const actionText = {
         accept: '接单成功',
         start: '签到成功，已开始维修',
-        finish: '签退成功，已完成维修，等待结算'
+        finish: '签退成功，维修已完成'
       }[currentAction.value]
       showSuccessToast(actionText)
       await loadDetail()

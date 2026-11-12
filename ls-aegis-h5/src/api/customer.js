@@ -70,7 +70,9 @@ export function uploadWithWatermark(file, options = {}) {
   return request({
     url: '/eoms/h5/repair/upload',
     method: 'post',
-    data: formData
+    data: formData,
+    signal: options.signal,
+    onUploadProgress: options.onUploadProgress
   })
 }
 

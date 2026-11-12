@@ -124,6 +124,6 @@ public class OrderCancellationTransactionTest {
     }
 
     @ParameterizedTest @ValueSource(longs={6,7,8,9,999}) void assignmentRejectsDisabledNonEngineerDeletedForeignTenantAndMissingUsers(long target){db.update("update eoms_repair_order set status='WAIT_ACCEPT'");assertThrows(RuntimeException.class,()->orders.assignEngineer(10L,target,"invalid engineer"));assertEquals("WAIT_ACCEPT",visible().getStatus());assertNull(visible().getEngineerId());}
-    @Test void assignmentToAnEnabledEngineerUsesExactUserKeyAndSucceeds(){db.update("update eoms_repair_order set status='WAIT_ACCEPT'");assertEquals(1,orders.assignEngineer(10L,5L,"valid engineer"));assertEquals("ACCEPTED",visible().getStatus());assertEquals(5L,visible().getEngineerId());}
+    @Test void assignmentToAnEnabledEngineerUsesExactUserKeyAndSucceeds(){db.update("update eoms_repair_order set status='WAIT_ACCEPT'");assertEquals(1,orders.assignEngineer(10L,5L,"valid engineer"));assertEquals("WAIT_ACCEPT",visible().getStatus());assertNull(visible().getAcceptTime());assertEquals(5L,visible().getEngineerId());}
 
 }

@@ -98,7 +98,7 @@ public interface IRepairOrderService
 
     /**
      * 开始维修（ACCEPTED → PROCESSING）含签到位置
-     * 工程师签到时记录经纬度，后端逆地理编码为中文地址一并入库
+     * 工程师签到时记录经纬度；中文地址由手机系统提供，无地址时回退坐标
      *
      * @param orderId   工单ID
      * @param remark    备注（可选）
@@ -107,6 +107,9 @@ public interface IRepairOrderService
      * @return 结果
      */
     public int startProcess(Long orderId, String remark, String longitude, String latitude);
+
+    /** 签到位置与手机系统解析地址，兼容原坐标入口。 */
+    public int startProcess(Long orderId, String remark, String longitude, String latitude, String location);
 
     /**
      * 提交结算（PROCESSING → WAIT_SETTLEMENT）
@@ -120,7 +123,7 @@ public interface IRepairOrderService
 
     /**
      * 提交结算（PROCESSING → WAIT_SETTLEMENT）含签退位置
-     * 工程师签退时记录经纬度，后端逆地理编码为中文地址一并入库
+     * 工程师签退时记录经纬度；中文地址由手机系统提供，无地址时回退坐标
      *
      * @param orderId   工单ID
      * @param remark    备注（可选）
@@ -129,6 +132,9 @@ public interface IRepairOrderService
      * @return 结果
      */
     public int submitSettlement(Long orderId, String remark, String longitude, String latitude);
+
+    /** 签退位置与手机系统解析地址，兼容原坐标入口。 */
+    public int submitSettlement(Long orderId, String remark, String longitude, String latitude, String location);
 
     /**
      * 关闭工单（FINISHED → CLOSED）

@@ -59,6 +59,13 @@ export const useUserStore = defineStore('user', () => {
     localStorage.removeItem('engineer_info')
   }
 
+  /** Update this identity's metadata without replacing its authenticated session. */
+  function updateEngineerInfo(info) {
+    if (!engineerToken.value) return
+    engineerInfo.value = info
+    localStorage.setItem('engineer_info', JSON.stringify(info))
+  }
+
   return {
     h5Token,
     customerInfo,
@@ -71,6 +78,7 @@ export const useUserStore = defineStore('user', () => {
     setH5Token,
     clearH5Token,
     setEngineerToken,
+    updateEngineerInfo,
     clearEngineerToken
   }
 })

@@ -48,8 +48,9 @@ const prefix = `ITLS-TEST-${Date.now()}`
 const date = new Date().toISOString().slice(0, 19).replace('T', ' ')
 const results = []
 const ids = {}
-async function request(path, { method = 'GET', data, token, headers = {}, reject = false } = {}) {
-  const response = await fetch(state.url + path, {
+async function request(path, { method = 'GET', data, token, headers = {}, reject = false, base = state.url } = {}) {
+  assert.ok(base === state.url || (state.h5Url && base === state.h5Url), 'Only the owned fixture backend/proxy is supported')
+  const response = await fetch(base + path, {
     method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...headers },
     body: data === undefined ? undefined : JSON.stringify(data), signal: AbortSignal.timeout(30000),
   })
@@ -288,6 +289,7 @@ if (ids.order) {
   await test('EOMS-01', async () => {
     await request(`/eoms/repair/order/submit/${ids.order}`, { method: 'PUT', token: admin, reject: true })
     await request(`/eoms/repair/order/assign/${ids.order}?engineerId=${userId.engineer}`, { method: 'PUT', token: admin })
+    await request(`/eoms/engineer/accept/${ids.order}`, { method: 'POST', token: engineer })
     await request(`/eoms/engineer/task/${ids.order}`, { token: other, reject: true })
     await request(`/eoms/engineer/start/${ids.order}?longitude=116.4&latitude=39.9`, { method: 'POST', token: engineer })
     await request('/eoms/engineer/record', { method: 'POST', token: engineer, data: { repairOrderId: ids.order,
@@ -327,6 +329,7 @@ if (ids.order) {
     const orderId = await create('/eoms/repair/order', { customerId: ids.customer, remark: marker,
       faultDesc: marker, address: '隔离测试地址' }, 'eoms_repair_order', 'remark', marker)
     await request(`/eoms/repair/order/assign/${orderId}?engineerId=${userId.engineer}`, { method: 'PUT', token: admin })
+    await request(`/eoms/engineer/accept/${orderId}`, { method: 'POST', token: engineer })
     await request(`/eoms/engineer/start/${orderId}?longitude=116.4&latitude=39.9`, { method: 'POST', token: engineer })
     await request('/eoms/engineer/record', { method: 'POST', token: engineer,
       data: { repairOrderId: orderId, faultReason: marker, checkProcess: '检查', solution: '修复', result: '已修复' } })
@@ -479,13 +482,40 @@ if (ids.customer2) await test('EOMS-01-CUSTOMER-H5', async () => {
   await request(`/eoms/repair/apply/toOrder/${apply.id}`, { method: 'PUT', token: admin, data: {} })
   const h5Order = sql(`SELECT id FROM eoms_repair_order WHERE apply_id=${apply.id} AND del_flag='0'`)
   assert.match(h5Order, /^\d+$/)
+  // RepairApply has no persisted address field; compare the actual work-order site,
+  // rather than assuming an unknown JSON field submitted above was persisted.
+  const originalServiceAddress = sql(`SELECT address FROM eoms_repair_order WHERE id=${h5Order}`)
   await request(`/eoms/repair/order/assign/${h5Order}?engineerId=${userId.engineer}`, { method: 'PUT', token: admin })
-  await request(`/eoms/engineer/start/${h5Order}?longitude=116.4&latitude=39.9`, { method: 'POST', token: engineer })
+  await request(`/eoms/engineer/accept/${h5Order}`, { method: 'POST', token: engineer })
+  const attendanceAddress = { start: '河北省廊坊市合成签到地点', finish: '河北省廊坊市合成签退地点' }
+  await request(`/eoms/engineer/start/${h5Order}?${new URLSearchParams({ longitude: '116.4', latitude: '39.9', location: attendanceAddress.start, remark: '合成签到备注' })}`, { method: 'POST', token: engineer })
+  assert.equal(sql(`SELECT sign_in_address FROM eoms_repair_order WHERE id=${h5Order}`), attendanceAddress.start)
+  assert.equal(sql(`SELECT address FROM eoms_repair_order WHERE id=${h5Order}`), originalServiceAddress)
+  assert.ok(sql(`SELECT remark FROM eoms_repair_order WHERE id=${h5Order}`).includes('合成签到备注'))
+  const repairPhotos = {}
+  for (const photoType of ['processing', 'completed']) {
+    const form = new FormData()
+    form.set('file', new Blob([syntheticPng()], { type: 'image/png' }), `synthetic-${photoType}.png`)
+    form.set('orderId', h5Order); form.set('photoType', photoType)
+    const image = await upload('/eoms/engineer/upload', form, { token: engineer })
+    assert.match(String(image.fileId), /^[1-9][0-9]*$/)
+    repairPhotos[photoType] = String(image.fileId)
+    const preview = await fetch(state.url + `/eoms/file/preview/${image.fileId}`, { headers: { Authorization: `Bearer ${engineer}` } })
+    assert.equal(preview.status, 200)
+    const bytes = new Uint8Array(await preview.arrayBuffer())
+    assert.ok(bytes.length > 0 && bytes[0] === 255 && bytes[1] === 216, '维修照片应回显为有效水印JPEG')
+  }
   await request('/eoms/engineer/record', { method: 'POST', token: engineer, data: { repairOrderId: h5Order,
-    faultReason: '测试客户报修', checkProcess: '检查', solution: '修复', result: '完成' } })
+    faultReason: '测试客户报修', checkProcess: '检查', solution: '修复', result: '完成',
+    processingPhotos: repairPhotos.processing, completedPhotos: repairPhotos.completed } })
+  assert.equal(sql(`SELECT processing_photos FROM eoms_repair_record WHERE repair_order_id=${h5Order} AND del_flag='0'`), repairPhotos.processing)
+  assert.equal(sql(`SELECT completed_photos FROM eoms_repair_record WHERE repair_order_id=${h5Order} AND del_flag='0'`), repairPhotos.completed)
   await request('/eoms/repair/material', { method: 'POST', token: admin, data: { repairOrderId: h5Order,
     materialId: ids.goods, warehouseId: ids.warehouse, materialName: '测试材料', quantity: 1, salePrice: 150, costPrice: 100 } })
-  await request(`/eoms/engineer/finish/${h5Order}?longitude=116.4&latitude=39.9`, { method: 'POST', token: engineer })
+  await request(`/eoms/engineer/finish/${h5Order}?${new URLSearchParams({ longitude: '116.4', latitude: '39.9', location: attendanceAddress.finish, remark: '合成签退备注' })}`, { method: 'POST', token: engineer })
+  assert.equal(sql(`SELECT sign_in_address FROM eoms_repair_order WHERE id=${h5Order}`), attendanceAddress.start)
+  assert.equal(sql(`SELECT sign_out_address FROM eoms_repair_order WHERE id=${h5Order}`), attendanceAddress.finish)
+  assert.equal(sql(`SELECT address FROM eoms_repair_order WHERE id=${h5Order}`), originalServiceAddress)
   await request('/eoms/h5/repair/confirm', { method: 'POST', headers: { 'h5-token': first }, data: { orderId: h5Order } })
   const h5Settlement = sql(`SELECT id FROM eoms_repair_settlement WHERE repair_order_id=${h5Order} AND del_flag='0'`)
   await request(`/eoms/repair/settlement/confirm/${h5Settlement}`, { method: 'PUT', token: admin })
@@ -496,7 +526,7 @@ if (ids.customer2) await test('EOMS-01-CUSTOMER-H5', async () => {
   await request(`/eoms/h5/repair/detail/${apply.id}`, { headers: { 'h5-token': first }, reject: true })
   await request('/eoms/h5/auth/logout', { method: 'POST', headers: { 'h5-token': second } })
   return { applyId: String(apply.id), orderId: h5Order, finalOrderStatus: 'CLOSED', forgedCustomerIgnored: true, crossCustomerRejected: true,
-    tokenRevoked: true, captcha: 'API 测试从专用 Redis 读取正确答案；未覆盖图像交互' }
+    tokenRevoked: true, repairPhotoGroupsPersisted: 2, watermarkedPhotoPreview: true, independentAttendanceAddresses: true, signInRemarkPersisted: true, captcha: 'API 测试从专用 Redis 读取正确答案；未覆盖图像交互' }
 })
 if (admin && ids.warehouse) await test('PSI-CASH-SUMMARY-01', async () => {
   const evidence = []
@@ -649,7 +679,116 @@ if (admin && other) await test('NOTICE-COUNT-01', async () => {
   assert.equal(Number((await request(`${root}/notice/unread`, { token: admin })).total), Number(noticeBefore.total) + 1)
   return { messageRecipients: 2, groupedTotalsAndMissingTypes: true, foreignReadExcluded: true, readRetryReadAllAndPersonalDeletion: true, noticeRecipientAndPublishedState: true }
 })
-for (const id of ['AUTH-01', 'AUTH-02-CONTEXT-ISOLATION', 'FIXTURE-01', 'PSI-01', 'PSI-02', 'PSI-BANK-01', 'PSI-CASH-SUMMARY-01', 'PSI-03-WORKBENCH', 'PSI-IMPORT-BATCH-01', 'NOTICE-COUNT-01', 'QUOTE-01', 'QUOTE-02-INDEPENDENT',
+if (admin && ids.customer) await test('ENGINEER-PASSWORD-RECOVERY', async () => {
+  const mobile = (path, options = {}) => request(path, { ...options, base: state.h5Url || state.url })
+  const key = await mobile('/auth/gm/public-key')
+  const encrypt = value => { const text = sm2.doEncrypt(value, key.publicKeyHex, 1); return text.startsWith('04') ? text : '04' + text }
+  const initial = 'Aa3!' + randomBytes(10).toString('hex'), updated = 'Bb4!' + randomBytes(10).toString('hex')
+  const username = `password_${state.runId}`
+  const roleId = sql("SELECT id FROM sys_role WHERE code='eoms_engineer' AND deleted=0 LIMIT 1")
+  const adminInfo = await mobile(`/system/user/${userId.admin}`, { token: admin })
+  const created = await mobile('/system/user', { method: 'POST', token: admin, data: {
+    username, nickname: '合成初始密码工程师', password: encrypt(initial), gender: 0, deptId: adminInfo.deptId, roleIds: [roleId], status: 1
+  } })
+  assert.ok(created.id); assert.equal(created.generated, false)
+  const clientId = sql('SELECT client_id FROM sys_client WHERE status=1 ORDER BY id LIMIT 1')
+  const signIn = async value => (await mobile('/auth/login', { method: 'POST', data: { username, password: encrypt(value), authType: 'ACCOUNT', clientId } })).token
+  const token = await signIn(initial)
+  assert.equal((await mobile('/auth/user/info', { token })).pwdExpired, true)
+  const denied = await mobile('/eoms/engineer/tasks?page=1&size=10', { token, reject: true })
+  assert.match(denied.msg, /密码已过期/)
+  const profileDenied = await mobile('/eoms/engineer/profile', { token, reject: true }); assert.match(profileDenied.msg, /密码已过期/)
+  await request('/eoms/repair/order', { method: 'POST', token: admin, data: { customerId: ids.customer, status: 'WAIT_ACCEPT', address: `${prefix}-password-site` } })
+  const orderId = sql(`SELECT id FROM eoms_repair_order WHERE address='${prefix}-password-site' AND del_flag='0'`)
+  assert.match(orderId, /^\d+$/)
+  await request(`/eoms/repair/order/assign/${orderId}?engineerId=${created.id}`, { method: 'PUT', token: admin })
+  const wrong = await mobile('/user/profile/password', { method: 'PATCH', token, data: { oldPassword: encrypt('Wrong1!synthetic'), newPassword: encrypt(updated) }, reject: true })
+  assert.match(wrong.msg, /当前密码不正确/)
+  await mobile('/user/profile/password', { method: 'PATCH', token, data: { oldPassword: encrypt(initial), newPassword: encrypt(updated) } })
+  assert.equal(String((await mobile('/auth/user/info', { token, reject: true })).code), '401')
+  const next = await signIn(updated)
+  assert.equal((await mobile('/auth/user/info', { token: next })).pwdExpired, false)
+  assert.equal(sql(`SELECT status FROM eoms_repair_order WHERE id=${orderId}`), 'WAIT_ACCEPT')
+  await mobile(`/eoms/engineer/accept/${orderId}`, {method:'POST',token:next})
+  const tasks = await mobile('/eoms/engineer/tasks?page=1&size=10&status=ACCEPTED', { token: next })
+  assert.ok(tasks.list.some(order => String(order.id) === String(orderId)))
+  const profile = await mobile('/eoms/engineer/profile', { token: next }); assert.equal(Number(profile.accepted), 1)
+  assert.equal(sql(`SELECT status FROM eoms_repair_order WHERE id=${orderId}`), 'ACCEPTED')
+  await mobile('/auth/logout', { method: 'POST', token: next })
+  return { normalUserApi: true, realH5NginxProxy: Boolean(state.h5Url), expiredTasksAndProfileRejected: true, wrongOldPasswordRejected: true, selfServiceChangeAvailableWhileExpired: true, oldSessionRevoked: true, newLoginRestoresAssignedTasks: true, acceptedCount: 1, explicitEngineerAcceptanceVerified: true }
+})
+await test('EOMS-POOL-UPGRADE',async()=>{
+  const database='ls_aegis_upgrade_'+state.runId
+  sql(`CREATE DATABASE ${database} CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci; CREATE TABLE ${database}.eoms_repair_apply(id bigint primary key,tenant_id bigint,status varchar(32),apply_time datetime,del_flag char(1),customer_id bigint,marker varchar(80)); INSERT INTO ${database}.eoms_repair_apply VALUES(1,0,'WAIT',NOW(),'0',1,'retained-application');`)
+  for(let round=0;round<2;round++){
+    const report=resolve('.local',`service-pool-upgrade-${state.runId}-${round}.json`)
+    const run=spawnSync('python',['-X','utf8','scripts/apply-service-pool-upgrade.py','--container',state.mysql,'--database',database,'--apply','--report',report],{encoding:'utf8',timeout:90000})
+    assert.equal(run.status,0,run.stderr);const result=JSON.parse(readFileSync(report,'utf8'));assert.equal(result.neededStatements,round===0?2:0);assert.equal(result.existingRowsAfter,1)
+  }
+  assert.equal(sql(`SELECT marker FROM ${database}.eoms_repair_apply WHERE id=1`),'retained-application')
+  return {oldSchemaUpgrade:true,repeatNoOp:true,existingRowPreserved:true,additiveOnly:true}
+})
+if (ids.customer && ids.goods && ids.warehouse && engineer && other) await test('EOMS-POOL-MATERIALS', async () => {
+  const oldTime = new Intl.DateTimeFormat('sv-SE', { timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false }).format(new Date(Date.now()-11*60*1000))
+  const makeApply = async (suffix, applyTime) => create('/eoms/repair/apply', {
+    customerId:ids.customer,contactName:'合成报修人',contactPhone:'13800000000',faultType:'设备故障',faultDesc:prefix+'-'+suffix,
+    reportAddress:'合成报修地址', ...(applyTime ? {applyTime} : {})
+  },'eoms_repair_apply','fault_desc',prefix+'-'+suffix)
+  const young=await makeApply('pool-young')
+  await request(`/eoms/engineer/pool/${young}/claim`,{method:'POST',token:engineer,reject:true})
+  const open=await makeApply('pool-open',oldTime)
+  const listed=await request('/eoms/engineer/pool?page=1&size=10',{token:engineer})
+  assert.ok(listed.list.some(item=>String(item.applyId)===open));assert.ok(!listed.list.some(item=>String(item.applyId)===young))
+  const item=listed.list.find(item=>String(item.applyId)===open);assert.equal(item.contactPhone,undefined);assert.equal(item.photos,undefined)
+  await request('/eoms/engineer/pool?page=1&size=10',{token:admin,reject:true})
+  const claim=async token=>{const r=await fetch((state.h5Url||state.url)+`/eoms/engineer/pool/${open}/claim`,{method:'POST',headers:{Authorization:`Bearer ${token}`},signal:AbortSignal.timeout(30000)});return r.json()}
+  const outcomes=await Promise.all([claim(engineer),claim(other)])
+  assert.equal(outcomes.filter(body=>body.success).length,1)
+  const winner=outcomes[0].success?engineer:other,loser=winner===engineer?other:engineer
+  const orderId=String(outcomes.find(body=>body.success).data.orderId)
+  assert.equal(Number(sql(`SELECT COUNT(*) FROM eoms_repair_order WHERE apply_id=${open} AND del_flag='0'`)),1)
+  assert.equal(sql(`SELECT status FROM eoms_repair_apply WHERE id=${open}`),'ORDER')
+  assert.equal(String((await request(`/eoms/engineer/pool/${open}/claim`,{method:'POST',token:winner})).orderId),orderId)
+  await request(`/eoms/engineer/task/${orderId}`,{token:loser,reject:true})
+  await request(`/eoms/repair/apply/cancel/${open}`,{method:'PUT',token:admin,reject:true})
+  const detail=await request(`/eoms/engineer/task/${orderId}`,{token:winner});assert.equal(detail.order.reportAddress,'合成报修地址')
+  await request(`/eoms/engineer/start/${orderId}?longitude=116.4&latitude=39.9`,{method:'POST',token:winner})
+  const options=await request(`/eoms/engineer/task/${orderId}/material-options`,{token:winner})
+  assert.ok(options.goods.some(g=>String(g.id)===String(ids.goods)))
+  for(const good of options.goods){assert.equal(good.salePrice,undefined);assert.equal(good.purchasePrice,undefined)}
+  await request(`/eoms/engineer/task/${orderId}/material-options`,{token:loser,reject:true})
+  const record={repairOrderId:orderId,faultReason:'合成原因',checkProcess:'合成检测过程',solution:'更换测试配件',result:'合成修复结果',materials:[{materialId:ids.goods,warehouseId:ids.warehouse,quantity:1,remark:'合成安装说明'}]}
+  const stock=sql(`SELECT SUM(remain_quantity) FROM psi_stock_batch WHERE warehouse_id=${ids.warehouse} AND goods_id=${ids.goods}`)
+  await request('/eoms/engineer/record',{method:'POST',token:winner,data:{...record,materials:[{...record.materials[0],warehouseId:'9223372036854775806'}]},reject:true})
+  assert.equal(Number(sql(`SELECT COUNT(*) FROM eoms_repair_record WHERE repair_order_id=${orderId} AND del_flag='0'`)),0)
+  assert.equal(Number(sql(`SELECT COUNT(*) FROM eoms_repair_material WHERE repair_order_id=${orderId} AND del_flag='0'`)),0)
+  await request('/eoms/engineer/record',{method:'POST',token:winner,data:record})
+  await request('/eoms/engineer/record',{method:'POST',token:winner,data:record,reject:true})
+  const materials=await request(`/eoms/engineer/task/${orderId}/materials`,{token:winner})
+  assert.equal(materials.length,1);assert.equal(Number(materials[0].quantity),1);assert.equal(materials[0].salePrice,undefined);assert.equal(materials[0].costPrice,undefined)
+  assert.equal(sql(`SELECT SUM(remain_quantity) FROM psi_stock_batch WHERE warehouse_id=${ids.warehouse} AND goods_id=${ids.goods}`),stock)
+  await request(`/eoms/engineer/finish/${orderId}?longitude=116.4&latitude=39.9`,{method:'POST',token:winner})
+  const completed=await request('/eoms/engineer/tasks?page=1&size=100&serviceCompleted=true',{token:winner})
+  assert.ok(completed.list.some(task=>String(task.id)===orderId));assert.equal(sql(`SELECT status FROM eoms_repair_order WHERE id=${orderId}`),'WAIT_SETTLEMENT')
+  // Compete with ordinary back-office operations, using only synthetic reports.
+  const cancelApply=await makeApply('pool-cancel-race',oldTime)
+  const raw=async(path,token,method)=>{const response=await fetch(state.url+path,{method,headers:{Authorization:`Bearer ${token}`},signal:AbortSignal.timeout(30000)});return response.json()}
+  const cancelRace=await Promise.all([raw(`/eoms/engineer/pool/${cancelApply}/claim`,engineer,'POST'),raw(`/eoms/repair/apply/cancel/${cancelApply}`,admin,'PUT')])
+  assert.equal(cancelRace.filter(body=>body.success).length,1)
+  if(cancelRace[0].success){assert.equal(sql(`SELECT status FROM eoms_repair_apply WHERE id=${cancelApply}`),'ORDER');assert.equal(Number(sql(`SELECT COUNT(*) FROM eoms_repair_order WHERE apply_id=${cancelApply} AND del_flag='0'`)),1)}
+  else {assert.equal(sql(`SELECT status FROM eoms_repair_apply WHERE id=${cancelApply}`),'CANCEL');assert.equal(Number(sql(`SELECT COUNT(*) FROM eoms_repair_order WHERE apply_id=${cancelApply} AND del_flag='0'`)),0)}
+  const dispatchApply=await makeApply('pool-dispatch-race',oldTime)
+  await request(`/eoms/repair/apply/confirm/${dispatchApply}`,{method:'PUT',token:admin})
+  await request(`/eoms/repair/apply/toOrder/${dispatchApply}`,{method:'PUT',token:admin,data:{}})
+  const dispatchOrder=sql(`SELECT id FROM eoms_repair_order WHERE apply_id=${dispatchApply} AND del_flag='0'`)
+  const dispatchRace=await Promise.all([raw(`/eoms/engineer/pool/${dispatchApply}/claim`,other,'POST'),raw(`/eoms/repair/order/assign/${dispatchOrder}?engineerId=${userId.engineer}`,admin,'PUT')])
+  assert.equal(dispatchRace[0].success,true)
+  assert.equal(sql(`SELECT engineer_id FROM eoms_repair_order WHERE id=${dispatchOrder}`),userId.other)
+  assert.equal(sql(`SELECT status FROM eoms_repair_order WHERE id=${dispatchOrder}`),'ACCEPTED')
+  assert.equal(Number(sql(`SELECT COUNT(*) FROM eoms_repair_order WHERE apply_id=${dispatchApply} AND del_flag='0'`)),1)
+  return {beforeTenMinutesRejected:true,unconfirmedAutoEligible:true,concurrentClaimWinners:1,claimVsCancelSingleWinner:true,claimVsDispatchKeepsActualAcceptingEngineer:true,retryCreatesNoDuplicates:true,contactsHiddenBeforeClaim:true,loserCannotReadTask:true,cancelAfterClaimRejected:true,reportAddressPreserved:true,invalidWarehouseRollsBackRecordAndMaterials:true,materialRetryRejected:true,noPrematureStockChange:true,engineerCompletedRetainsBackendSettlement:true}
+})
+for (const id of ['EOMS-POOL-UPGRADE', 'EOMS-POOL-MATERIALS', 'ENGINEER-PASSWORD-RECOVERY', 'AUTH-01', 'AUTH-02-CONTEXT-ISOLATION', 'FIXTURE-01', 'PSI-01', 'PSI-02', 'PSI-BANK-01', 'PSI-CASH-SUMMARY-01', 'PSI-03-WORKBENCH', 'PSI-IMPORT-BATCH-01', 'NOTICE-COUNT-01', 'QUOTE-01', 'QUOTE-02-INDEPENDENT',
   'EOMS-01', 'EOMS-02-X-01', 'EOMS-03-STOCK-ROLLBACK', 'SIGN-01-AUTH', 'SIGN-01-SIGNATURE', 'EOMS-01-CUSTOMER-H5']) {
   if (!results.some(r => r.id === id)) blocked(id, '上游测试数据或身份前置未完成')
 }

@@ -72,6 +72,8 @@ public class RepairApplyServiceImpl implements IRepairApplyService
     @Transactional(rollbackFor = Exception.class)
     public int insertRepairApply(RepairApply repairApply)
     {
+        if (repairApply.getReportAddress() != null && repairApply.getReportAddress().length() > 500)
+            throw new ServiceException("报修地址最多500字");
         // 自动生成报修编号
         if (StringUtils.isEmpty(repairApply.getRepairNo()))
         {
@@ -100,6 +102,8 @@ public class RepairApplyServiceImpl implements IRepairApplyService
     @Transactional(rollbackFor = Exception.class)
     public int updateRepairApply(RepairApply repairApply)
     {
+        if (repairApply != null && repairApply.getReportAddress() != null && repairApply.getReportAddress().length() > 500)
+            throw new ServiceException("报修地址最多500字");
         if (repairApply == null || selectRepairApplyById(repairApply.getId()) == null)
             throw new ServiceException("报修申请不存在或无权访问");
         RepairApply current = repairApplyMapper.lockApply(repairApply.getId());
@@ -163,7 +167,8 @@ public class RepairApplyServiceImpl implements IRepairApplyService
         after.setStatus(EomsConstants.APPLY_STATUS_CONFIRM);
         after.setUpdateBy(getCurrentUsername());
         after.setRemark(remark);
-        int rows = repairApplyMapper.updateRepairApply(after);
+        int rows = repairApplyMapper.transitionStatus(after, oldStatus);
+        if (rows != 1) throw new ServiceException("报修状态已变更，请刷新后重试");
         return rows;
     }
 
@@ -184,7 +189,8 @@ public class RepairApplyServiceImpl implements IRepairApplyService
         after.setStatus(EomsConstants.APPLY_STATUS_CANCEL);
         after.setUpdateBy(getCurrentUsername());
         after.setRemark(remark);
-        int rows = repairApplyMapper.updateRepairApply(after);
+        int rows = repairApplyMapper.transitionStatus(after, oldStatus);
+        if (rows != 1) throw new ServiceException("报修状态已变更，请刷新后重试");
         return rows;
     }
 
@@ -214,7 +220,8 @@ public class RepairApplyServiceImpl implements IRepairApplyService
         after.setStatus(EomsConstants.APPLY_STATUS_CANCEL);
         after.setUpdateBy(getCurrentUsername());
         after.setRemark(reason);
-        int rows = repairApplyMapper.updateRepairApply(after);
+        int rows = repairApplyMapper.transitionStatus(after, oldStatus);
+        if (rows != 1) throw new ServiceException("报修状态已变更，请刷新后重试");
         return rows;
     }
 

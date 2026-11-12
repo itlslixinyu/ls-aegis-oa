@@ -1000,6 +1000,7 @@ CREATE TABLE IF NOT EXISTS `eoms_repair_apply` (
   id              bigint(20)      NOT NULL AUTO_INCREMENT COMMENT '主键',
   repair_no       varchar(32)     NOT NULL                COMMENT '报修编号，唯一',
   customer_id     bigint(20)      NOT NULL                COMMENT '客户ID，关联 psi_unit.id',
+  report_address  varchar(500)    DEFAULT NULL            COMMENT '客户提交的报修地址，独立于签到签退地址',
   contact_name    varchar(50)     DEFAULT NULL            COMMENT '联系人姓名',
   contact_phone   varchar(30)     DEFAULT NULL            COMMENT '联系电话',
   fault_type      varchar(32)     DEFAULT NULL            COMMENT '故障类型',
@@ -1025,7 +1026,8 @@ CREATE TABLE IF NOT EXISTS `eoms_repair_apply` (
   KEY idx_status (status),
   KEY idx_urgent_level (urgent_level),
   KEY idx_apply_time (apply_time),
-  KEY idx_source (source)
+  KEY idx_source (source),
+  KEY idx_apply_pool (tenant_id,status,apply_time,del_flag)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='报修申请表';
 
 -- ---------- 5.3 维修模块 ----------

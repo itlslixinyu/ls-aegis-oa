@@ -77,10 +77,17 @@ class ApplyOrderCompensationTest {
         ReflectionTestUtils.setField(service, "repairApplyMapper", applies);
         var current = new RepairApply(); current.setId(2L); current.setStatus("CONFIRM");
         doReturn(current).when(service).selectRepairApplyById(2L);
-        when(applies.updateRepairApply(any())).thenReturn(1);
+        when(applies.transitionStatus(any(),eq("CONFIRM"))).thenReturn(1);
         assertEquals(1, service.closeApply(2L, "  customer cancelled  "));
-        verify(applies).updateRepairApply(argThat(a -> a.getId().equals(2L)
-            && "CANCEL".equals(a.getStatus()) && "customer cancelled".equals(a.getRemark())));
+        verify(applies).transitionStatus(argThat(a -> a.getId().equals(2L)
+            && "CANCEL".equals(a.getStatus()) && "customer cancelled".equals(a.getRemark())),eq("CONFIRM"));
+    }
+    @Test void concurrentClaimPreventsStaleCancellationWrite() {
+        var service=spy(new RepairApplyServiceImpl());ReflectionTestUtils.setField(service,"repairApplyMapper",applies);
+        var current=new RepairApply();current.setId(2L);current.setStatus("WAIT");doReturn(current).when(service).selectRepairApplyById(2L);
+        when(applies.transitionStatus(any(),eq("WAIT"))).thenReturn(0);
+        assertThrows(ServiceException.class,()->service.cancelApply(2L,"stale cancellation"));
+        verify(applies,never()).updateRepairApply(any());
     }
     @Test void reasonDoesNotPermitClosingApplicationThatAlreadyBecameOrder() {
         var service = spy(new RepairApplyServiceImpl());
