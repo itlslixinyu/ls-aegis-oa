@@ -5287,6 +5287,22 @@ CREATE TABLE IF NOT EXISTS psi_stock_mutation_lock (
 UPDATE sys_option SET default_value='/brand-logo.png' WHERE code='SITE_LOGO';
 UPDATE sys_option SET default_value='/favicon.png' WHERE code='SITE_FAVICON';
 
+-- 同公司多成员账号与报修提交人；历史无提交人的记录仅公司管理员可见。
+
+ALTER TABLE eoms_h5_customer_credential
+ DROP PRIMARY KEY,
+ ADD COLUMN id bigint NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST,
+ ADD COLUMN display_name varchar(50) NOT NULL DEFAULT '',
+ ADD COLUMN account_role varchar(16) NOT NULL DEFAULT 'MEMBER',
+ ADD COLUMN status tinyint NOT NULL DEFAULT 1,
+ ADD COLUMN auth_version bigint NOT NULL DEFAULT 1,
+ ADD KEY idx_h5_member_customer(tenant_id,customer_id);
+UPDATE eoms_h5_customer_credential SET display_name=login_name,account_role='ADMIN';
+
+ALTER TABLE eoms_repair_apply ADD COLUMN reporter_account_id bigint NULL,
+ ADD COLUMN reporter_name varchar(50) NULL,
+ ADD KEY idx_repair_member(tenant_id,customer_id,reporter_account_id,del_flag);
+
 -- 部署健康检查标记：仅当本文件整份执行完才出现，供 docker-compose MySQL healthcheck 使用
 CREATE TABLE IF NOT EXISTS `_itls_init_done` (
   `id` tinyint NOT NULL PRIMARY KEY,

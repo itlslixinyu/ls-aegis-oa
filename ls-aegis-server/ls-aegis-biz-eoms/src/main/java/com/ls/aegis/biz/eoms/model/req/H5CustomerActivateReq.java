@@ -15,6 +15,9 @@ public class H5CustomerActivateReq {
     @Pattern(regexp = "[A-Za-z][A-Za-z0-9._-]{3,31}", message = "用户名需为4-32位字母开头的字母、数字或 . _ -")
     private String username;
 
+    @Size(max = 50, message = "姓名最多50字")
+    private String displayName;
+
     @NotBlank(message = "密码不能为空")
     @Size(max = 2048, message = "加密密码格式不正确")
     private String password;

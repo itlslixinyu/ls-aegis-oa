@@ -34,6 +34,13 @@ public class RepairApply extends XmlMapperDO implements EomsDataScopeHelper.Dept
     private String repairNo;
 
     @NotNull(message = "客户不能为空")
+    private Long reporterAccountId;
+    private String reporterName;
+    public Long getReporterAccountId() { return reporterAccountId; }
+    public void setReporterAccountId(Long value) { reporterAccountId = value; }
+    public String getReporterName() { return reporterName; }
+    public void setReporterName(String value) { reporterName = value; }
+
     private Long customerId;
 
     /** 关联客户编号（非持久化，JOIN psi_unit 查询用于显示） */

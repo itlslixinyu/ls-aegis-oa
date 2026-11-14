@@ -96,7 +96,7 @@ public class EomsFileController {
         if (cn.hutool.core.util.StrUtil.isNotBlank(h5Token)) {
             var customer = h5TokenService.validateToken(h5Token);
             if (customer != null && cn.hutool.core.util.StrUtil.isNotBlank(customer.getCustomerNo())) {
-                return FileAccessContext.forH5Customer(customer.getTenantId(), customer.getCustomerId(), customer.getCustomerNo());
+                return FileAccessContext.forH5Member(customer.getTenantId(), customer.getCustomerId(), customer.getCustomerNo(), customer.getAccountId(), customer.isCompanyAdmin());
             }
             return null;
         }

@@ -10,6 +10,14 @@ import lombok.Getter;
 public class FileAccessContext {
 
     private final Long userId;
+    private Long h5AccountId;
+    private boolean h5CompanyAdmin;
+    public Long getH5AccountId() { return h5AccountId; }
+    public boolean isH5CompanyAdmin() { return h5CompanyAdmin; }
+    public static FileAccessContext forH5Member(Long tenantId, Long customerId, String customerNo, Long accountId, boolean companyAdmin) {
+        var context = forH5Customer(tenantId, customerId, customerNo);
+        context.h5AccountId = accountId; context.h5CompanyAdmin = companyAdmin; return context;
+    }
     private final String h5CustomerNo;
     private final Long h5TenantId;
     private final Long h5CustomerId;

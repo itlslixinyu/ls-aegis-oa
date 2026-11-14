@@ -25,7 +25,7 @@ public class H5AttachmentService {
     private final EomsFileAccessMapper accessMapper;
 
     private Long activeDept(H5CustomerInfo customer) {
-        if (customer == null || customer.getTenantId() == null || customer.getCustomerId() == null) throw new ServiceException("客户会话无效");
+        if (customer == null || customer.getTenantId() == null || customer.getCustomerId() == null || customer.getAccountId() == null) throw new ServiceException("客户会话无效");
         Long dept = attachmentMapper.selectActiveCustomerDept(customer.getTenantId(), customer.getCustomerId());
         if (dept == null) throw new ServiceException("客户不存在或已停用");
         return dept;
@@ -38,7 +38,7 @@ public class H5AttachmentService {
         if (file == null || !"/eoms/repair".equals(file.getParentPath())) throw new ServiceException("上传文件不存在");
         JSONObject metadata = metadata(file);
         if (metadata.containsKey(OWNER)) throw new ServiceException("上传归属已绑定，不可覆盖");
-        metadata.set(OWNER, new JSONObject().set("tenantId", customer.getTenantId().toString()).set("customerId", customer.getCustomerId().toString()));
+        metadata.set(OWNER, new JSONObject().set("tenantId", customer.getTenantId().toString()).set("customerId", customer.getCustomerId().toString()).set("accountId", customer.getAccountId().toString()));
         if (attachmentMapper.bindUpload(fileId, file.getMetadata(), metadata.toString()) != 1) throw new ServiceException("上传归属写入失败，请重新上传");
     }
 
@@ -53,8 +53,12 @@ public class H5AttachmentService {
         activeDept(customer);
         if (file == null || file.getId() == null || (file.getDeleted() != null && file.getDeleted() != 0L)) return false;
         JSONObject owner = metadata(file).getJSONObject(OWNER);
-        if (owner != null) return customer.getTenantId().toString().equals(owner.getStr("tenantId")) && customer.getCustomerId().toString().equals(owner.getStr("customerId"));
-        return accessMapper.countByOwnerAndFileId(customer.getTenantId(), customer.getCustomerId(), file.getId()) > 0;
+        if (owner != null) {
+            if (!customer.getTenantId().toString().equals(owner.getStr("tenantId")) || !customer.getCustomerId().toString().equals(owner.getStr("customerId"))) return false;
+            if (customer.isCompanyAdmin() || customer.getAccountId().toString().equals(owner.getStr("accountId"))) return true;
+        }
+        if (customer.isCompanyAdmin()) return accessMapper.countByOwnerAndFileId(customer.getTenantId(), customer.getCustomerId(), file.getId()) > 0;
+        return accessMapper.countByMemberAndFileId(customer.getTenantId(), customer.getCustomerId(), customer.getAccountId(), file.getId()) > 0;
     }
 
     public RepairApply prepareNewApply(H5CustomerInfo customer, RepairApply supplied) {
@@ -88,6 +92,7 @@ public class H5AttachmentService {
         }
         var clean = new RepairApply();
         clean.setCustomerId(customer.getCustomerId()); clean.setTenantId(customer.getTenantId()); clean.setDeptId(dept); clean.setCreateUser(0L);
+        clean.setReporterAccountId(customer.getAccountId()); clean.setReporterName(customer.getDisplayName());
         clean.setContactName(name); clean.setContactPhone(phone);
         String address = supplied.getReportAddress() == null ? "" : supplied.getReportAddress().trim();
         if (address.length() > 500) throw new ServiceException("报修地址最多500字");
@@ -95,7 +100,7 @@ public class H5AttachmentService {
 
         clean.setFaultType(faultType); clean.setFaultDesc(description); clean.setUrgentLevel(urgent);
         clean.setPhotos(String.join(",", ids)); clean.setRemark(supplied.getRemark());
-        clean.setStatus("WAIT"); clean.setDelFlag("0"); clean.setSource("H5"); clean.setCreateBy("H5客户"); clean.setApplyTime(new Date());
+        clean.setStatus("WAIT"); clean.setDelFlag("0"); clean.setSource("H5"); clean.setCreateBy(customer.getLoginName()); clean.setApplyTime(new Date());
         return clean;
     }
 

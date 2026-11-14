@@ -71,6 +71,9 @@ public class H5RepairController
     @Autowired
     private com.ls.aegis.biz.eoms.service.h5.H5AttachmentService h5AttachmentService;
 
+    @Autowired
+    private com.ls.aegis.biz.eoms.service.h5.H5CustomerScope customerScope;
+
     /**
      * H5 端带水印图片上传
      */
@@ -93,7 +96,7 @@ public class H5RepairController
             info.setTaskName(taskName);
             info.setExecutorLabel("报修人");
             info.setAddressLabel("报修地址");
-            info.setExecutor(executor);
+            info.setExecutor(authenticatedCustomer.getDisplayName());
             info.setRemark(remark);
             String addr = serviceAddress != null && !serviceAddress.isEmpty() ? serviceAddress : location;
             if ((addr == null || addr.isEmpty()) && longitude != null && !longitude.isEmpty()
@@ -177,20 +180,17 @@ public class H5RepairController
     public R<PageResp<RepairApply>> todos(HttpServletRequest request, @Valid PageQuery pageQuery)
     {
         H5CustomerInfo session = customerSession(request);
-        return R.ok(PageQueryHelper.page(pageQuery, () -> customerConfirmationService.pendingConfirmations(
-            session.getTenantId(), session.getCustomerId())));
+        return R.ok(PageQueryHelper.page(pageQuery, () -> customerConfirmationService.pendingConfirmations(session)));
     }
 
     @GetMapping("/list")
     public R<PageResp<RepairApply>> list(HttpServletRequest request, RepairApply query, @Valid PageQuery pageQuery)
     {
-        Long customerId = (Long) request.getAttribute(H5TokenInterceptor.ATTR_CUSTOMER_ID);
-        if (customerId == null)
-        {
-            return R.ok(PageQueryHelper.toPageResp(new ArrayList<>()));
-        }
-        query.setCustomerId(customerId);
-        return R.ok(PageQueryHelper.page(pageQuery, () -> repairApplyService.selectRepairApplyList(query)));
+        H5CustomerInfo session = customerSession(request);
+        RepairApply scoped = new RepairApply(); scoped.setCustomerId(session.getCustomerId()); scoped.setStatus(query.getStatus());
+        scoped.getParams().put("h5TenantId", session.getTenantId());
+        if (!session.isCompanyAdmin()) scoped.setReporterAccountId(session.getAccountId());
+        return R.ok(PageQueryHelper.page(pageQuery, () -> repairApplyService.selectRepairApplyList(scoped)));
     }
 
     /**
@@ -205,6 +205,7 @@ public class H5RepairController
         {
             return R.fail("1", "用户未登录或会话已过期");
         }
+        customerScope.requireApply(session, id);
         RepairApply apply = repairApplyService.selectRepairApplyById(id);
         if (apply == null || !customerId.equals(apply.getCustomerId()) || !session.getTenantId().equals(apply.getTenantId()))
         {
@@ -258,7 +259,7 @@ public class H5RepairController
             return R.fail("1", "工单ID格式不合法");
         }
         String remark = body.get("remark") == null ? null : String.valueOf(body.get("remark"));
-        return R.ok(customerConfirmationService.confirm(session.getTenantId(), customerId, orderId, remark));
+        return R.ok(customerConfirmationService.confirm(session, orderId, remark));
     }
     private H5CustomerInfo customerSession(HttpServletRequest request) {
         H5CustomerInfo info = (H5CustomerInfo) request.getAttribute(H5TokenInterceptor.ATTR_CUSTOMER_INFO);
@@ -267,6 +268,7 @@ public class H5RepairController
         if (info == null || info.getCustomerId() == null || info.getTenantId() == null
                 || !info.getCustomerId().equals(customerId) || !info.getTenantId().equals(tenantId))
             throw new com.ls.aegis.compat.common.exception.ServiceException("客户会话无效或已过期，请重新登录");
+        customerScope.requireIdentity(info);
         return info;
     }
 

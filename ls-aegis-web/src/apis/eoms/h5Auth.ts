@@ -4,6 +4,8 @@ const BASE_URL = '/eoms/admin/h5/auth'
 
 /** H5 在线客户令牌 */
 export interface H5OnlineTokenResp {
+  loginName?: string
+  displayName?: string
   customerId: string
   customerNo: string
   customerName: string
@@ -37,6 +39,23 @@ export interface H5InvitationResp {
   customerId: string
 }
 
-export function issueH5Invitation(customerId: string) {
-  return http.post<H5InvitationResp>(`${BASE_URL}/invitations`, { customerId })
+export function issueH5Invitation(customerId: string, options: { accountRole?: 'ADMIN' | 'MEMBER', resetAccountId?: string } = {}) {
+  return http.post<H5InvitationResp>(`${BASE_URL}/invitations`, { customerId, ...options })
+}
+
+export interface H5CustomerMember {
+  id: string
+  customerId: string
+  loginName: string
+  displayName: string
+  accountRole: 'ADMIN' | 'MEMBER'
+  status: 0 | 1
+}
+export function listH5CustomerMembers(customerId: string) {
+  return http.get<H5CustomerMember[]>(`${BASE_URL}/customers/${customerId}/members`)
+}
+export function updateH5CustomerMember(customerId: string, member: H5CustomerMember) {
+  return http.put(`${BASE_URL}/customers/${customerId}/members/${member.id}`, {
+    displayName: member.displayName, accountRole: member.accountRole, status: member.status,
+  })
 }

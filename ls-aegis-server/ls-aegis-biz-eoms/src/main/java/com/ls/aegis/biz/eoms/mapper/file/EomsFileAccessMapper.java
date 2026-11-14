@@ -14,6 +14,10 @@ public interface EomsFileAccessMapper {
     @com.baomidou.mybatisplus.annotation.InterceptorIgnore(tenantLine = "true")
     int countByOwnerAndFileId(@Param("tenantId") Long tenantId, @Param("customerId") Long customerId, @Param("fileId") Long fileId);
 
+    @com.baomidou.mybatisplus.annotation.InterceptorIgnore(tenantLine = "true", dataPermission = "true")
+    int countByMemberAndFileId(@Param("tenantId") Long tenantId, @Param("customerId") Long customerId,
+        @Param("accountId") Long accountId, @Param("fileId") Long fileId);
+
     /**
      * 文件是否属于指定客户编号的业务数据。
      */

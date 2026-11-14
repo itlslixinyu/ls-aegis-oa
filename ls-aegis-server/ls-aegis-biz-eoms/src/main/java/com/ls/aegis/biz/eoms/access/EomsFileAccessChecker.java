@@ -28,8 +28,9 @@ public class EomsFileAccessChecker implements FileAccessChecker {
         }
         Long fileId = file.getId();
         if (StrUtil.isNotBlank(context.getH5CustomerNo())) {
-            if (context.getH5TenantId() == null || context.getH5CustomerId() == null) return false;
-            return eomsFileAccessMapper.countByOwnerAndFileId(context.getH5TenantId(), context.getH5CustomerId(), fileId) > 0;
+            if (context.getH5TenantId() == null || context.getH5CustomerId() == null || context.getH5AccountId() == null) return false;
+            return context.isH5CompanyAdmin() ? eomsFileAccessMapper.countByOwnerAndFileId(context.getH5TenantId(), context.getH5CustomerId(), fileId) > 0 :
+                eomsFileAccessMapper.countByMemberAndFileId(context.getH5TenantId(),context.getH5CustomerId(),context.getH5AccountId(),fileId) > 0;
         }
         if (context.isPlatformLogin()) {
             try {

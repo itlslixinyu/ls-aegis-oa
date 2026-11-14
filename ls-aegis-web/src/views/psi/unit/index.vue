@@ -45,19 +45,14 @@
         <a-space wrap>
           <a-link v-permission="['psi:unit:get']" @click="onSub(record)">子资料</a-link>
           <a-link v-permission="['psi:unit:update']" @click="onUpdate(record)">修改</a-link>
-          <a-link v-if="record.status === 1 && ['CUSTOMER', 'BOTH'].includes(record.unitType)" v-permission="['psi:unit:update']" @click="onInvitation(record)">客户访问码</a-link>
+          <a-link v-if="record.status === 1 && ['CUSTOMER', 'BOTH'].includes(record.unitType)" v-permission="['psi:unit:update']" @click="onInvitation(record)">App成员</a-link>
           <a-link v-permission="['psi:unit:delete']" status="danger" @click="onDelete(record)">删除</a-link>
         </a-space>
       </template>
     </BaseTable>
     <AddModal ref="AddModalRef" @save-success="search" />
     <UnitSubDrawer ref="SubDrawerRef" />
-    <a-modal v-model:visible="invitationVisible" title="签发客户激活/重置码" :footer="false" @close="clearInvitation">
-      <a-alert type="warning">仅交给「{{ invitationCustomer }}」本人。客户首次使用它设置用户名密码；忘记密码时可用新码重置并沿用原用户名。访问码十分钟内有效且只能使用一次。</a-alert>
-      <p v-if="invitationExpiresAt">本次访问码到期时间：{{ invitationExpiresAt }}</p>
-      <a-input-password :model-value="invitationCode" readonly autocomplete="off" />
-      <a-button type="primary" :disabled="!invitationCode" @click="copyText(invitationCode)">复制访问码</a-button>
-    </a-modal>
+    <CustomerMembersDrawer ref="MembersRef" />
     <PsiImportDrawer
       ref="ImportDrawerRef"
       title="导入往来单位"
@@ -97,8 +92,7 @@ import {
 import GiCellTag from '@/components/GiCell/GiCellTag.vue'
 import { useDownload, useTable } from '@/hooks'
 import { useDict } from '@/hooks/app'
-import { issueH5Invitation } from '@/apis/eoms/h5Auth'
-import { copyText } from '@/utils'
+import CustomerMembersDrawer from './CustomerMembersDrawer.vue'
 import type { LabelValueState } from '@/types/global'
 
 defineOptions({ name: 'PsiUnit' })
@@ -156,34 +150,8 @@ const onImport = () => ImportDrawerRef.value?.onOpen()
 const onExport = () => useDownload(() => exportUnit(queryForm as any))
 const onUpdate = (record: UnitResp) => AddModalRef.value?.onUpdate(record.id)
 const onSub = (record: UnitResp) => SubDrawerRef.value?.open(record.id, record.unitName)
-const invitationVisible = ref(false)
-const invitationCode = ref('')
-const invitationCustomer = ref('')
-const invitationExpiresAt = ref('')
-let invitationRequest = 0
-const clearInvitation = () => {
-  invitationRequest++
-  invitationCode.value = ''
-  invitationCustomer.value = ''
-  invitationExpiresAt.value = ''
-}
-const onInvitation = (record: UnitResp) => {
-  Modal.warning({
-    title: '签发客户激活/重置码',
-    content: `为客户「${record.unitName}」签发访问码？请通过可信方式交给该客户。`,
-    hideCancel: false,
-    onOk: async () => {
-      clearInvitation()
-      const request = invitationRequest
-      const { data } = await issueH5Invitation(record.id)
-      if (request !== invitationRequest) return
-      invitationCode.value = data.invitationCode
-      invitationCustomer.value = record.unitName
-      invitationExpiresAt.value = new Date(Date.now() + data.expiresInSeconds * 1000).toLocaleString()
-      invitationVisible.value = true
-    },
-  })
-}
+const MembersRef = ref<InstanceType<typeof CustomerMembersDrawer>>()
+const onInvitation = (record: UnitResp) => MembersRef.value?.open(record.id, record.unitName)
 const onDelete = (record: UnitResp) => {
   Modal.warning({
     title: '提示',

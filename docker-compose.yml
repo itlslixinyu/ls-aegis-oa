@@ -70,7 +70,7 @@ services:
     build:
       context: .
       dockerfile: docker/ls-aegis-server/Dockerfile.prod
-    image: ls-aegis-server:${ITLS_VERSION:-1.2.0}
+    image: ls-aegis-server:${ITLS_VERSION:-1.5.0}
     container_name: ls-aegis-server
     restart: unless-stopped
     mem_limit: 1536m
@@ -134,7 +134,7 @@ services:
     build:
       context: .
       dockerfile: docker/nginx/Dockerfile
-    image: ls-aegis-web:${ITLS_VERSION:-1.2.0}
+    image: ls-aegis-web:${ITLS_VERSION:-1.5.0}
     container_name: ls-aegis-web
     restart: unless-stopped
     mem_limit: 128m
@@ -159,7 +159,7 @@ services:
       args:
         H5_ROLE: customer
         BASE_PATH: /
-    image: ls-aegis-h5:${ITLS_VERSION:-1.2.0}
+    image: ls-aegis-h5:${ITLS_VERSION:-1.5.0}
     container_name: ls-aegis-h5
     restart: unless-stopped
     mem_limit: 128m
@@ -184,7 +184,7 @@ services:
       args:
         H5_ROLE: engineer
         BASE_PATH: /
-    image: ls-aegis-h5-engineer:${ITLS_VERSION:-1.2.0}
+    image: ls-aegis-h5-engineer:${ITLS_VERSION:-1.5.0}
     container_name: ls-aegis-h5-engineer
     restart: unless-stopped
     mem_limit: 128m

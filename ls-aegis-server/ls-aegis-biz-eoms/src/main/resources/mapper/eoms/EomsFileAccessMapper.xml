@@ -63,6 +63,16 @@
         ) t
     </select>
 
+    <select id="countByMemberAndFileId" resultType="int">
+        SELECT COUNT(*) FROM eoms_repair_apply a
+        WHERE a.tenant_id=#{tenantId} AND a.customer_id=#{customerId} AND a.reporter_account_id=#{accountId} AND a.del_flag='0'
+        AND (FIND_IN_SET(#{fileId}, REPLACE(a.photos,' ','')) &gt; 0 OR EXISTS (
+            SELECT 1 FROM eoms_repair_order o WHERE o.apply_id=a.id AND o.tenant_id=a.tenant_id AND o.customer_id=a.customer_id AND o.del_flag='0'
+            AND (FIND_IN_SET(#{fileId}, REPLACE(o.photos,' ','')) &gt; 0 OR EXISTS (
+                SELECT 1 FROM eoms_repair_record r WHERE r.repair_order_id=o.id AND r.tenant_id=o.tenant_id AND r.del_flag='0'
+                AND (FIND_IN_SET(#{fileId}, REPLACE(r.processing_photos,' ','')) &gt; 0 OR FIND_IN_SET(#{fileId}, REPLACE(r.completed_photos,' ','')) &gt; 0)))))
+    </select>
+
     <select id="countByOwnerAndFileId" resultType="int">
         SELECT COUNT(1) FROM (
             SELECT 1 FROM eoms_repair_apply a JOIN psi_unit u ON u.id=a.customer_id AND u.tenant_id=a.tenant_id

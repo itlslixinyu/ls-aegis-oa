@@ -8,7 +8,7 @@
 
 进销存 · 运维报修 · 报价管理 · 电子签章
 
-![Version](https://img.shields.io/badge/version-1.2.0-2563EB?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.5.0-2563EB?style=flat-square)
 ![Java](https://img.shields.io/badge/Java-21-E76F00?style=flat-square)
 ![Vue](https://img.shields.io/badge/Vue-3-42B883?style=flat-square)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square)
@@ -81,7 +81,7 @@ ls-aegis-oa/
 | 数据如何保存和恢复 | [数据与密钥生命周期](Docs/operations/data-and-recovery.md) |
 | 接口如何保持一致 | [接口与数据一致性](Docs/architecture/contracts.md) |
 | Android 如何接入 | [Android 应用架构](android-demo/README.md) |
-| 当前版本的交付范围 | [1.2.0 版本说明](Docs/releases/1.2.0.md) |
+| 当前版本的交付范围 | [1.5.0 版本说明](Docs/releases/1.5.0.md) |
 
 ## 部署原则
 

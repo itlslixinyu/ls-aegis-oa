@@ -7,6 +7,20 @@ package com.ls.aegis.biz.eoms.domain;
  */
 public class H5CustomerInfo
 {
+    private Long accountId;
+    private String loginName;
+    private String displayName;
+    private String accountRole;
+    public Long getAccountId() { return accountId; }
+    public void setAccountId(Long value) { accountId = value; }
+    public String getLoginName() { return loginName; }
+    public void setLoginName(String value) { loginName = value; }
+    public String getDisplayName() { return displayName; }
+    public void setDisplayName(String value) { displayName = value; }
+    public String getAccountRole() { return accountRole; }
+    public void setAccountRole(String value) { accountRole = value; }
+    public boolean isCompanyAdmin() { return "ADMIN".equals(accountRole); }
+
     private Long tenantId;
 
     public Long getTenantId() { return tenantId; }

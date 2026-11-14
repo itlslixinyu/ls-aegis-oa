@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
+import com.ls.aegis.biz.sign.utils.PdfSignatureGuard;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -354,9 +355,12 @@ public class SignExecuteServiceImpl implements ISignExecuteService {
             if (Integer.parseInt(meta.getOrDefault("pageCount", "0")) < 1) {
                 throw new IllegalArgumentException("Invalid PDF");
             }
-            boolean signaturePresent = Integer.parseInt(meta.getOrDefault("signatureCount", "0")) > 0;
+            var signatureReport = PdfSignatureGuard.inspect(bytes);
+            boolean signaturePresent = signatureReport.signatureCount() > 0;
             resp.put("signaturePresent", signaturePresent);
-            boolean valid = signaturePresent && pdfService.verifySignature(bytes);
+            boolean valid = signaturePresent && signatureReport.allSignaturesIntact()
+                && signatureReport.latestSignatureCoversWholeDocument() && pdfService.verifySignature(bytes);
+            resp.put("signatureReport", signatureReport);
             String author = meta.getOrDefault("author", "-");
             String creator = meta.getOrDefault("creator", "-");
             String producer = meta.getOrDefault("producer", "-");
@@ -411,13 +415,18 @@ public class SignExecuteServiceImpl implements ISignExecuteService {
             fp.put("compareTip", valid ? "数字签名完整性校验通过；证书信任链及撤销状态未验证"
                     : signaturePresent ? "签名完整性或签署时证书有效期校验未通过，请核实文件和证书"
                     : "文件未包含数字签名，无法验证签名完整性");
+            if (signaturePresent && signatureReport.allSignaturesIntact()
+                && !signatureReport.latestSignatureCoversWholeDocument()) {
+                fp.put("result", "存在签后未签署修改");
+                fp.put("compareTip", "历史签名完整，但最后签名未覆盖当前完整文件，请核实追加修改");
+            }
 
             // 4. 填充 CA 校验
             boolean hasCertificate = !certSerial.equals("-") && !certIssuer.equals("-");
             ca.put("result", hasCertificate ? "信任链未验证" : "缺少对比数据");
             ca.put("resultType", "warning");
             ca.put("signer", meta.getOrDefault("signer", "-"));
-            ca.put("signTime", signTime.equals("-") ? created : signTime);
+            ca.put("signTime", signTime);
             ca.put("currentFileHash", currentHash);
             ca.put("certSerial", certSerial);
             ca.put("certIssuer", certIssuer);

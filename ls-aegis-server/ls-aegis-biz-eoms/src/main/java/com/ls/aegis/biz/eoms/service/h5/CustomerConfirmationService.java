@@ -20,6 +20,21 @@ import com.ls.aegis.biz.eoms.domain.RepairApply;
 public class CustomerConfirmationService {
     private final CustomerConfirmationMapper mapper;
     private final IRepairOrderService orderService;
+    @org.springframework.beans.factory.annotation.Autowired
+    private H5CustomerScope customerScope;
+
+    @Transactional(readOnly = true)
+    public List<RepairApply> pendingConfirmations(com.ls.aegis.biz.eoms.domain.H5CustomerInfo session) {
+        customerScope.requireIdentity(session);
+        return mapper.pendingMemberConfirmations(session.getTenantId(),session.getCustomerId(),session.isCompanyAdmin() ? null : session.getAccountId());
+    }
+
+    @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
+    public CustomerConfirmationResp confirm(com.ls.aegis.biz.eoms.domain.H5CustomerInfo session, Long orderId, String remark) {
+        customerScope.requireOrder(session, orderId);
+        return confirmInternal(session.getTenantId(), session.getCustomerId(), orderId, remark,
+            "CUSTOMER:" + session.getCustomerId() + ";MEMBER:" + session.getAccountId());
+    }
 
     @Transactional(readOnly = true)
     public List<RepairApply> pendingConfirmations(Long tenantId, Long customerId) {
@@ -29,6 +44,10 @@ public class CustomerConfirmationService {
 
     @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
     public CustomerConfirmationResp confirm(Long tenantId, Long customerId, Long orderId, String remark) {
+        return confirmInternal(tenantId, customerId, orderId, remark, "CUSTOMER:" + customerId);
+    }
+
+    private CustomerConfirmationResp confirmInternal(Long tenantId, Long customerId, Long orderId, String remark, String operator) {
         requireIdentity(tenantId, customerId, orderId);
         String reason = remark == null || remark.isBlank() ? "客户确认维修完成" : remark.trim();
         if (reason.length() > 500) throw new ServiceException("确认备注不得超过500字");
@@ -38,7 +57,7 @@ public class CustomerConfirmationService {
             throw new ServiceException("仅待结算或已完成工单可确认维修结果");
         var existing = mapper.confirmation(tenantId, customerId, orderId);
         if (existing != null) return response(tenantId, customerId, orderId, existing);
-        if (mapper.insertConfirmation(tenantId, customerId, orderId, "CUSTOMER:" + customerId, reason) != 1)
+        if (mapper.insertConfirmation(tenantId, customerId, orderId, operator, reason) != 1)
             throw new ServiceException("工单状态已变更，维修结果确认失败");
         var saved = mapper.confirmation(tenantId, customerId, orderId);
         if (saved == null) throw new ServiceException("维修结果确认未持久化");
@@ -71,10 +90,13 @@ public class CustomerConfirmationService {
         if (order == null || !Objects.equals(orderId, order.getId()) || !Objects.equals(tenantId, order.getTenantId())
                 || !Objects.equals(customerId, order.getCustomerId())) throw new ServiceException("工单不存在或无权访问");
     }
+    private boolean validOperator(Long customerId, String operator) {
+        return ("CUSTOMER:" + customerId).equals(operator) || operator != null && operator.matches("CUSTOMER:" + customerId + ";MEMBER:[1-9][0-9]*");
+    }
     private CustomerConfirmationResp response(Long tenantId, Long customerId, Long orderId, CustomerConfirmationMapper.ConfirmationRow row) {
         var result = new CustomerConfirmationResp();result.setOrderId(orderId.toString());result.setCustomerId(customerId.toString());result.setConfirmed(row != null);
         if (row != null) {
-            if (!Objects.equals(customerId, row.getCustomerId()) || !("CUSTOMER:" + customerId).equals(row.getOperator())
+            if (!Objects.equals(customerId, row.getCustomerId()) || !validOperator(customerId, row.getOperator())
                     || row.getConfirmedAt() == null || row.getReason() == null) throw new ServiceException("客户确认历史关联异常，请联系管理员核对");
             result.setConfirmedAt(row.getConfirmedAt());result.setReason(row.getReason());
         }

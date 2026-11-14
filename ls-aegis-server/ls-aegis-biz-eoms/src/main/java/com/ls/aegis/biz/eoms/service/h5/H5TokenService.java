@@ -59,75 +59,108 @@ public class H5TokenService
     private PasswordEncoder passwordEncoder;
 
     private static final java.security.SecureRandom INVITATION_RANDOM = new java.security.SecureRandom();
-    private static final String INVITATION_PREFIX = "eoms:h5:invitation:v2:";
-    private static final String SESSION_HANDLE_PREFIX = "eoms:h5:session-handle:v2:";
-    private static final String AUTH_VERSION = "2";
+    private static final String INVITATION_PREFIX = "eoms:h5:invitation:v3:";
+    private static final String SESSION_HANDLE_PREFIX = "eoms:h5:session-handle:v3:";
+    private static final String AUTH_VERSION = "3";
     private static final int INVITATION_SECONDS = 600;
 
     public record Invitation(String invitationCode, int expiresInSeconds, String customerId) {}
 
-    /** Staff authorization is resolved by PSI's ordinary tenant + department permission chain. */
+    /** Legacy staff call bootstraps an admin only for a company without any accounts. */
     public Invitation createInvitation(Long customerId) {
         var customer = customerAccessApi.requireManagedCustomer(customerId);
-        String binding = customer.tenantId() + ":" + customer.customerId();
-        // Eight decimal digits are easier to enter on phones. Keep short expiry, single use,
-        // IP rate limiting, and an atomic insert so a rare collision cannot rebind an invite.
+        String role = credentialMapper.list(customer.tenantId(), customer.customerId()).isEmpty() ? "ADMIN" : "MEMBER";
+        return createMemberInvitation(customerId, role, null);
+    }
+
+    public Invitation createMemberInvitation(Long customerId, String role, Long resetAccountId) {
+        var customer = customerAccessApi.requireManagedCustomer(customerId);
+        if (!Set.of("ADMIN", "MEMBER").contains(role)) throw new ServiceException("成员角色无效");
+        long resetVersion = 0L;
+        if (resetAccountId != null) {
+            var member = requireManagedMember(customerId, resetAccountId);
+            if (!Integer.valueOf(1).equals(member.getStatus())) throw new ServiceException("请先启用该成员再重置密码");
+            role = member.getAccountRole(); resetVersion = member.getAuthVersion();
+        }
+        String binding = customer.tenantId() + ":" + customer.customerId() + ":" +
+            (resetAccountId == null ? "CREATE:0:" : "RESET:" + resetAccountId + ":") + role + ":" + resetVersion;
         for (int attempt = 0; attempt < 5; attempt++) {
             String code = String.format(java.util.Locale.ROOT, "%08d", INVITATION_RANDOM.nextInt(100_000_000));
             org.redisson.api.RBucket<String> bucket = redissonClient.getBucket(invitationKey(code), org.redisson.client.codec.StringCodec.INSTANCE);
-            if (bucket.trySet(binding, INVITATION_SECONDS, TimeUnit.SECONDS)) {
-                // The bearer code is returned only once, never stored or logged. Redis holds its digest.
+            if (bucket.trySet(binding, INVITATION_SECONDS, TimeUnit.SECONDS))
                 return new Invitation(code, INVITATION_SECONDS, customer.customerId().toString());
-            }
         }
         throw new ServiceException("访问码暂时无法生成，请稍后重试");
     }
 
-    private String invitationKey(String code) {
-        return INVITATION_PREFIX + SecureUtil.sha256(code);
+    public List<H5CustomerCredential> listMembers(Long customerId) {
+        var customer = customerAccessApi.requireManagedCustomer(customerId);
+        return credentialMapper.list(customer.tenantId(), customer.customerId());
     }
 
-    /** Internal compatibility/session exchange; no public controller route exposes code-only login. */
-    public H5CustomerInfo exchangeInvitation(String code) {
-        return generateVerifiedToken(consumeInvitation(code));
+    private H5CustomerCredential requireManagedMember(Long customerId, Long accountId) {
+        var customer = customerAccessApi.requireManagedCustomer(customerId);
+        var member = credentialMapper.selectById(accountId);
+        if (member == null || !customer.tenantId().equals(member.getTenantId()) || !customer.customerId().equals(member.getCustomerId()))
+            throw new ServiceException("成员不存在或无权操作");
+        return member;
     }
 
-    /** Activate the invited PSI customer with a self-chosen, globally unique login name. */
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    public void updateMember(Long customerId, Long accountId, String name, String role, Integer status) {
+        var member = requireManagedMember(customerId, accountId);
+        if (!Set.of("ADMIN", "MEMBER").contains(role) || status == null || (status != 0 && status != 1))
+            throw new ServiceException("成员角色或状态无效");
+        var locked = credentialMapper.lockMembers(member.getTenantId(), customerId);
+        member = locked.stream().filter(m -> m.getId().equals(accountId)).findFirst().orElseThrow(() -> new ServiceException("成员已变更"));
+        if ("ADMIN".equals(member.getAccountRole()) && Integer.valueOf(1).equals(member.getStatus())
+            && (!"ADMIN".equals(role) || status == 0)
+            && locked.stream().filter(m -> "ADMIN".equals(m.getAccountRole()) && Integer.valueOf(1).equals(m.getStatus())).count() <= 1)
+            throw new ServiceException("请保留至少一位启用的公司管理员");
+        member.setDisplayName(memberName(name, member.getLoginName())); member.setAccountRole(role); member.setStatus(status);
+        if (credentialMapper.updateMember(member) != 1) throw new ServiceException("成员已变更，请刷新后重试");
+    }
+
+    private String invitationKey(String code) { return INVITATION_PREFIX + SecureUtil.sha256(code); }
+
+    /** No code-only login, including internal callers: every session needs a named account. */
+    @Deprecated
+    public H5CustomerInfo exchangeInvitation(String code) { throw new ServiceException("请使用邀请码激活个人账号后登录"); }
+
     public H5CustomerInfo activateInvitation(String code, String loginName, String rawPassword) {
-        String normalizedName = normalizeLoginName(loginName);
-        validateCustomerPassword(rawPassword);
-        var customer = invitationCustomer(code, false);
-        H5CustomerCredential existing = credentialMapper.selectByCustomer(customer.tenantId(), customer.customerId());
-        H5CustomerCredential credential = new H5CustomerCredential();
-        if (existing == null) {
-            if (credentialMapper.selectByLoginName(normalizedName) != null) {
-                throw new ServiceException("用户名已被占用，请更换一个用户名后重试");
-            }
-            credential.setTenantId(customer.tenantId());
-            credential.setCustomerId(customer.customerId());
-            credential.setLoginName(normalizedName);
-            credential.setPasswordHash(passwordEncoder.encode(rawPassword));
+        return activateInvitation(code, loginName, rawPassword, null);
+    }
+
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    public H5CustomerInfo activateInvitation(String code, String loginName, String rawPassword, String displayName) {
+        String normalizedName = normalizeLoginName(loginName); validateCustomerPassword(rawPassword);
+        Invite invite = readInvitation(code, false);
+        var customer = customerAccessApi.requireAvailableCustomer(invite.tenantId(), invite.customerId());
+        H5CustomerCredential credential;
+        if ("RESET".equals(invite.purpose())) {
+            credential = credentialMapper.selectById(invite.accountId());
+            if (credential == null || !invite.tenantId().equals(credential.getTenantId()) || !invite.customerId().equals(credential.getCustomerId())
+                || !Integer.valueOf(1).equals(credential.getStatus()) || !normalizedName.equals(credential.getLoginName()) || !invite.accountVersion().equals(credential.getAuthVersion()))
+                throw new ServiceException("请输入该重置码指定成员的原用户名");
         } else {
-            if (!existing.getLoginName().equals(normalizedName)) {
-                throw new ServiceException("该客户账号已激活，请输入原用户名完成密码重置");
-            }
-            existing.setPasswordHash(passwordEncoder.encode(rawPassword));
-            credential = existing;
+            if (credentialMapper.selectByLoginName(normalizedName) != null) throw new ServiceException("用户名已被占用，请更换；重置密码须使用该成员的重置码");
+            credential = new H5CustomerCredential(); credential.setTenantId(invite.tenantId()); credential.setCustomerId(invite.customerId());
+            credential.setLoginName(normalizedName); credential.setDisplayName(memberName(displayName, normalizedName));
+            credential.setAccountRole(invite.role()); credential.setStatus(1); credential.setAuthVersion(1L);
         }
-        // Do not burn the short-lived invite for a correctable username collision or typo.
-        customer = consumeInvitation(code);
-        if (existing == null) {
-            try {
-                credentialMapper.insert(credential);
-            } catch (DuplicateKeyException e) {
-                throw new ServiceException("用户名已被占用，请重新获取邀请码后重试");
-            }
-        } else {
-            if (credentialMapper.updatePassword(existing) != 1) {
-                throw new ServiceException("账号更新失败，请重新获取邀请码后重试");
-            }
-        }
-        return generateVerifiedToken(customer);
+        if (!invite.equals(readInvitation(code, true))) throw new ServiceException("邀请码已变更，请重试");
+        credential.setPasswordHash(passwordEncoder.encode(rawPassword));
+        try {
+            int changed = "RESET".equals(invite.purpose()) ? credentialMapper.updatePassword(credential) : credentialMapper.insert(credential);
+            if (changed != 1) throw new ServiceException("账号已变更，请重新获取邀请码后重试");
+        } catch (DuplicateKeyException ex) { throw new ServiceException("用户名已被占用，请重新获取邀请码后重试"); }
+        return generateVerifiedToken(customer, credentialMapper.selectById(credential.getId()));
+    }
+
+    private static String memberName(String name, String fallback) {
+        String value = name == null || name.isBlank() ? fallback : name.trim();
+        if (value.length() > 50 || value.chars().anyMatch(Character::isISOControl)) throw new ServiceException("姓名最多50字且不可含控制字符");
+        return value;
     }
 
     /** Password login shares the existing customer-token boundary and rechecks customer status. */
@@ -139,7 +172,7 @@ public class H5TokenService
             throw new ServiceException("用户名或密码不正确，或账号暂时无法登录");
         }
         H5CustomerCredential credential = credentialMapper.selectByLoginName(normalizedName);
-        boolean valid = credential != null && passwordEncoder.matches(rawPassword, credential.getPasswordHash());
+        boolean valid = credential != null && Integer.valueOf(1).equals(credential.getStatus()) && passwordEncoder.matches(rawPassword, credential.getPasswordHash());
         if (!valid) {
             failures.incrementAndGet();
             failures.expire(java.time.Duration.ofMinutes(15));
@@ -147,7 +180,7 @@ public class H5TokenService
         }
         failures.delete();
         var customer = customerAccessApi.requireAvailableCustomer(credential.getTenantId(), credential.getCustomerId());
-        return generateVerifiedToken(customer);
+        return generateVerifiedToken(customer, credential);
     }
 
     private static String normalizeLoginName(String loginName) {
@@ -163,29 +196,20 @@ public class H5TokenService
         }
     }
 
-    private com.ls.aegis.common.api.psi.H5CustomerAccessApi.Customer consumeInvitation(String code) {
-        return invitationCustomer(code, true);
-    }
-
-    private com.ls.aegis.common.api.psi.H5CustomerAccessApi.Customer invitationCustomer(String code, boolean consume) {
-        if (code == null || !(code.matches("\\d{8}") || code.matches("[A-Za-z0-9_-]{43}"))) {
-            throw new ServiceException("请使用管理员签发的一次性邀请码", EomsConstants.CODE_H5_TOKEN_INVALID);
-        }
+    private record Invite(Long tenantId, Long customerId, String purpose, Long accountId, String role, Long accountVersion) {}
+    private Invite readInvitation(String code, boolean consume) {
+        if (code == null || !code.matches("\\d{8}")) throw new ServiceException("请使用管理员签发的8位一次性邀请码");
         org.redisson.api.RBucket<String> bucket = redissonClient.getBucket(invitationKey(code), org.redisson.client.codec.StringCodec.INSTANCE);
         String binding = consume ? bucket.getAndDelete() : bucket.get();
-        if (binding == null) throw new ServiceException("邀请码无效、已使用或已过期", EomsConstants.CODE_H5_TOKEN_INVALID);
-        Long tenantId;
-        Long customerId;
+        if (binding == null) throw new ServiceException("邀请码无效、已使用或已过期");
         try {
-            String[] ids = binding.split(":", -1);
-            if (ids.length != 2) throw new IllegalArgumentException();
-            tenantId = Long.valueOf(ids[0]);
-            customerId = Long.valueOf(ids[1]);
-            if (tenantId < 0 || customerId <= 0) throw new IllegalArgumentException();
-        } catch (IllegalArgumentException ex) {
-            throw new ServiceException("邀请码无效", EomsConstants.CODE_H5_TOKEN_INVALID);
-        }
-        return customerAccessApi.requireAvailableCustomer(tenantId, customerId);
+            String[] parts = binding.split(":", -1);
+            if (parts.length != 6) throw new IllegalArgumentException();
+            var invite = new Invite(Long.valueOf(parts[0]),Long.valueOf(parts[1]),parts[2],Long.valueOf(parts[3]),parts[4],Long.valueOf(parts[5]));
+            if (invite.tenantId() < 0 || invite.customerId() <= 0 || !Set.of("ADMIN","MEMBER").contains(invite.role())
+                || !("CREATE".equals(invite.purpose()) && invite.accountId() == 0 && invite.accountVersion() == 0 || "RESET".equals(invite.purpose()) && invite.accountId() > 0 && invite.accountVersion() > 0)) throw new IllegalArgumentException();
+            return invite;
+        } catch (IllegalArgumentException ex) { throw new ServiceException("邀请码无效，请重新获取"); }
     }
 
     @Autowired
@@ -215,13 +239,18 @@ public class H5TokenService
         throw new ServiceException("客户编号不能用于登录，请使用一次性邀请码", EomsConstants.CODE_H5_TOKEN_INVALID);
     }
 
-    private H5CustomerInfo generateVerifiedToken(com.ls.aegis.common.api.psi.H5CustomerAccessApi.Customer customer)
+    private H5CustomerInfo generateVerifiedToken(com.ls.aegis.common.api.psi.H5CustomerAccessApi.Customer customer, H5CustomerCredential credential)
     {
+        if (credential == null || credential.getId() == null || !Integer.valueOf(1).equals(credential.getStatus())) throw new ServiceException("成员账号不可用");
         String token = createTokenValue();
         String key = EomsConstants.H5_TOKEN_KEY + token;
         int expireMinutes = resolveExpireMinutes();
 
         redisCache.setCacheMapValue(key, "authVersion", AUTH_VERSION);
+        redisCache.setCacheMapValue(key, "accountId", credential.getId().toString());
+        redisCache.setCacheMapValue(key, "accountVersion", credential.getAuthVersion().toString());
+        redisCache.setCacheMapValue(key, "loginName", credential.getLoginName());
+        redisCache.setCacheMapValue(key, "displayName", credential.getDisplayName());
         redisCache.setCacheMapValue(key, "tenantId", String.valueOf(customer.tenantId()));
         redisCache.setCacheMapValue(key, FIELD_CUSTOMER_ID, String.valueOf(customer.customerId()));
         redisCache.setCacheMapValue(key, FIELD_CUSTOMER_NO, customer.customerNo());
@@ -235,6 +264,7 @@ public class H5TokenService
 
         H5CustomerInfo info = new H5CustomerInfo(customer.customerId(), customer.customerNo(), customer.customerName());
         info.setTenantId(customer.tenantId());
+        applyMember(info, credential);
         info.setToken(token);
         return info;
     }
@@ -265,16 +295,26 @@ public class H5TokenService
             Long customerId = Long.parseLong(String.valueOf(idObj));
             Long tenantId = Long.valueOf(String.valueOf(entries.get("tenantId")));
             if (tenantId < 0 || customerId <= 0) return null;
+            var member = credentialMapper.selectById(Long.valueOf(String.valueOf(entries.get("accountId"))));
+            if (member == null || member.getAuthVersion() == null || member.getAuthVersion() <= 0 || !Integer.valueOf(1).equals(member.getStatus()) || !tenantId.equals(member.getTenantId())
+                || !customerId.equals(member.getCustomerId()) || !String.valueOf(member.getAuthVersion()).equals(String.valueOf(entries.get("accountVersion")))
+                || !Set.of("ADMIN", "MEMBER").contains(member.getAccountRole())) return null;
             // Current unit status is checked on every request; disable/deletion revokes old sessions too.
             var customer = customerAccessApi.requireAvailableCustomer(tenantId, customerId);
             H5CustomerInfo info = new H5CustomerInfo(customerId, customer.customerNo(), customer.customerName());
             info.setTenantId(tenantId);
+            applyMember(info, member);
             return info;
         }
         catch (RuntimeException e)
         {
             return null;
         }
+    }
+
+    private void applyMember(H5CustomerInfo info, H5CustomerCredential member) {
+        info.setAccountId(member.getId()); info.setLoginName(member.getLoginName());
+        info.setDisplayName(member.getDisplayName()); info.setAccountRole(member.getAccountRole());
     }
 
     /**
@@ -367,7 +407,7 @@ public class H5TokenService
             {
                 continue;
             }
-            if (!AUTH_VERSION.equals(entries.get("authVersion"))) continue;
+            if (!AUTH_VERSION.equals(entries.get("authVersion")) || validateToken(token) == null) continue;
             try {
                 Long tenant = Long.valueOf(String.valueOf(entries.get("tenantId")));
                 Long customerId = Long.valueOf(String.valueOf(entries.get(FIELD_CUSTOMER_ID)));
@@ -463,6 +503,8 @@ public class H5TokenService
         Object loginObj = entries.get(FIELD_LOGIN_TIME);
         resp.setCustomerNo(noObj == null ? null : String.valueOf(noObj));
         resp.setCustomerName(nameObj == null ? null : String.valueOf(nameObj));
+        resp.setLoginName(entries.get("loginName") == null ? null : String.valueOf(entries.get("loginName")));
+        resp.setDisplayName(entries.get("displayName") == null ? null : String.valueOf(entries.get("displayName")));
         if (loginObj != null)
         {
             try

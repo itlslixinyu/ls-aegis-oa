@@ -10,6 +10,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="customerId"    column="customer_id"    />
         <result property="customerNo"    column="customer_no"    />
         <result property="customerName"    column="customer_name"    />
+        <result property="reporterAccountId" column="reporter_account_id" />
+        <result property="reporterName" column="reporter_name" />
         <result property="reportAddress" column="report_address" />
         <result property="contactName"    column="contact_name"    />
         <result property="contactPhone"    column="contact_phone"    />
@@ -34,7 +36,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectRepairApplyVo">
-        select a.id, a.repair_no, a.customer_id, a.report_address, a.contact_name, a.contact_phone, a.fault_type, a.fault_desc,
+        select a.id, a.repair_no, a.customer_id, a.reporter_account_id, a.reporter_name, a.report_address, a.contact_name, a.contact_phone, a.fault_type, a.fault_desc,
                a.photos, a.urgent_level, a.contract_id, a.status, a.apply_time, a.source,
                a.create_by, a.create_user, a.create_time, a.update_by, a.update_time, a.remark, a.del_flag,
                a.tenant_id, a.dept_id,
@@ -64,7 +66,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			<if test="customerId != null">
 				AND a.customer_id = #{customerId}
 			</if>
-			<if test="customerName != null and customerName != ''">
+			<if test="params.h5TenantId != null">AND a.tenant_id = #{params.h5TenantId}</if>
+            <if test="reporterAccountId != null">AND a.reporter_account_id = #{reporterAccountId}</if>
+            <if test="customerName != null and customerName != ''">
 				AND c.unit_name like concat('%', #{customerName}, '%')
 			</if>
 			<if test="contactName != null and contactName != ''">
@@ -100,7 +104,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="(" suffix=")" suffixOverrides=",">
 			<if test="repairNo != null and repairNo != ''">repair_no,</if>
 			<if test="customerId != null">customer_id,</if>
-			<if test="reportAddress != null">report_address,</if>
+			<if test="reporterAccountId != null">reporter_account_id,</if>
+            <if test="reporterName != null">reporter_name,</if>
+            <if test="reportAddress != null">report_address,</if>
             <if test="contactName != null and contactName != ''">contact_name,</if>
 			<if test="contactPhone != null and contactPhone != ''">contact_phone,</if>
 			<if test="faultType != null and faultType != ''">fault_type,</if>
@@ -124,7 +130,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="values (" suffix=")" suffixOverrides=",">
 			<if test="repairNo != null and repairNo != ''">#{repairNo},</if>
 			<if test="customerId != null">#{customerId},</if>
-			<if test="reportAddress != null">#{reportAddress},</if>
+			<if test="reporterAccountId != null">#{reporterAccountId},</if>
+            <if test="reporterName != null">#{reporterName},</if>
+            <if test="reportAddress != null">#{reportAddress},</if>
             <if test="contactName != null and contactName != ''">#{contactName},</if>
 			<if test="contactPhone != null and contactPhone != ''">#{contactPhone},</if>
 			<if test="faultType != null and faultType != ''">#{faultType},</if>

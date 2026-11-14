@@ -4,11 +4,11 @@
       <div class="logo-section">
         <SystemLogo :src="systemStore.logoUrl" class="logo-img" />
         <SingleLineHeading v-if="systemStore.h5Title" class="title" :text="systemStore.h5Title" />
-        <p class="subtitle">{{ mode === 'login' ? '客户服务端' : '客户账号激活' }}</p>
+        <p class="subtitle">{{ mode === 'login' ? '客户服务端' : '成员账号激活/重置' }}</p>
       </div>
 
       <van-form ref="formRef" @submit="onSubmit" class="form-section">
-        <h3 class="form-heading">{{ mode === 'login' ? '账号登录' : '设置客户账号' }}</h3>
+        <h3 class="form-heading">{{ mode === 'login' ? '账号登录' : '设置个人账号' }}</h3>
         <van-cell-group class="input-box-wrap">
           <van-field
             v-model.trim="username"
@@ -20,6 +20,9 @@
               { required: true, message: '请输入用户名', trigger: 'onBlur' }
             ]"
           />
+        </van-cell-group>
+        <van-cell-group v-if="mode === 'activate'" class="input-box-wrap">
+          <van-field v-model.trim="displayName" name="displayName" autocomplete="name" maxlength="50" placeholder="姓名（新成员填写，重置密码可留空）" clearable />
         </van-cell-group>
         <van-cell-group v-if="mode === 'activate'" class="input-box-wrap">
           <van-field
@@ -126,6 +129,7 @@ const systemStore = useSystemStore()
 const formRef = ref(null)
 const mode = ref('login')
 const username = ref('')
+const displayName = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 const invitationCode = ref('')
@@ -167,7 +171,7 @@ function setMode(nextMode) {
 function showPasswordHelp() {
   showDialog({
     title: '忘记密码',
-    message: '请联系平台管理员重新签发客户激活码，再用原用户名设置新密码。'
+    message: '请联系平台管理员为你的个人账号签发密码重置码，再用原用户名设置新密码。'
   })
 }
 
@@ -182,7 +186,7 @@ async function onSubmit() {
   try {
     const encryptedPassword = await encryptTransport(password.value)
     const payload = mode.value === 'activate'
-      ? { invitationCode: invitationCode.value, username: username.value, password: encryptedPassword, captcha: captchaCode.value, uuid: captchaUuid.value }
+      ? { displayName: displayName.value, invitationCode: invitationCode.value, username: username.value, password: encryptedPassword, captcha: captchaCode.value, uuid: captchaUuid.value }
       : { username: username.value, password: encryptedPassword, captcha: captchaCode.value, uuid: captchaUuid.value }
     const res = mode.value === 'activate'
       ? await activateAccount(payload)
@@ -193,7 +197,8 @@ async function onSubmit() {
         customerId: toBizId(data.customerId),
         tenantId: toBizId(data.tenantId),
         customerNo: data.customerNo,
-        customerName: data.customerName
+        customerName: data.customerName,
+        accountId: toBizId(data.accountId), loginName: data.loginName, displayName: data.displayName, accountRole: data.accountRole
       })
       invitationCode.value = ''
       password.value = ''

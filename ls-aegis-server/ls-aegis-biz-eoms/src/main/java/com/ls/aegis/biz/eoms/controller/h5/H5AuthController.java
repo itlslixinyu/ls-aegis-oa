@@ -81,7 +81,7 @@ public class H5AuthController
     {
         ImageCaptchaValidator.validate(req.getUuid(), req.getCaptcha());
         String password = SecureUtils.decryptPasswordByRsaPrivateKey(req.getPassword(), "密码解密失败", true);
-        H5CustomerInfo info = h5TokenService.activateInvitation(req.getInvitationCode(), req.getUsername(), password);
+        H5CustomerInfo info = h5TokenService.activateInvitation(req.getInvitationCode(), req.getUsername(), password, req.getDisplayName());
         return R.ok(info);
     }
 

@@ -8,6 +8,12 @@ import java.time.LocalDateTime;
 public class H5OnlineTokenResp
 {
     /** 客户 ID */
+    private String loginName;
+    private String displayName;
+    public String getLoginName() { return loginName; }
+    public void setLoginName(String value) { loginName = value; }
+    public String getDisplayName() { return displayName; }
+    public void setDisplayName(String value) { displayName = value; }
     private Long customerId;
 
     /** 客户编号 */

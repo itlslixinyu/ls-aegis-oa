@@ -16,6 +16,8 @@
     <section class="account-section">
       <div class="block-title">账户</div>
       <van-cell-group inset>
+        <van-cell title="当前成员" :value="userStore.customerInfo?.displayName || userStore.customerInfo?.loginName || '-'" />
+        <van-cell title="成员角色" :value="userStore.customerInfo?.accountRole === 'ADMIN' ? '公司管理员' : '普通员工'" />
         <van-cell title="关于系统" icon="info-o" is-link @click="showAbout" />
         <van-cell
           title="退出登录"

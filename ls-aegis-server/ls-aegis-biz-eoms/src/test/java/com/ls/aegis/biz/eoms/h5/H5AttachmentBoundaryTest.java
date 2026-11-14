@@ -19,11 +19,20 @@ class H5AttachmentBoundaryTest {
     EomsFileAccessMapper access = mock(EomsFileAccessMapper.class);
     H5AttachmentService service = new H5AttachmentService(files, mapper, access);
     H5CustomerInfo customer = customer(7L, 10L);
-    static H5CustomerInfo customer(Long tenant, Long id) { var c = new H5CustomerInfo(id,"FIXTURE","fixture");c.setTenantId(tenant);return c; }
+    static H5CustomerInfo customer(Long tenant, Long id) { var c = new H5CustomerInfo(id,"FIXTURE","fixture");c.setTenantId(tenant);c.setAccountId(501L);c.setAccountRole("ADMIN");c.setLoginName("alice");c.setDisplayName("Alice");return c; }
     @BeforeEach void setup() { when(mapper.selectActiveCustomerDept(7L,10L)).thenReturn(20L); }
     FileDO file(Long id, String metadata) {var f=new FileDO();f.setId(id);f.setParentPath("/eoms/repair");f.setCreateUser(1L);f.setDeleted(0L);f.setMetadata(metadata);when(files.getById(id)).thenReturn(f);return f;}
     static String owned(Long tenant,Long id){return "{\"storageTag\":\"preserved\",\"itlsEomsH5UploadOwner\":{\"tenantId\":\""+tenant+"\",\"customerId\":\""+id+"\"}}";}
     RepairApply valid(){file(100L,owned(7L,10L));var input=new RepairApply();input.setContactName("fixture");input.setContactPhone("13800000000");input.setFaultType("DYNAMIC_CUSTOM_CODE");input.setFaultDesc("fixture description");input.setPhotos("100");return input;}
+    @Test void ordinaryMemberCannotReadOrAttachColleagueUpload() {
+        customer.setAccountRole("MEMBER");var f=file(100L,"{\"itlsEomsH5UploadOwner\":{\"tenantId\":\"7\",\"customerId\":\"10\",\"accountId\":\"502\"}}");
+        assertFalse(service.canAccess(customer,f));verify(access).countByMemberAndFileId(7L,10L,501L,100L);
+        f.setMetadata("{\"itlsEomsH5UploadOwner\":{\"tenantId\":\"7\",\"customerId\":\"10\",\"accountId\":\"501\"}}");assertTrue(service.canAccess(customer,f));
+    }
+    @Test void reporterIdentityCannotBeSuppliedByClient() {
+        var supplied=valid();supplied.setReporterAccountId(999L);supplied.setReporterName("Fake");var clean=service.prepareNewApply(customer,supplied);
+        assertEquals(501L,clean.getReporterAccountId());assertEquals("Alice",clean.getReporterName());assertEquals("alice",clean.getCreateBy());
+    }
     @Test void forgedFlowAndAuditFieldsAreDiscardedEvenWhenBodyLooksLikeConfirmedAdminApply(){
         var input=valid();input.setId(999L);input.setStatus("CONFIRM");input.setDelFlag("2");input.setRepairNo("CLIENT-CHOSEN");input.setDeptId(999L);input.setCreateUser(999L);input.setTenantId(999L);input.setCustomerId(999L);input.setContractId(999L);input.setFaultDesc("fixture");
         var clean=service.prepareNewApply(customer,input);

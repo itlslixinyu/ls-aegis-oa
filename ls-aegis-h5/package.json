@@ -1,6 +1,6 @@
 {
   "name": "itls-h5",
-  "version": "1.2.0",
+  "version": "1.5.0",
   "description": "LS·Aegis OA 管理平台移动入口：客户服务与工程师任务",
   "private": true,
   "type": "module",

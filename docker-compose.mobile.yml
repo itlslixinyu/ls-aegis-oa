@@ -1,7 +1,7 @@
 # Optional same-LAN HTTPS entrypoints. Existing database and application services are reused.
 services:
   ls-aegis-mobile-gateway:
-    image: ls-aegis-h5:${ITLS_VERSION:-1.2.0}
+    image: ls-aegis-h5:${ITLS_VERSION:-1.5.0}
     container_name: ls-aegis-mobile-gateway
     restart: unless-stopped
     mem_limit: 64m

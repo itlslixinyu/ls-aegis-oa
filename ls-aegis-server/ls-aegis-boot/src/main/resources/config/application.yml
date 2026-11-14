@@ -6,7 +6,7 @@ application:
   # 描述
   description: LS·Aegis OA 管理平台统一业务服务
   # 版本
-  version: 1.2.0
+  version: 1.5.0
   starter: 2.14.0
   # 基本包（扫描 com.ls 下全部模块）
   base-package: com.ls.aegis

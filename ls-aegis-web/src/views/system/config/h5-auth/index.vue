@@ -12,7 +12,7 @@
         scroll-to-first-error
       >
         <a-alert type="info" style="margin-bottom: 16px">
-          客户首次使用管理员签发的一次性访问码激活账号并设置用户名密码，之后使用用户名密码和图形验证码登录。忘记密码时由管理员重新签发访问码，客户沿用原用户名设置新密码。访问码十分钟内有效且只能使用一次；管理列表只提供会话摘要和强退句柄。
+          每位成员使用独立邀请码激活个人账号，之后使用个人用户名密码登录。员工只看自己提交的报修，公司管理员看本公司全部报修。新增成员和密码重置请到往来单位的「App成员」操作；重置码只针对指定成员。访问码十分钟内有效且只能使用一次；管理列表只提供会话摘要和强退句柄。
         </a-alert>
 
         <h4 class="section-title">令牌策略</h4>
@@ -60,7 +60,7 @@
     </a-spin>
 
     <h4 class="section-title">在线客户</h4>
-    <p class="section-hint">授权数据来源：进销存 → 往来单位（客户类型且已启用）。停用单位后无法获取新令牌，已有令牌可在此强退。</p>
+    <p class="section-hint">授权数据来源：进销存 → 往来单位（客户类型且已启用）。停用单位后无法获取新令牌，成员停用或密码重置后其旧会话立即失效；也可在此单独强退会话。</p>
 
     <BaseTable
       row-key="sessionId"
@@ -96,7 +96,7 @@
       <template #action="{ record }">
         <a-popconfirm
           type="warning"
-          content="确定强退该客户的 H5 令牌？"
+          content="确定退出该成员的这次App登录？"
           :ok-button-props="{ status: 'danger' }"
           @ok="handleKickout(record.sessionId)"
         >
@@ -194,6 +194,8 @@ const columns: TableInstance['columns'] = [
     render: ({ rowIndex }) => h('span', {}, rowIndex + 1 + (pagination.current - 1) * pagination.pageSize),
   },
   { title: '客户编号', dataIndex: 'customerNo', minWidth: TableCol.codeMinSm, ellipsis: false },
+  { title: '成员姓名', dataIndex: 'displayName', width: 120 },
+  { title: '用户名', dataIndex: 'loginName', width: 150 },
   { title: '客户名称', dataIndex: 'customerName', width: TableCol.name },
   { title: '令牌摘要', dataIndex: 'tokenDigest', minWidth: TableCol.codeMinSm, ellipsis: false },
   { title: '登录时间', dataIndex: 'loginTime', width: TableCol.date },

@@ -62,11 +62,12 @@ class AddressUploadMetadataTest {
 
     @Test void authenticatedCompanyIsCustomerAndNativeAddressReachesCustomerWatermark() {
         var request = new MockHttpServletRequest();
-        var customer = new H5CustomerInfo(1L, "sample", "示例公司"); customer.setTenantId(10L);
+        var customer = new H5CustomerInfo(1L, "sample", "示例公司"); customer.setTenantId(10L);customer.setAccountId(501L);customer.setAccountRole("MEMBER");customer.setDisplayName("示例联系人");
         request.setAttribute(H5TokenInterceptor.ATTR_CUSTOMER_INFO, customer);
         request.setAttribute(H5TokenInterceptor.ATTR_CUSTOMER_ID, 1L);
         request.setAttribute(H5TokenInterceptor.ATTR_TENANT_ID, 10L);
         var controller = new H5RepairController();
+        ReflectionTestUtils.setField(controller,"customerScope",new com.ls.aegis.biz.eoms.service.h5.H5CustomerScope(mock(com.ls.aegis.biz.eoms.mapper.repair.RepairApplyMapper.class),mock(com.ls.aegis.biz.eoms.mapper.repair.RepairOrderMapper.class)));
         var attachments = mock(H5AttachmentService.class); var geo = mock(GeoUtils.class);
         ReflectionTestUtils.setField(controller, "platformFileHelper", files);
         ReflectionTestUtils.setField(controller, "h5AttachmentService", attachments);
@@ -83,7 +84,7 @@ class AddressUploadMetadataTest {
         assertEquals("报修资料", captured.get().getTitle());
         assertEquals("报修地址", captured.get().getAddressLabel());
         assertEquals("报修人", captured.get().getExecutorLabel());
-        assertEquals("示例报修人", captured.get().getExecutor());
+        assertEquals("示例联系人", captured.get().getExecutor());
         assertEquals("示例报修备注", captured.get().getRemark());
         assertEquals("示例中文地址", captured.get().getServiceAddress());
         verify(attachments).bindNewUpload(customer, 123L);

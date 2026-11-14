@@ -27,14 +27,29 @@ public class H5AuthAdminController
     @Autowired
     private H5TokenService h5TokenService;
 
-    public record InvitationReq(@jakarta.validation.constraints.NotNull Long customerId) {}
+    public record InvitationReq(@jakarta.validation.constraints.NotNull Long customerId, String accountRole, Long resetAccountId) {}
+    public record MemberUpdateReq(@jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max=50) String displayName,
+        @jakarta.validation.constraints.NotBlank String accountRole, @jakarta.validation.constraints.NotNull Integer status) {}
 
     /** The response contains a one-time bearer secret: never use request/response audit logging. */
     @Log(ignore = true)
     @SaCheckPermission("psi:unit:update")
     @org.springframework.web.bind.annotation.PostMapping("/invitations")
     public R<H5TokenService.Invitation> invitation(@Valid @org.springframework.web.bind.annotation.RequestBody InvitationReq req) {
-        return R.ok(h5TokenService.createInvitation(req.customerId()));
+        return R.ok(req.accountRole() == null && req.resetAccountId() == null ? h5TokenService.createInvitation(req.customerId()) :
+            h5TokenService.createMemberInvitation(req.customerId(), req.accountRole() == null ? "MEMBER" : req.accountRole(), req.resetAccountId()));
+    }
+
+    @SaCheckPermission("psi:unit:update")
+    @GetMapping("/customers/{customerId}/members")
+    public R<java.util.List<com.ls.aegis.biz.eoms.domain.H5CustomerCredential>> members(@PathVariable Long customerId) {
+        return R.ok(h5TokenService.listMembers(customerId));
+    }
+
+    @SaCheckPermission("psi:unit:update")
+    @org.springframework.web.bind.annotation.PutMapping("/customers/{customerId}/members/{accountId}")
+    public R<Void> updateMember(@PathVariable Long customerId, @PathVariable Long accountId, @Valid @org.springframework.web.bind.annotation.RequestBody MemberUpdateReq req) {
+        h5TokenService.updateMember(customerId, accountId, req.displayName(), req.accountRole(), req.status()); return R.ok();
     }
 
     /**

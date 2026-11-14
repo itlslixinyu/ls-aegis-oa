@@ -21,6 +21,7 @@
           </van-tag>
         </template>
       </van-cell>
+      <van-cell title="提交人" :value="apply.reporterName || '历史记录'" />
       <van-cell title="联系人" :value="apply.contactName || '-'" />
       <van-cell title="联系电话" :value="apply.contactPhone || '-'" />
       <van-cell v-if="apply.reportAddress" title="报修地址" :value="apply.reportAddress" />
