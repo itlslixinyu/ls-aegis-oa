@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.sign.mapper.SignRecordMapper">
+
+    <resultMap id="SignRecordResult" type="com.ls.aegis.biz.sign.domain.SignRecord">
+        <id property="recordId" column="record_id"/>
+        <result property="fileId" column="file_id"/>
+        <result property="sealId" column="seal_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="projectId" column="project_id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="createUser" column="create_user"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="signMode" column="sign_mode"/>
+        <result property="positions" column="positions"/>
+        <result property="hasTimestamp" column="has_timestamp"/>
+        <result property="spanConfig" column="span_config"/>
+        <result property="clientIp" column="client_ip"/>
+        <result property="ipLocation" column="ip_location"/>
+        <result property="osVersion" column="os_version"/>
+        <result property="browserVersion" column="browser_version"/>
+        <result property="status" column="status"/>
+        <result property="signedFileId" column="signed_file_id"/>
+        <result property="certId" column="cert_id"/>
+        <result property="serialNo" column="serial_no"/>
+        <result property="fingerprintSha256" column="fingerprint_sha256"/>
+        <result property="verifyStatus" column="verify_status"/>
+        <result property="signHash" column="sign_hash"/>
+        <result property="pageFingerprint" column="page_fingerprint"/>
+        <result property="signTime" column="sign_time"/>
+        <result property="createTime" column="create_time"/>
+        <result property="projectName" column="project_name"/>
+        <result property="sealName" column="seal_name"/>
+        <result property="userName" column="user_name"/>
+        <result property="nickName" column="nick_name"/>
+        <result property="fileName" column="file_name"/>
+        <result property="signedFileName" column="signed_file_name"/>
+    </resultMap>
+
+    <select id="selectRecordList" parameterType="com.ls.aegis.biz.sign.domain.SignRecord" resultMap="SignRecordResult">
+        SELECT r.record_id, r.file_id, r.seal_id, r.user_id, r.project_id,
+               r.sign_mode, r.positions, r.has_timestamp, r.span_config,
+               r.client_ip, r.ip_location, r.os_version, r.browser_version,
+               r.status, r.signed_file_id, r.cert_id, r.serial_no, r.fingerprint_sha256,
+               r.verify_status, r.sign_hash, r.page_fingerprint, r.sign_time, r.create_time,
+               r.tenant_id, r.create_user, r.dept_id,
+               p.project_name,
+               s.seal_name,
+               u.nickname AS nick_name,
+               sf.file_name,
+               ss.file_name AS signed_file_name
+        FROM sign_record r
+        LEFT JOIN sign_project p ON r.project_id = p.project_id
+        LEFT JOIN sign_seal s ON r.seal_id = s.seal_id
+        LEFT JOIN sys_user u ON r.user_id = u.id
+        LEFT JOIN sign_file sf ON r.file_id = sf.file_id
+        LEFT JOIN sign_file ss ON r.signed_file_id = ss.file_id
+        <where>
+            <if test="recordId != null and recordId != ''">AND r.record_id = #{recordId}</if>
+            <if test="projectId != null">AND r.project_id = #{projectId}</if>
+            <if test="sealId != null">AND r.seal_id = #{sealId}</if>
+            <if test="userId != null">AND r.user_id = #{userId}</if>
+            <if test="signMode != null and signMode != ''">AND r.sign_mode = #{signMode}</if>
+            <if test="status != null and status != ''">AND r.status = #{status}</if>
+            <include refid="com.ls.aegis.biz.sign.mapper.SignDataScopeMapper.dataScopeFilter"/>
+        </where>
+        ORDER BY r.sign_time DESC
+    </select>
+
+    <select id="selectRecordById" parameterType="String" resultMap="SignRecordResult">
+        SELECT r.record_id, r.file_id, r.seal_id, r.user_id, r.project_id,
+               r.sign_mode, r.positions, r.has_timestamp, r.span_config,
+               r.client_ip, r.ip_location, r.os_version, r.browser_version,
+               r.status, r.signed_file_id, r.cert_id, r.serial_no, r.fingerprint_sha256,
+               r.verify_status, r.sign_hash, r.page_fingerprint, r.sign_time, r.create_time,
+               p.project_name,
+               s.seal_name,
+               u.nickname AS nick_name,
+               u.username AS user_name,
+               sf.file_name,
+               ss.file_name AS signed_file_name
+        FROM sign_record r
+        LEFT JOIN sign_project p ON r.project_id = p.project_id
+        LEFT JOIN sign_seal s ON r.seal_id = s.seal_id
+        LEFT JOIN sys_user u ON r.user_id = u.id
+        LEFT JOIN sign_file sf ON r.file_id = sf.file_id
+        LEFT JOIN sign_file ss ON r.signed_file_id = ss.file_id
+        WHERE r.record_id = #{recordId}
+    </select>
+
+    <select id="selectBySignedFileId" parameterType="Long" resultMap="SignRecordResult">
+        SELECT * FROM sign_record
+        WHERE signed_file_id = #{signedFileId}
+        ORDER BY sign_time DESC, create_time DESC
+        LIMIT 1
+    </select>
+
+    <insert id="insertRecord" parameterType="com.ls.aegis.biz.sign.domain.SignRecord">
+        INSERT INTO sign_record (
+            record_id, file_id, seal_id, user_id, project_id, sign_mode, positions,
+            has_timestamp, span_config, client_ip, ip_location, os_version,
+            browser_version, status, signed_file_id, cert_id, serial_no,
+            fingerprint_sha256, verify_status, sign_hash, page_fingerprint, sign_time, create_time,
+            tenant_id, create_user, dept_id
+        ) VALUES (
+            #{recordId}, #{fileId}, #{sealId}, #{userId}, #{projectId}, #{signMode}, #{positions},
+            #{hasTimestamp}, #{spanConfig}, #{clientIp}, #{ipLocation}, #{osVersion},
+            #{browserVersion}, #{status}, #{signedFileId}, #{certId}, #{serialNo},
+            #{fingerprintSha256}, #{verifyStatus}, #{signHash}, #{pageFingerprint},
+            CURRENT_TIMESTAMP(3), #{createTime}, #{tenantId}, #{createUser}, #{deptId}
+        )
+    </insert>
+
+    <update id="updateRecord" parameterType="com.ls.aegis.biz.sign.domain.SignRecord">
+        UPDATE sign_record
+        <set>
+            <if test="status != null">status = #{status},</if>
+            <if test="signedFileId != null">signed_file_id = #{signedFileId},</if>
+            <if test="certId != null">cert_id = #{certId},</if>
+            <if test="serialNo != null">serial_no = #{serialNo},</if>
+            <if test="fingerprintSha256 != null">fingerprint_sha256 = #{fingerprintSha256},</if>
+            <if test="verifyStatus != null">verify_status = #{verifyStatus},</if>
+            <if test="signHash != null">sign_hash = #{signHash},</if>
+            <if test="pageFingerprint != null">page_fingerprint = #{pageFingerprint},</if>
+        </set>
+        WHERE record_id = #{recordId}
+    </update>
+
+    <!--
+        【合规强制】签章记录是电子签名法规定的法定审计依据，严禁物理/逻辑删除。
+        此 Statement 返回 0 并拒绝执行任何 DELETE 操作；代码层同时通过 @Deprecated +
+        UnsupportedOperationException 做第二道防线。
+    -->
+    <delete id="deleteRecordByIds">
+        SELECT 1 FROM DUAL WHERE 1 = 0
+    </delete>
+
+    <!-- 印章删除前：统计关联签章记录数（关联数>0禁止删除印章） -->
+    <select id="selectRecordIdsBySealIdsForUpdate" resultType="string" useCache="false" flushCache="true">
+        SELECT record_id FROM sign_record WHERE seal_id IN
+        <foreach collection="sealIds" item="sealId" open="(" separator="," close=")">#{sealId}</foreach>
+        FOR UPDATE
+    </select>
+
+    <select id="countBySealIds" resultType="long">
+        SELECT COUNT(1) FROM sign_record
+        WHERE seal_id IN
+        <foreach collection="sealIds" item="sealId" open="(" separator="," close=")">
+            #{sealId}
+        </foreach>
+    </select>
+
+    <select id="selectRecentRecords" resultMap="SignRecordResult">
+        SELECT r.record_id, r.seal_id, r.user_id, r.project_id, r.cert_id, r.serial_no,
+               r.fingerprint_sha256, r.verify_status, r.sign_hash, r.page_fingerprint,
+               r.sign_time, r.create_time,
+               p.project_name, s.seal_name, u.nickname AS nick_name
+        FROM sign_record r
+        LEFT JOIN sign_project p ON r.project_id = p.project_id
+        LEFT JOIN sign_seal s ON r.seal_id = s.seal_id
+        LEFT JOIN sys_user u ON r.user_id = u.id
+        ORDER BY r.sign_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="countMonthSign" resultType="Long">
+        SELECT COUNT(1) FROM sign_record
+        WHERE sign_time >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+    </select>
+
+</mapper>

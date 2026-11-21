@@ -1,0 +1,33 @@
+databaseChangeLog:
+  - preConditions:
+      - onFail: HALT
+      - onError: HALT
+      - dbms:
+          type: mysql
+      - sqlCheck:
+          expectedResult: "1"
+          sql: SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='eoms_contract' AND engine='InnoDB'
+      - sqlCheck:
+          expectedResult: "1"
+          sql: >-
+            SELECT CASE WHEN COUNT(*)=0 THEN 1
+            WHEN COUNT(*)=1 AND SUM(CASE WHEN data_type='datetime' AND datetime_precision=0
+            AND is_nullable='YES' AND column_default IS NULL AND extra=''
+            AND COALESCE(generation_expression,'')='' THEN 1 ELSE 0 END)=1 THEN 1 ELSE 0 END
+            FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='eoms_contract' AND column_name='sign_date'
+  - changeSet:
+      id: r43_eoms_contract_sign_date_mysql
+      author: ls
+      dbms: mysql
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - sqlCheck:
+            expectedResult: "0"
+            sql: SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='eoms_contract' AND column_name='sign_date'
+      changes:
+        - sqlFile:
+            path: db/changelog/mysql/patch_eoms_contract_sign_date.sql
+            encoding: UTF-8
+            splitStatements: true
+            stripComments: true

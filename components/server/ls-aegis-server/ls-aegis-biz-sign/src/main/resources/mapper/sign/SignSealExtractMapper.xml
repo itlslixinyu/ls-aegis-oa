@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.sign.mapper.SignSealExtractMapper">
+
+    <resultMap id="SignSealExtractResult" type="com.ls.aegis.biz.sign.domain.SignSealExtract">
+        <id property="id" column="id"/>
+        <result property="sealId" column="seal_id"/>
+        <result property="originalFileId" column="original_file_id"/>
+        <result property="originalFileName" column="original_file_name"/>
+        <result property="originalFileSize" column="original_file_size"/>
+        <result property="extractFileId" column="extract_file_id"/>
+        <result property="extractFileName" column="extract_file_name"/>
+        <result property="extractFilePath" column="extract_file_path"/>
+        <result property="extractFileSize" column="extract_file_size"/>
+        <result property="thumbnailFilePath" column="thumbnail_file_path"/>
+        <result property="createUserId" column="create_user_id"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="sealName" column="seal_name"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <select id="selectExtractList" parameterType="com.ls.aegis.biz.sign.domain.SignSealExtract" resultMap="SignSealExtractResult">
+        SELECT e.id, e.seal_id, e.original_file_id, e.original_file_name,
+               e.original_file_size, e.extract_file_id, e.extract_file_name,
+               e.extract_file_path, e.extract_file_size, e.thumbnail_file_path,
+               e.create_user_id,
+               COALESCE(u.nickname, e.create_by) AS create_by, e.create_time,
+               e.remark, s.seal_name
+        FROM sign_seal_extract e
+        LEFT JOIN sign_seal s ON e.seal_id = s.seal_id
+        LEFT JOIN sys_user u ON e.create_user_id = u.id
+        <where>
+            <if test="sealId != null">AND e.seal_id = #{sealId}</if>
+            <if test="createBy != null and createBy != ''">
+                AND (
+                    u.nickname LIKE CONCAT('%', #{createBy}, '%')
+                    OR e.create_by LIKE CONCAT('%', #{createBy}, '%')
+                )
+            </if>
+        </where>
+        ORDER BY e.create_time DESC
+    </select>
+
+    <select id="selectExtractById" parameterType="Long" resultMap="SignSealExtractResult">
+        SELECT id, original_file_name, original_file_size,
+               extract_file_name, extract_file_path, extract_file_size,
+               thumbnail_file_path, create_user_id,
+               remark, create_by, create_time
+        FROM sign_seal_extract
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insertExtract" parameterType="com.ls.aegis.biz.sign.domain.SignSealExtract" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sign_seal_extract (
+            original_file_name, original_file_size,
+            extract_file_name, extract_file_path, extract_file_size, thumbnail_file_path,
+            remark, create_user_id, create_by, create_time
+        ) VALUES (
+            #{originalFileName}, #{originalFileSize},
+            #{extractFileName}, #{extractFilePath}, #{extractFileSize}, #{thumbnailFilePath},
+            #{remark}, #{createUserId}, #{createBy}, NOW()
+        )
+    </insert>
+
+    <update id="updateExtractFileName" parameterType="com.ls.aegis.biz.sign.domain.SignSealExtract">
+        UPDATE sign_seal_extract SET extract_file_name = #{extractFileName} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteExtractByIds">
+        DELETE FROM sign_seal_extract WHERE id IN
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="clearAll">
+        TRUNCATE TABLE sign_seal_extract
+    </delete>
+
+    <!-- 按用户ID查询提取记录列表 -->
+    <select id="selectExtractListByUserId" parameterType="Long" resultType="Map">
+        SELECT e.id, e.seal_id, e.original_file_id, e.original_file_name,
+               e.original_file_size, e.extract_file_id, e.extract_file_name,
+               e.extract_file_path, e.extract_file_size, e.create_user_id,
+               COALESCE(u.nickname, e.create_by) AS create_by, e.create_time,
+               e.remark, s.seal_name
+        FROM sign_seal_extract e
+        LEFT JOIN sign_seal s ON e.seal_id = s.seal_id
+        LEFT JOIN sys_user u ON e.create_user_id = u.id
+        WHERE e.create_user_id = #{userId}
+        ORDER BY e.create_time DESC
+    </select>
+
+    <!-- 查询提取记录列表（Map格式） -->
+    <select id="selectExtractListMap" resultType="Map">
+        SELECT e.id, e.seal_id, e.original_file_id, e.original_file_name,
+               e.original_file_size, e.extract_file_id, e.extract_file_name,
+               e.extract_file_path, e.extract_file_size, e.create_user_id,
+               COALESCE(u.nickname, e.create_by) AS create_by, e.create_time,
+               e.remark, s.seal_name
+        FROM sign_seal_extract e
+        LEFT JOIN sign_seal s ON e.seal_id = s.seal_id
+        LEFT JOIN sys_user u ON e.create_user_id = u.id
+        ORDER BY e.create_time DESC
+    </select>
+
+</mapper>

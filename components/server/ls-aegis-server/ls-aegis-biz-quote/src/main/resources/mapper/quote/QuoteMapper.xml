@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.quote.mapper.QuoteMapper">
+
+    <resultMap type="com.ls.aegis.biz.quote.domain.Quote" id="QuoteResult">
+        <id     property="id"             column="id"              />
+        <result property="quoteNo"        column="quote_no"        />
+        <result property="customerId"     column="customer_id"     />
+        <result property="warehouseId"    column="warehouse_id"    />
+        <result property="warehouseName"  column="warehouse_name"  />
+        <result property="projectName"    column="project_name"    />
+        <result property="quoteUnit"      column="quote_unit"      />
+        <result property="quoteDate"      column="quote_date"      />
+        <result property="validUntil"     column="valid_until"     />
+        <result property="taxRate"        column="tax_rate"        />
+        <result property="materialSubtotal" column="material_subtotal" />
+        <result property="serviceSubtotal" column="service_subtotal" />
+        <result property="customerNo"     column="customer_no"     />
+        <result property="customerName"   column="customer_name"   />
+        <result property="repairOrderId"  column="repair_order_id" />
+        <result property="orderNo"        column="order_no"        />
+        <result property="totalAmount"    column="total_amount"    />
+        <result property="status"         column="status"          />
+        <result property="createBy"       column="create_by"       />
+        <result property="createTime"     column="create_time"     />
+        <result property="updateBy"       column="update_by"       />
+        <result property="updateTime"     column="update_time"     />
+        <result property="remark"         column="remark"          />
+        <result property="terms"          column="terms"           />
+        <result property="delFlag"        column="del_flag"        />
+        <result property="tenantId"       column="tenant_id"       />
+        <result property="createUser"     column="create_user"     />
+        <result property="deptId"         column="dept_id"         />
+    </resultMap>
+
+    <sql id="accessBinding">
+        <bind name="_quoteScope" value="@com.ls.aegis.biz.quote.support.QuoteAccessContext@current()"/>
+    </sql>
+    <!-- Explicit tenant boundary also applies when the optional TenantLine plugin is disabled. -->
+    <sql id="tenantFilter">
+        AND (q.tenant_id = #{_quoteScope.tenantId}
+        <if test="_quoteScope.legacyAdministrator">
+            OR (q.tenant_id IS NULL AND q.create_user IS NULL AND q.dept_id IS NULL)
+        </if>)
+    </sql>
+
+    <sql id="selectQuoteVo">
+        select q.id, q.quote_no, q.customer_id, q.warehouse_id, q.project_name, q.quote_unit, q.quote_date, q.valid_until,
+               q.tax_rate, q.material_subtotal, q.service_subtotal,
+               q.repair_order_id, q.total_amount, q.status,
+               q.create_by, q.create_time, q.update_by, q.update_time, q.remark, q.terms, q.del_flag,
+               q.tenant_id, q.create_user, q.dept_id,
+               c.unit_code as customer_no,
+               c.unit_name as customer_name,
+               w.warehouse_name as warehouse_name,
+               o.order_no as order_no
+        from eoms_quote q
+        left join psi_unit c on q.customer_id = c.id and c.deleted = 0 and c.tenant_id = q.tenant_id
+        left join psi_warehouse w on q.warehouse_id = w.id and w.deleted = 0 and w.tenant_id = q.tenant_id
+        left join eoms_repair_order o on q.repair_order_id = o.id and o.tenant_id = q.tenant_id
+    </sql>
+
+    <select id="selectQuoteById" parameterType="Long" resultMap="QuoteResult">
+        <include refid="accessBinding"/>
+        <include refid="selectQuoteVo"/>
+        where q.id = #{id} and q.del_flag = '0'
+        <include refid="tenantFilter"/>
+    </select>
+
+    <select id="selectQuoteByIdForUpdate" parameterType="Long" resultMap="QuoteResult">
+        <include refid="accessBinding"/>
+        select q.* from eoms_quote q
+        where q.id = #{id} and q.del_flag = '0'
+        <include refid="tenantFilter"/>
+        for update
+    </select>
+
+    <select id="selectQuoteList" parameterType="com.ls.aegis.biz.quote.domain.Quote" resultMap="QuoteResult">
+        <include refid="accessBinding"/>
+        <include refid="selectQuoteVo"/>
+        <where>
+            q.del_flag = '0'
+            <include refid="tenantFilter"/>
+            <if test="quoteNo != null and quoteNo != ''">
+                AND q.quote_no = #{quoteNo}
+            </if>
+            <if test="customerId != null">
+                AND q.customer_id = #{customerId}
+            </if>
+            <if test="customerName != null and customerName != ''">
+                AND c.unit_name like concat('%', #{customerName}, '%')
+            </if>
+            <if test="projectName != null and projectName != ''">
+                AND q.project_name like concat('%', #{projectName}, '%')
+            </if>
+            <if test="repairOrderId != null">
+                AND q.repair_order_id = #{repairOrderId}
+            </if>
+            <if test="orderNo != null and orderNo != ''">
+                AND o.order_no = #{orderNo}
+            </if>
+            <if test="status != null and status != ''">
+                AND q.status = #{status}
+            </if>
+            <if test="(status == null or status == '') and statusScope != null and statusScope == 'ACTIVE'">
+                AND q.status in ('DRAFT', 'SUBMIT', 'CANCEL')
+            </if>
+            <if test="(status == null or status == '') and statusScope != null and statusScope == 'HISTORY'">
+                AND q.status = 'CONFIRM'
+            </if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and q.create_time &gt;= #{params.beginTime}
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and q.create_time &lt; DATE_ADD(DATE(#{params.endTime}), INTERVAL 1 DAY)
+            </if>
+        </where>
+    </select>
+
+    <select id="selectQuoteSummary" resultType="com.ls.aegis.biz.quote.model.resp.QuoteSummaryResp">
+        <include refid="accessBinding"/>
+        select
+            coalesce(sum(case when q.status = 'DRAFT' then 1 else 0 end), 0) as draftCount,
+            coalesce(sum(case when coalesce(q.quote_date, q.create_time) &gt;= #{monthStart} then 1 else 0 end), 0) as monthCount,
+            coalesce(sum(case when coalesce(q.quote_date, q.create_time) &gt;= #{monthStart} then q.total_amount else 0 end), 0) as monthAmount
+        from eoms_quote q
+        where q.del_flag = '0'
+        <include refid="tenantFilter"/>
+    </select>
+
+    <insert id="insertQuote" parameterType="com.ls.aegis.biz.quote.domain.Quote" useGeneratedKeys="true" keyProperty="id">
+        <include refid="accessBinding"/>
+        insert into eoms_quote
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            tenant_id, create_user, dept_id,
+            <if test="quoteNo != null and quoteNo != ''">quote_no,</if>
+            <if test="customerId != null">customer_id,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="projectName != null and projectName != ''">project_name,</if>
+            <if test="quoteUnit != null and quoteUnit != ''">quote_unit,</if>
+            <if test="quoteDate != null">quote_date,</if>
+            <if test="validUntil != null">valid_until,</if>
+            <if test="taxRate != null">tax_rate,</if>
+            <if test="materialSubtotal != null">material_subtotal,</if>
+            <if test="serviceSubtotal != null">service_subtotal,</if>
+            <if test="repairOrderId != null">repair_order_id,</if>
+            <if test="totalAmount != null">total_amount,</if>
+            <if test="status != null and status != ''">status,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="true">create_time,</if>
+            <if test="updateBy != null and updateBy != ''">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+            <if test="terms != null and terms != ''">terms,</if>
+            <if test="delFlag != null and delFlag != ''">del_flag,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            #{_quoteScope.tenantId}, #{_quoteScope.userId}, #{_quoteScope.deptId},
+            <if test="quoteNo != null and quoteNo != ''">#{quoteNo},</if>
+            <if test="customerId != null">#{customerId},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="projectName != null and projectName != ''">#{projectName},</if>
+            <if test="quoteUnit != null and quoteUnit != ''">#{quoteUnit},</if>
+            <if test="quoteDate != null">#{quoteDate},</if>
+            <if test="validUntil != null">#{validUntil},</if>
+            <if test="taxRate != null">#{taxRate},</if>
+            <if test="materialSubtotal != null">#{materialSubtotal},</if>
+            <if test="serviceSubtotal != null">#{serviceSubtotal},</if>
+            <if test="repairOrderId != null">#{repairOrderId},</if>
+            <if test="totalAmount != null">#{totalAmount},</if>
+            <if test="status != null and status != ''">#{status},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="true">sysdate(),</if>
+            <if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+            <if test="terms != null and terms != ''">#{terms},</if>
+            <if test="delFlag != null and delFlag != ''">#{delFlag,jdbcType=CHAR},</if>
+        </trim>
+    </insert>
+
+    <update id="updateQuote" parameterType="com.ls.aegis.biz.quote.domain.Quote">
+        <include refid="accessBinding"/>
+        update eoms_quote q
+        <set>
+            <if test="quoteNo != null and quoteNo != ''">quote_no = #{quoteNo},</if>
+            <if test="customerId != null">customer_id = #{customerId},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="projectName != null">project_name = #{projectName},</if>
+            <if test="quoteUnit != null">quote_unit = #{quoteUnit},</if>
+            <if test="quoteDate != null">quote_date = #{quoteDate},</if>
+            <if test="validUntil != null">valid_until = #{validUntil},</if>
+            <if test="taxRate != null">tax_rate = #{taxRate},</if>
+            <if test="materialSubtotal != null">material_subtotal = #{materialSubtotal},</if>
+            <if test="serviceSubtotal != null">service_subtotal = #{serviceSubtotal},</if>
+            <if test="repairOrderId != null">repair_order_id = #{repairOrderId},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="terms != null">terms = #{terms},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+        </set>
+        where q.id = #{id} and q.del_flag = '0'
+        <include refid="tenantFilter"/>
+    </update>
+
+    <update id="deleteQuoteById" parameterType="Long">
+        <include refid="accessBinding"/>
+        update eoms_quote q set del_flag = '2' where q.id = #{id} and q.del_flag = '0'
+        <include refid="tenantFilter"/>
+    </update>
+
+    <update id="deleteQuoteByIds" parameterType="Long">
+        <include refid="accessBinding"/>
+        update eoms_quote q set del_flag = '2' where q.id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        and q.del_flag = '0'
+        <include refid="tenantFilter"/>
+    </update>
+
+</mapper>

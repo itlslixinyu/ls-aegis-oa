@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/mysql/patch_stock_mutation_lock.sql
+  - include:
+      file: db/changelog/mysql/patch_psi_finance_compensation.sql
+  - include:
+      file: db/changelog/mysql/patch_eoms_finance_compensation.sql
+  - include:
+      file: db/changelog/mysql/patch_stock_adjust_restore.sql

@@ -1,0 +1,2 @@
+com.ls.aegis.crypto.config.GmCryptoAutoConfiguration
+com.ls.aegis.crypto.config.GmPasswordEncoderAutoConfiguration

@@ -1,0 +1,41 @@
+/**
+ * 文字操作链接（表格行 / 轻量操作，对齐按钮字典）
+ * 表格操作列统一 a-link，禁止再用 a-button type="text"。
+ */
+
+.arco-link {
+  padding: 0 4px;
+  font-size: 14px;
+  line-height: 28px;
+  height: 28px;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: rgb(var(--primary-5));
+  }
+}
+
+.arco-link.arco-link-status-danger,
+.arco-link-status-danger {
+  color: rgb(var(--danger-6));
+
+  &:hover {
+    color: rgb(var(--danger-5));
+  }
+}
+
+/* 弱化链接（取消、更多旁辅助） */
+.arco-link.arco-link-status-secondary,
+.arco-link-status-secondary {
+  color: var(--color-text-2);
+
+  &:hover {
+    color: rgb(var(--primary-6));
+  }
+}
+
+/* 表格操作列间距 */
+.arco-table-td .arco-space .arco-link,
+.arco-table-td .arco-link {
+  margin: 0 2px;
+}

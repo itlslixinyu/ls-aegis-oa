@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.eoms.mapper.repair.RepairMaterialMapper">
+    
+    <resultMap type="RepairMaterial" id="RepairMaterialResult">
+    	<id     property="id"      column="id"      />
+        <result property="repairOrderId"    column="repair_order_id"    />
+        <result property="orderNo"    column="order_no"    />
+        <result property="materialId"    column="material_id"    />
+        <result property="warehouseId"    column="warehouse_id"    />
+        <result property="materialName"    column="material_name"    />
+        <result property="quantity"    column="quantity"    />
+        <result property="salePrice"    column="sale_price"    />
+        <result property="costPrice"    column="cost_price"    />
+        <result property="saleAmount"    column="sale_amount"    />
+        <result property="costAmount"    column="cost_amount"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="materialNo"    column="material_no"    />
+        <result property="specification"    column="specification"    />
+    </resultMap>
+
+    <sql id="selectRepairMaterialVo">
+        select m.id, m.repair_order_id, m.material_id, m.warehouse_id, m.material_name, m.quantity, m.sale_price, m.cost_price,
+               m.sale_amount, m.cost_amount, m.create_by, m.create_time, m.update_by, m.update_time, m.remark, m.del_flag,
+               o.order_no as order_no,
+               mt.goods_code as material_no,
+               mt.spec as specification
+		from eoms_repair_material m
+		left join eoms_repair_order o on m.repair_order_id = o.id
+		left join psi_goods mt on m.material_id = mt.id and mt.deleted = 0 and mt.tenant_id = o.tenant_id
+    </sql>
+
+    <select id="selectRepairMaterialById" parameterType="Long" resultMap="RepairMaterialResult">
+        <include refid="selectRepairMaterialVo"/>
+        where m.id = #{id} and m.del_flag = '0'
+    </select>
+
+    <select id="selectRepairMaterialList" parameterType="RepairMaterial" resultMap="RepairMaterialResult">
+        <include refid="selectRepairMaterialVo"/>
+        <where>
+            m.del_flag = '0' and o.del_flag = '0' and o.tenant_id = #{params.materialTenantId}
+            <if test="id != null">and m.id = #{id}</if>
+            <include refid="com.ls.aegis.biz.eoms.mapper.EomsDataScopeMapper.dataScopeFilter"/>
+			<if test="repairOrderId != null">
+				AND m.repair_order_id = #{repairOrderId}
+			</if>
+			<if test="materialId != null">
+				AND m.material_id = #{materialId}
+			</if>
+			<if test="materialName != null and materialName != ''">
+				AND m.material_name like concat('%', #{materialName}, '%')
+			</if>
+			<if test="materialNo != null and materialNo != ''">
+				AND mt.goods_code = #{materialNo}
+			</if>
+			<if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+				and m.create_time &gt;= #{params.beginTime}
+			</if>
+			<if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+				and m.create_time &lt; DATE_ADD(DATE(#{params.endTime}), INTERVAL 1 DAY)
+			</if>
+		</where>
+    </select>
+
+    <insert id="insertRepairMaterial" parameterType="RepairMaterial" useGeneratedKeys="true" keyProperty="id">
+        insert into eoms_repair_material
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="repairOrderId != null">repair_order_id,</if>
+			<if test="materialId != null">material_id,</if>
+			<if test="warehouseId != null">warehouse_id,</if>
+			<if test="materialName != null and materialName != ''">material_name,</if>
+			<if test="quantity != null">quantity,</if>
+			<if test="salePrice != null">sale_price,</if>
+			<if test="costPrice != null">cost_price,</if>
+			<if test="saleAmount != null">sale_amount,</if>
+			<if test="costAmount != null">cost_amount,</if>
+			<if test="createBy != null and createBy != ''">create_by,</if>
+			<if test="true">create_time,</if>
+			<if test="updateBy != null and updateBy != ''">update_by,</if>
+			<if test="updateTime != null and updateTime != ''">update_time,</if>
+			<if test="remark != null and remark != ''">remark,</if>
+			<if test="delFlag != null and delFlag != ''">del_flag,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="repairOrderId != null">#{repairOrderId},</if>
+			<if test="materialId != null">#{materialId},</if>
+			<if test="warehouseId != null">#{warehouseId},</if>
+			<if test="materialName != null and materialName != ''">#{materialName},</if>
+			<if test="quantity != null">#{quantity},</if>
+			<if test="salePrice != null">#{salePrice},</if>
+			<if test="costPrice != null">#{costPrice},</if>
+			<if test="saleAmount != null">#{saleAmount},</if>
+			<if test="costAmount != null">#{costAmount},</if>
+			<if test="createBy != null and createBy != ''">#{createBy},</if>
+			<if test="true">sysdate(),</if>
+			<if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+			<if test="updateTime != null and updateTime != ''">#{updateTime},</if>
+			<if test="remark != null and remark != ''">#{remark},</if>
+			<if test="delFlag != null and delFlag != ''">#{delFlag,jdbcType=CHAR},</if>
+        </trim>
+    </insert>
+
+    <update id="updateRepairMaterial" parameterType="RepairMaterial">
+        update eoms_repair_material 
+        <set>
+            <if test="repairOrderId != null">repair_order_id = #{repairOrderId},</if>
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="materialName != null and materialName != ''">material_name = #{materialName},</if>
+            <if test="quantity != null">quantity = #{quantity},</if>
+            <if test="salePrice != null">sale_price = #{salePrice},</if>
+            <if test="costPrice != null">cost_price = #{costPrice},</if>
+            <if test="saleAmount != null">sale_amount = #{saleAmount},</if>
+            <if test="costAmount != null">cost_amount = #{costAmount},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+ 			update_time = sysdate(),
+            <if test="remark != null and remark != ''">remark = #{remark},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+        </set>
+        where id = #{id} and repair_order_id = #{repairOrderId} and del_flag = '0'
+    </update>
+
+    <update id="deleteRepairMaterialById" parameterType="Long">
+        update eoms_repair_material set del_flag = '2' where id = #{id}
+    </update>
+
+    <update id="deleteRepairMaterialByIds" parameterType="Long">
+        update eoms_repair_material set del_flag = '2' where del_flag = '0' and id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+        	#{id}
+        </foreach>
+    </update>
+
+    <!-- Internal reference check is limited to the exact authorized parent tenant, not operator PSI scope. -->
+    <select id="countUsableReferences" resultType="int">
+        select count(*) from psi_goods g join psi_warehouse w on w.id=#{warehouseId}
+        where g.id=#{goodsId} and g.tenant_id=#{tenantId} and w.tenant_id=#{tenantId}
+          and g.deleted=0 and w.deleted=0 and g.status=1 and w.status=1
+    </select>
+
+    <select id="lockMaterial" resultMap="RepairMaterialResult">
+        select * from eoms_repair_material where id=#{id} and repair_order_id=#{orderId} and del_flag='0' for update
+    </select>
+
+    <select id="lockByOrder" resultMap="RepairMaterialResult">
+        select * from eoms_repair_material where repair_order_id=#{orderId} and del_flag='0' for update
+    </select>
+</mapper>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.eoms.mapper.customer.CustomerMapper">
+
+    <resultMap type="Customer" id="CustomerResult">
+        <id     property="id"           column="id"            />
+        <result property="customerNo"   column="customer_no"   />
+        <result property="customerName" column="customer_name" />
+        <result property="address"      column="address"       />
+        <result property="status"       column="status"        />
+    </resultMap>
+
+    <!-- M2.3：H5 按 psi_unit.unit_code 换令牌；status 1=启用 2=停用（与 DisEnableStatusEnum 一致） -->
+    <select id="selectCustomerByCustomerNo" parameterType="String" resultMap="CustomerResult">
+        select u.id,
+               u.unit_code as customer_no,
+               u.unit_name as customer_name,
+               u.address,
+               CAST(u.status AS CHAR) as status
+        from psi_unit u
+        where u.deleted = 0
+          and u.unit_type in ('CUSTOMER', 'BOTH')
+          and u.unit_code = #{customerNo}
+        limit 1
+    </select>
+
+    <select id="fieldUnitNameExists" resultType="boolean">
+        select exists(select 1 from psi_unit where tenant_id=#{tenantId} and deleted=0 and unit_name=#{customerName})
+    </select>
+    <select id="fieldCustomers" resultType="map">
+        select cast(a.id as char) as id, a.unit_name as name, a.unit_code as code,
+               a.address, c.contact_name as contactName, coalesce(nullif(c.mobile,''), c.phone) as contactPhone
+        from psi_unit a
+        left join psi_unit_contact c on c.id=(select cc.id from psi_unit_contact cc
+            where cc.unit_id=a.id and cc.tenant_id=a.tenant_id and cc.deleted=0
+            order by cc.is_default desc, cc.id limit 1)
+        where a.tenant_id=#{tenantId} and a.deleted=0 and a.status=1 and a.unit_type in ('CUSTOMER','BOTH')
+        <if test="customerId != null">and a.id=#{customerId}</if>
+        <if test="customerName != null">and (locate(#{customerName}, a.unit_name)>0 or locate(#{customerName}, a.unit_code)>0)</if>
+        <trim prefix="and (" suffix=")" prefixOverrides="AND">
+            <include refid="com.ls.aegis.biz.eoms.mapper.EomsDataScopeMapper.dataScopeFilter"/>
+            <if test="params.dataScopeFilter == true and params.dsSelf == true">
+                or exists (select 1 from eoms_repair_order h where h.tenant_id=a.tenant_id
+                    and h.customer_id=a.id and h.engineer_id=#{params.dsUserId} and h.del_flag='0')
+            </if>
+        </trim>
+        order by a.unit_name, a.id limit 25
+    </select>
+    <select id="fieldOpenRepairs" resultType="map">
+        select a.repair_no as repairNo, a.report_address as address, a.fault_desc as fault,
+               o.status as orderStatus, u.nickname as engineer,
+               case when o.engineer_id=#{params.actor} then cast(o.id as char) end as ownOrderId
+        from eoms_repair_apply a left join eoms_repair_order o on o.apply_id=a.id and o.tenant_id=a.tenant_id and o.del_flag='0'
+        left join sys_user u on u.id=o.engineer_id
+        where a.tenant_id=#{tenantId} and a.customer_id=#{customerId} and a.del_flag='0'
+          and (a.status in ('WAIT','CONFIRM') or (a.status='ORDER' and o.status in ('WAIT_ACCEPT','ACCEPTED','PROCESSING')))
+        <trim prefix="and (" suffix=")" prefixOverrides="AND">
+            <include refid="com.ls.aegis.biz.eoms.mapper.EomsDataScopeMapper.dataScopeFilter"/>
+            <if test="params.dataScopeFilter == true and params.dsSelf == true">or o.engineer_id=#{params.dsUserId}</if>
+        </trim>
+        order by a.apply_time desc
+    </select>
+</mapper>

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.ls</groupId>
+        <artifactId>ls-aegis-server</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>ls-aegis-starter</artifactId>
+    <packaging>jar</packaging>
+    <name>${project.artifactId}</name>
+    <description>Starter 自动装配（核心能力，不含 rbac/业务模块，避免与 biz 循环依赖）</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.ls</groupId>
+            <artifactId>ls-aegis-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.ls</groupId>
+            <artifactId>ls-aegis-mybatis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.ls</groupId>
+            <artifactId>ls-aegis-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.ls</groupId>
+            <artifactId>ls-aegis-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.ls</groupId>
+            <artifactId>ls-aegis-crypto</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>top.continew.starter</groupId>
+            <artifactId>continew-starter-web</artifactId>
+        </dependency>
+        <!-- P4：原 ls-aegis-legacy 中 eoms/sign/quote 仍依赖的 Excel/工具能力（包名 com.ls.aegis.compat.*） -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.fastjson2</groupId>
+            <artifactId>fastjson2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+        </dependency>
+        <!-- XML 分页 API；optional 避免传到 PSI。拦截器仍由 eoms/quote/sign 的 pagehelper-spring-boot-starter 注册 -->
+        <dependency>
+            <groupId>com.github.pagehelper</groupId>
+            <artifactId>pagehelper-spring-boot-starter</artifactId>
+            <version>2.1.0</version>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.mybatis.spring.boot</groupId>
+                    <artifactId>mybatis-spring-boot-starter</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

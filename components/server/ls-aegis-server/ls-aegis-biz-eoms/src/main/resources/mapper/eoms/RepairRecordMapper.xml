@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.eoms.mapper.repair.RepairRecordMapper">
+    <select id="lockActiveRecordIds" resultType="long">
+        SELECT id FROM eoms_repair_record WHERE repair_order_id=#{orderId} AND tenant_id=#{tenantId} AND del_flag='0' FOR UPDATE
+    </select>
+    <select id="lockRecord" resultMap="RepairRecordResult">
+        SELECT * FROM eoms_repair_record WHERE id=#{id} AND tenant_id=#{tenantId} AND del_flag='0' FOR UPDATE
+    </select>
+    
+    <resultMap type="RepairRecord" id="RepairRecordResult">
+    	<id     property="id"      column="id"      />
+        <result property="repairOrderId"    column="repair_order_id"    />
+        <result property="orderNo"    column="order_no"    />
+        <result property="engineerName"    column="engineer_name"    />
+        <result property="faultReason"    column="fault_reason"    />
+        <result property="checkProcess"    column="check_process"    />
+        <result property="solution"    column="solution"    />
+        <result property="result"    column="result"    />
+        <result property="processingPhotos"    column="processing_photos"    />
+        <result property="completedPhotos"    column="completed_photos"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createUser"  column="create_user"  />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="tenantId"  column="tenant_id"    />
+        <result property="deptId"    column="dept_id"      />
+    </resultMap>
+
+    <sql id="selectRepairRecordVo">
+        select r.id, r.repair_order_id, r.fault_reason, r.check_process, r.solution, r.result,
+               r.processing_photos, r.completed_photos,
+               r.create_by, r.create_user, r.create_time, r.update_by, r.update_time, r.remark, r.del_flag,
+               r.tenant_id, r.dept_id,
+               o.order_no as order_no,
+               u.nickname as engineer_name
+		from eoms_repair_record r
+		left join eoms_repair_order o on r.repair_order_id = o.id
+		left join sys_user u on o.engineer_id = u.id
+    </sql>
+
+    <select id="selectRepairRecordById" parameterType="Long" resultMap="RepairRecordResult">
+        <include refid="selectRepairRecordVo"/>
+        where r.id = #{id} and r.del_flag = '0'
+    </select>
+
+    <select id="selectRepairRecordList" parameterType="RepairRecord" resultMap="RepairRecordResult">
+        <include refid="selectRepairRecordVo"/>
+        <where>
+			r.del_flag = '0'
+			<if test="id != null">
+				AND r.id = #{id}
+			</if>
+			<if test="repairOrderId != null">
+				AND r.repair_order_id = #{repairOrderId}
+			</if>
+			<if test="orderNo != null and orderNo != ''">
+				AND o.order_no = #{orderNo}
+			</if>
+			<if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+				and r.create_time &gt;= #{params.beginTime}
+			</if>
+			<if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+				and r.create_time &lt; DATE_ADD(DATE(#{params.endTime}), INTERVAL 1 DAY)
+			</if>
+			<include refid="com.ls.aegis.biz.eoms.mapper.EomsDataScopeMapper.dataScopeFilter"/>
+		</where>
+    </select>
+
+    <insert id="insertRepairRecord" parameterType="RepairRecord" useGeneratedKeys="true" keyProperty="id">
+        insert into eoms_repair_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="repairOrderId != null">repair_order_id,</if>
+			<if test="faultReason != null and faultReason != ''">fault_reason,</if>
+			<if test="checkProcess != null and checkProcess != ''">check_process,</if>
+			<if test="solution != null and solution != ''">solution,</if>
+			<if test="result != null and result != ''">result,</if>
+			<if test="processingPhotos != null and processingPhotos != ''">processing_photos,</if>
+			<if test="completedPhotos != null and completedPhotos != ''">completed_photos,</if>
+			<if test="createBy != null and createBy != ''">create_by,</if>
+			<if test="createUser != null">create_user,</if>
+			<if test="true">create_time,</if>
+			<if test="updateBy != null and updateBy != ''">update_by,</if>
+			<if test="updateTime != null and updateTime != ''">update_time,</if>
+			<if test="remark != null and remark != ''">remark,</if>
+			<if test="delFlag != null and delFlag != ''">del_flag,</if>
+			<if test="tenantId != null">tenant_id,</if>
+			<if test="deptId != null">dept_id,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="repairOrderId != null">#{repairOrderId},</if>
+			<if test="faultReason != null and faultReason != ''">#{faultReason},</if>
+			<if test="checkProcess != null and checkProcess != ''">#{checkProcess},</if>
+			<if test="solution != null and solution != ''">#{solution},</if>
+			<if test="result != null and result != ''">#{result},</if>
+			<if test="processingPhotos != null and processingPhotos != ''">#{processingPhotos},</if>
+			<if test="completedPhotos != null and completedPhotos != ''">#{completedPhotos},</if>
+			<if test="createBy != null and createBy != ''">#{createBy},</if>
+			<if test="createUser != null">#{createUser},</if>
+			<if test="true">sysdate(),</if>
+			<if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+			<if test="updateTime != null and updateTime != ''">#{updateTime},</if>
+			<if test="remark != null and remark != ''">#{remark},</if>
+			<if test="delFlag != null and delFlag != ''">#{delFlag,jdbcType=CHAR},</if>
+			<if test="tenantId != null">#{tenantId},</if>
+			<if test="deptId != null">#{deptId},</if>
+        </trim>
+    </insert>
+
+    <update id="updateRepairRecord" parameterType="RepairRecord">
+        update eoms_repair_record 
+        <set>
+            <if test="repairOrderId != null">repair_order_id = #{repairOrderId},</if>
+            <if test="faultReason != null and faultReason != ''">fault_reason = #{faultReason},</if>
+            <if test="checkProcess != null and checkProcess != ''">check_process = #{checkProcess},</if>
+            <if test="solution != null and solution != ''">solution = #{solution},</if>
+            <if test="result != null and result != ''">result = #{result},</if>
+            <if test="processingPhotos != null and processingPhotos != ''">processing_photos = #{processingPhotos},</if>
+            <if test="completedPhotos != null and completedPhotos != ''">completed_photos = #{completedPhotos},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+ 			update_time = sysdate(),
+            <if test="remark != null and remark != ''">remark = #{remark},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <update id="deleteRepairRecordById" parameterType="Long">
+        update eoms_repair_record set del_flag = '2' where id = #{id}
+    </update>
+
+    <update id="deleteRepairRecordByIds" parameterType="Long">
+        update eoms_repair_record set del_flag = '2' where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+        	#{id}
+        </foreach>
+    </update>
+
+    <!-- 按工单ID统计未删除维修记录数量，用于 DB 层兜底唯一性校验 -->
+    <select id="countByRepairOrderId" parameterType="Long" resultType="int">
+        select count(1) from eoms_repair_record
+        where repair_order_id = #{repairOrderId} and del_flag = '0'
+    </select>
+
+</mapper>

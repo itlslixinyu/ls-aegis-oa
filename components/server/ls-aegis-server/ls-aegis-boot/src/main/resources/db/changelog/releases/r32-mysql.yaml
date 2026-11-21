@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - preConditions:
+      - onFail: HALT
+      - onError: HALT
+      - dbms:
+          type: mysql
+      - sqlCheck:
+          expectedResult: "1"
+          sql: SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='eoms_quote' AND engine='InnoDB'
+      - sqlCheck:
+          expectedResult: "1"
+          sql: >-
+            SELECT CASE WHEN COUNT(*)=0 THEN 1
+            WHEN COUNT(*)=3 AND SUM(CASE WHEN data_type='bigint' AND column_type NOT LIKE '%unsigned%'
+            AND column_type NOT LIKE '%zerofill%' AND is_nullable='YES' AND column_default IS NULL
+            AND extra='' AND COALESCE(generation_expression,'')='' THEN 1 ELSE 0 END)=3
+            THEN 1 ELSE 0 END
+            FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='eoms_quote'
+            AND column_name IN ('tenant_id','create_user','dept_id')
+  - changeSet:
+      id: r32_quote_data_scope_mysql
+      author: ls
+      dbms: mysql
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - sqlCheck:
+            expectedResult: "0"
+            sql: SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='eoms_quote' AND column_name IN ('tenant_id','create_user','dept_id')
+      changes:
+        - sqlFile:
+            path: db/changelog/mysql/patch_quote_data_scope.sql
+            encoding: UTF-8
+            splitStatements: true
+            stripComments: true

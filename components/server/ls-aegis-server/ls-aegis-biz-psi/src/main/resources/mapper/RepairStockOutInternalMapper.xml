@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.psi.mapper.RepairStockOutInternalMapper">
+    <select id="lockRepairHeads" resultType="com.ls.aegis.biz.psi.model.entity.StockOutDO">
+        select * from psi_stock_out
+        where tenant_id=#{tenantId} and out_type='REPAIR' and deleted=0
+        and (repair_order_id=#{orderId}
+             or (repair_order_id is null and left(remark, char_length(#{prefix}))=#{prefix}))
+        for update
+    </select>
+    <select id="selectItems" resultType="com.ls.aegis.biz.psi.model.entity.StockOutItemDO">
+        select * from psi_stock_out_item where tenant_id=#{tenantId} and stock_out_id=#{outId} and deleted=0
+    </select>
+    <update id="markVoid">
+        update psi_stock_out set doc_status='VOID', update_time=CURRENT_TIMESTAMP
+        where id=#{id} and tenant_id=#{tenantId} and out_type='REPAIR' and doc_status='CONFIRMED' and deleted=0
+    </update>
+</mapper>

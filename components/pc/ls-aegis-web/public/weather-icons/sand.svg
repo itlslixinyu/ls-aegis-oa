@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
+  <defs>
+    <linearGradient id="sandCloud" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D7CCC8"/>
+      <stop offset="100%" stop-color="#A1887F"/>
+    </linearGradient>
+    <linearGradient id="sandTint" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFCC80" stop-opacity="0.2"/>
+      <stop offset="50%" stop-color="#FFB74D" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#FFCC80" stop-opacity="0.2"/>
+    </linearGradient>
+  </defs>
+  <g fill="url(#sandCloud)">
+    <ellipse cx="24" cy="22" rx="13" ry="9"/>
+    <ellipse cx="36" cy="20" rx="15" ry="11"/>
+    <ellipse cx="46" cy="24" rx="10" ry="7"/>
+    <ellipse cx="18" cy="26" rx="8" ry="6"/>
+  </g>
+  <g stroke="#FFB74D" stroke-width="2.4" stroke-linecap="round" opacity="0.9">
+    <path d="M10 40 Q22 36 34 40 T58 40"/>
+    <path d="M8 48 Q20 44 32 48 T56 48"/>
+    <path d="M12 56 Q24 52 36 56 T54 56"/>
+  </g>
+  <rect x="8" y="36" width="48" height="24" fill="url(#sandTint)"/>
+</svg>

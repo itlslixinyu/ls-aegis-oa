@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.sign.mapper.SignLogMapper">
+
+    <resultMap id="SignLogResult" type="com.ls.aegis.biz.sign.domain.SignLog">
+        <id property="logId" column="log_id"/>
+        <result property="projectId" column="project_id"/>
+        <result property="sealId" column="seal_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="createUser" column="create_user"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="fileHash" column="file_hash"/>
+        <result property="clientIp" column="client_ip"/>
+        <result property="ipLocation" column="ip_location"/>
+        <result property="remark" column="remark"/>
+        <result property="outputFileId" column="output_file_id"/>
+        <result property="certId" column="cert_id"/>
+        <result property="actionType" column="action_type"/>
+        <result property="resultCode" column="result_code"/>
+        <result property="traceId" column="trace_id"/>
+        <result property="signTime" column="sign_time"/>
+        <result property="createTime" column="create_time"/>
+        <result property="projectName" column="project_name"/>
+        <result property="sealName" column="seal_name"/>
+        <result property="userName" column="user_name"/>
+        <result property="nickName" column="nick_name"/>
+    </resultMap>
+
+    <select id="selectLogList" parameterType="com.ls.aegis.biz.sign.domain.SignLog" resultMap="SignLogResult">
+        SELECT l.log_id, l.project_id, l.seal_id, l.user_id, l.file_hash,
+               l.client_ip, l.ip_location, l.remark, l.output_file_id,
+               l.cert_id, l.action_type, l.result_code, l.trace_id,
+               l.sign_time, l.create_time, l.tenant_id, l.create_user, l.dept_id,
+               p.project_name, s.seal_name,
+               u.username AS user_name, u.nickname AS nick_name
+        FROM sign_log l
+        LEFT JOIN sign_project p ON l.project_id = p.project_id
+        LEFT JOIN sign_seal s ON l.seal_id = s.seal_id
+        LEFT JOIN sys_user u ON l.user_id = u.id
+        <where>
+            <if test="logId != null">AND l.log_id = #{logId}</if>
+            <if test="projectId != null">AND l.project_id = #{projectId}</if>
+            <if test="sealId != null">AND l.seal_id = #{sealId}</if>
+            <if test="userId != null">AND l.user_id = #{userId}</if>
+            <if test="actionType != null and actionType != ''">AND l.action_type = #{actionType}</if>
+            <if test="userName != null and userName != ''">AND u.username LIKE CONCAT('%', #{userName}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                AND l.sign_time &gt;= #{params.beginTime}
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                AND l.sign_time &lt;= #{params.endTime}
+            </if>
+            <include refid="com.ls.aegis.biz.sign.mapper.SignDataScopeMapper.dataScopeFilter"/>
+        </where>
+        ORDER BY l.sign_time DESC
+    </select>
+
+    <select id="selectLogById" parameterType="Long" resultMap="SignLogResult">
+        SELECT * FROM sign_log WHERE log_id = #{logId}
+    </select>
+
+    <select id="selectLatestByOutputFileId" parameterType="Long" resultMap="SignLogResult">
+        SELECT * FROM sign_log
+        WHERE output_file_id = #{outputFileId}
+        ORDER BY sign_time DESC, create_time DESC, log_id DESC
+        LIMIT 1
+    </select>
+
+    <insert id="insertLog" parameterType="com.ls.aegis.biz.sign.domain.SignLog">
+        INSERT INTO sign_log (
+            project_id, seal_id, user_id, file_hash, client_ip, ip_location,
+            remark, output_file_id, cert_id, action_type, result_code,
+            trace_id, sign_time, create_time, tenant_id, create_user, dept_id
+        ) VALUES (
+            #{projectId}, #{sealId}, #{userId}, #{fileHash}, #{clientIp}, #{ipLocation},
+            #{remark}, #{outputFileId}, #{certId}, #{actionType}, #{resultCode},
+            #{traceId}, #{signTime}, #{createTime}, #{tenantId}, #{createUser}, #{deptId}
+        )
+    </insert>
+
+    <!--
+        【合规强制】签章日志是法定审计依据，禁止任何删除/清空操作。
+        这里返回一个永不匹配的假语句，避免真实删除；
+        Java 层同时通过 UnsupportedOperationException 拦截调用。
+    -->
+    <delete id="deleteLogByIds">
+        SELECT 1 FROM DUAL WHERE 1 = 0
+    </delete>
+
+    <delete id="clearAll">
+        SELECT 1 FROM DUAL WHERE 1 = 0
+    </delete>
+
+</mapper>

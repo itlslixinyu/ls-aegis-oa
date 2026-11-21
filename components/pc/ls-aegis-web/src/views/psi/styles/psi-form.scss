@@ -1,0 +1,41 @@
+/* PSI 业务弹窗表单公共样式 */
+.psi-biz-form {
+  .arco-form-item {
+    margin-bottom: 12px;
+  }
+
+  .arco-form-item-label-col > .arco-form-item-label {
+    font-weight: 500;
+    color: var(--color-text-2);
+  }
+
+  .arco-picker,
+  .arco-select-view-single,
+  .arco-input-wrapper,
+  .arco-input-number,
+  .arco-textarea-wrapper {
+    width: 100%;
+  }
+
+  .psi-biz-form__section {
+    margin: 4px 0 8px;
+  }
+
+  .psi-biz-form__section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 8px 0 10px;
+  }
+
+  .psi-biz-form__section-title h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-1);
+  }
+
+  .psi-biz-form__table {
+    margin-top: 0;
+  }
+}

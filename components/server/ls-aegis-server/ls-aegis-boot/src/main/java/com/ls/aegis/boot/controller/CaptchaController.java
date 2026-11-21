@@ -1,0 +1,189 @@
+/*
+ * Copyright (c) 2022-present Charles7c Authors. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.ls.aegis.boot.controller;
+
+import cn.dev33.satoken.annotation.SaIgnore;
+import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.core.lang.Dict;
+import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.servlet.JakartaServletUtil;
+import cn.hutool.extra.spring.SpringUtil;
+import com.anji.captcha.model.common.RepCodeEnum;
+import com.anji.captcha.model.common.ResponseModel;
+import com.anji.captcha.model.vo.CaptchaVO;
+import com.anji.captcha.service.CaptchaService;
+import com.wf.captcha.base.Captcha;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.mail.MessagingException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import com.ls.aegis.rbac.auth.model.resp.CaptchaResp;
+import com.ls.aegis.common.config.CaptchaProperties;
+import com.ls.aegis.redis.constant.CacheConstants;
+import com.ls.aegis.common.constant.GlobalConstants;
+import com.ls.aegis.rbac.enums.OptionCategoryEnum;
+import com.ls.aegis.rbac.model.entity.user.UserDO;
+import com.ls.aegis.rbac.service.OptionService;
+import com.ls.aegis.rbac.service.UserService;
+import com.ls.aegis.rbac.config.mail.MailSendHelper;
+import top.continew.starter.cache.redisson.util.RedisUtils;
+import top.continew.starter.captcha.graphic.core.GraphicCaptchaService;
+import top.continew.starter.core.autoconfigure.application.ApplicationProperties;
+import top.continew.starter.core.util.TemplateUtils;
+import top.continew.starter.core.util.validation.CheckUtils;
+import top.continew.starter.core.util.validation.ValidationUtils;
+import top.continew.starter.extension.tenant.annotation.TenantIgnore;
+import top.continew.starter.log.annotation.Log;
+import top.continew.starter.ratelimiter.annotation.RateLimiter;
+import top.continew.starter.ratelimiter.annotation.RateLimiters;
+import top.continew.starter.ratelimiter.enums.LimitType;
+import top.continew.starter.web.model.R;
+
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * 验证码 API
+ *
+ * @author Charles7c
+ * @since 2022/12/11 14:00
+ */
+@Tag(name = "验证码 API")
+@TenantIgnore
+@SaIgnore
+@Validated
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/captcha")
+public class CaptchaController {
+
+    private final ApplicationProperties applicationProperties;
+    private final CaptchaProperties captchaProperties;
+    private final GraphicCaptchaService graphicCaptchaService;
+    private final OptionService optionService;
+    private final UserService userService;
+
+    @Log(ignore = true)
+    @Operation(summary = "获取行为验证码", description = "获取行为验证码（Base64编码）")
+    @GetMapping("/behavior")
+    public Object getBehaviorCaptcha(CaptchaVO captchaReq, HttpServletRequest request) {
+        CaptchaService behaviorCaptchaService = SpringUtil.getBean(CaptchaService.class);
+        captchaReq.setBrowserInfo(JakartaServletUtil.getClientIP(request) + request.getHeader(HttpHeaders.USER_AGENT));
+        ResponseModel responseModel = behaviorCaptchaService.get(captchaReq);
+        CheckUtils.throwIf(() -> !StrUtil.equals(RepCodeEnum.SUCCESS.getCode(), responseModel
+            .getRepCode()), responseModel.getRepMsg());
+        return responseModel.getRepData();
+    }
+
+    @Log(ignore = true)
+    @Operation(summary = "校验行为验证码", description = "校验行为验证码")
+    @PostMapping("/behavior")
+    public Object checkBehaviorCaptcha(@RequestBody CaptchaVO captchaReq, HttpServletRequest request) {
+        CaptchaService behaviorCaptchaService = SpringUtil.getBean(CaptchaService.class);
+        captchaReq.setBrowserInfo(JakartaServletUtil.getClientIP(request) + request.getHeader(HttpHeaders.USER_AGENT));
+        return behaviorCaptchaService.check(captchaReq);
+    }
+
+    @Log(ignore = true)
+    @Operation(summary = "获取图片验证码", description = "获取图片验证码（Base64编码，带图片格式：data:image/gif;base64）")
+    @GetMapping("/image")
+    public CaptchaResp getImageCaptcha() {
+        int loginCaptchaEnabled = optionService.getValueByCode2Int("LOGIN_CAPTCHA_ENABLED");
+        if (GlobalConstants.Boolean.NO.equals(loginCaptchaEnabled)) {
+            return CaptchaResp.builder().isEnabled(false).build();
+        }
+        String uuid = IdUtil.fastUUID();
+        String captchaKey = CacheConstants.CAPTCHA_KEY_PREFIX + uuid;
+        Captcha captcha = graphicCaptchaService.getCaptcha();
+        long expireTime = LocalDateTimeUtil.toEpochMilli(LocalDateTime.now()
+            .plusMinutes(captchaProperties.getExpirationInMinutes()));
+        RedisUtils.set(captchaKey, captcha.text(), Duration.ofMinutes(captchaProperties.getExpirationInMinutes()));
+        return CaptchaResp.of(uuid, captcha.toBase64(), expireTime);
+    }
+
+    /**
+     * 获取邮箱验证码
+     *
+     * <p>
+     * 限流规则：<br>
+     * 1.同一邮箱同一模板，1分钟2条，1小时8条，24小时20条 <br>
+     * 2.同一邮箱所有模板 24 小时 100 条 <br>
+     * 3.同一 IP 每分钟限制发送 30 条
+     * </p>
+     *
+     * @param email      邮箱
+     * @param captchaReq 行为验证码请求参数
+     * @return {@link R }
+     */
+    @Operation(summary = "获取邮箱验证码", description = "发送验证码到指定邮箱")
+    @GetMapping("/mail")
+    @RateLimiters({
+        @RateLimiter(name = CacheConstants.CAPTCHA_KEY_PREFIX + "MIN", key = "#email + ':' + T(cn.hutool.extra.spring.SpringUtil).getProperty('captcha.mail.templatePath')", rate = 2, interval = 1, unit = TimeUnit.MINUTES, message = "获取验证码操作太频繁，请稍后再试"),
+        @RateLimiter(name = CacheConstants.CAPTCHA_KEY_PREFIX + "HOUR", key = "#email + ':' + T(cn.hutool.extra.spring.SpringUtil).getProperty('captcha.mail.templatePath')", rate = 8, interval = 1, unit = TimeUnit.HOURS, message = "获取验证码操作太频繁，请稍后再试"),
+        @RateLimiter(name = CacheConstants.CAPTCHA_KEY_PREFIX + "DAY", key = "#email + ':' + T(cn.hutool.extra.spring.SpringUtil).getProperty('captcha.mail.templatePath')", rate = 20, interval = 24, unit = TimeUnit.HOURS, message = "获取验证码操作太频繁，请稍后再试"),
+        @RateLimiter(name = CacheConstants.CAPTCHA_KEY_PREFIX, key = "#email", rate = 100, interval = 24, unit = TimeUnit.HOURS, message = "获取验证码操作太频繁，请稍后再试"),
+        @RateLimiter(name = CacheConstants.CAPTCHA_KEY_PREFIX, key = "#email", rate = 30, interval = 1, unit = TimeUnit.MINUTES, type = LimitType.IP, message = "获取验证码操作太频繁，请稍后再试")})
+    public R getMailCaptcha(@NotBlank(message = "邮箱不能为空") @Email(message = "邮箱格式不正确") String email,
+                            CaptchaVO captchaReq,
+                            @RequestParam(required = false) String purpose) throws MessagingException {
+        // 行为验证码校验
+        CaptchaService behaviorCaptchaService = SpringUtil.getBean(CaptchaService.class);
+        ResponseModel verificationRes = behaviorCaptchaService.verification(captchaReq);
+        ValidationUtils.throwIfNotEqual(verificationRes.getRepCode(), RepCodeEnum.SUCCESS.getCode(), verificationRes
+            .getRepMsg());
+        // 登录/找回：必须已绑定；绑定新邮箱（个人中心）允许未绑定
+        if (StrUtil.equalsAnyIgnoreCase(purpose, "login", "forgot")) {
+            UserDO user = userService.getByEmail(email);
+            ValidationUtils.throwIfNull(user, "此邮箱未绑定本系统账号");
+        }
+        // 生成验证码
+        CaptchaProperties.CaptchaMail captchaMail = captchaProperties.getMail();
+        String captcha = RandomUtil.randomNumbers(captchaMail.getLength());
+        // 发送验证码
+        Long expirationInMinutes = captchaMail.getExpirationInMinutes();
+        Map<String, String> siteConfig = optionService.getByCategory(OptionCategoryEnum.SITE);
+        String siteTitle = StrUtil.blankToDefault(siteConfig.get("SITE_TITLE"), applicationProperties.getName());
+        String siteUrl = StrUtil.blankToDefault(applicationProperties.getUrl(), "");
+        String content = TemplateUtils.render(captchaMail.getTemplatePath(), Dict.create()
+            .set("siteUrl", siteUrl)
+            .set("siteTitle", siteTitle)
+            .set("siteCompany", siteConfig.get("SITE_COMPANY"))
+            .set("siteCopyright", siteConfig.get("SITE_COPYRIGHT"))
+            .set("captcha", captcha)
+            .set("expiration", expirationInMinutes));
+        MailSendHelper.sendHtml(email, "【%s】邮箱验证码".formatted(siteTitle), content);
+        // 保存验证码
+        String captchaKey = CacheConstants.CAPTCHA_KEY_PREFIX + email;
+        RedisUtils.set(captchaKey, captcha, Duration.ofMinutes(expirationInMinutes));
+        return R.ok("发送成功，验证码有效期 %s 分钟".formatted(expirationInMinutes));
+    }
+}

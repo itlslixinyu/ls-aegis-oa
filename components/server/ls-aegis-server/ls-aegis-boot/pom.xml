@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.ls</groupId>
+        <artifactId>ls-aegis-server</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>ls-aegis-boot</artifactId>
+    <packaging>jar</packaging>
+    <name>${project.artifactId}</name>
+    <description>启动入口模块：main 方法、主配置文件</description>
+
+    <properties>
+        <main-class>com.ls.aegis.boot.LsAegisApplication</main-class>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.ls</groupId>
+            <artifactId>ls-aegis-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.ls</groupId>
+            <artifactId>ls-aegis-rbac</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.ls</groupId>
+            <artifactId>ls-aegis-biz-file</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.ls</groupId>
+            <artifactId>ls-aegis-biz-notice</artifactId>
+        </dependency>
+        <!-- 租户管理 API；行级隔离仍由 continew-starter.tenant.enabled 控制（默认 false） -->
+        <dependency>
+            <groupId>com.ls</groupId>
+            <artifactId>ls-aegis-biz-tenant</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.ls</groupId>
+            <artifactId>ls-aegis-biz-schedule</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.ls</groupId>
+            <artifactId>ls-aegis-biz-psi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.ls</groupId>
+            <artifactId>ls-aegis-biz-eoms</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.ls</groupId>
+            <artifactId>ls-aegis-biz-sign</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.ls</groupId>
+            <artifactId>ls-aegis-biz-quote</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>top.continew.starter</groupId>
+            <artifactId>continew-starter-trace</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-core</artifactId>
+        </dependency>
+        <!-- pagehelper @AutoConfigureAfter 需要类存在；勿启用官方 MybatisAutoConfiguration（与 MP 冲突） -->
+        <dependency>
+            <groupId>org.mybatis.spring.boot</groupId>
+            <artifactId>mybatis-spring-boot-autoconfigure</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- 本机开发热重启（改类后自动重启上下文；打包时 optional 不会进生产镜像） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>ls-aegis-server</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <!-- 覆盖父工程 skip=true，仅本模块真正 spring-boot:run -->
+                    <skip>false</skip>
+                    <mainClass>${main-class}</mainClass>
+                    <!-- 编译器与重复日志实现不进入运行包；编译/测试依赖保持原有解析。 -->
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                        <exclude>
+                            <groupId>commons-logging</groupId>
+                            <artifactId>commons-logging</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

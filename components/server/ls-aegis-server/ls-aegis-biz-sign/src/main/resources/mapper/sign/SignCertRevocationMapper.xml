@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.sign.mapper.SignCertRevocationMapper">
+
+    <resultMap id="SignCertRevocationResult" type="com.ls.aegis.biz.sign.domain.SignCertRevocation">
+        <id property="revokeId" column="revoke_id"/>
+        <result property="certId" column="cert_id"/>
+        <result property="revokeReason" column="revoke_reason"/>
+        <result property="revokeTime" column="revoke_time"/>
+        <result property="operatorId" column="operator_id"/>
+        <result property="crlNo" column="crl_no"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <select id="selectByCertId" parameterType="Long" resultMap="SignCertRevocationResult">
+        SELECT revoke_id, cert_id, revoke_reason, revoke_time, operator_id, crl_no,
+               create_by, create_time, update_by, update_time, remark
+        FROM sign_cert_revocation
+        WHERE cert_id = #{certId}
+        ORDER BY revoke_time DESC, revoke_id DESC
+    </select>
+
+    <insert id="insertSignCertRevocation" parameterType="com.ls.aegis.biz.sign.domain.SignCertRevocation" useGeneratedKeys="true" keyProperty="revokeId">
+        INSERT INTO sign_cert_revocation (
+            cert_id, revoke_reason, revoke_time, operator_id, crl_no,
+            create_by, create_time, update_by, update_time, remark
+        ) VALUES (
+            #{certId}, #{revokeReason}, #{revokeTime}, #{operatorId}, #{crlNo},
+            #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{remark}
+        )
+    </insert>
+</mapper>

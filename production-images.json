@@ -1,0 +1,32 @@
+{
+  "gateway": {
+    "image": "ls-aegis-h5:1.4.0-20261114t080227z-4f37f31c11d1",
+    "imageId": "sha256:ed86e6a7a5e56134edac66d99a3c7c59e7711335766c0b19f1a1f2498b92a8bf",
+    "sourceSha256": "aec059e0c6f26101df7871a4bf8aafe3c57b6872ff3f88526aad2fdb9f9db986",
+    "buildId": "20261114T080227Z-4f37f31c11d1"
+  },
+  "customer": {
+    "image": "ls-aegis-h5:1.4.0-20261114t090631z-fa6bc83852b9",
+    "imageId": "sha256:9ceeb0443f37e73222eb3665688cc5ca7c2e9c5d5619ba582e3d8c19b7474f8a",
+    "sourceSha256": "c3a733223ca457ab60042d2a7a8461d50b8cf4ea1899d6f60e9b384e05a27964",
+    "buildId": "20261114T090631Z-fa6bc83852b9"
+  },
+  "engineer": {
+    "image": "ls-aegis-h5-engineer:1.4.0-20261121t093547z-0a82b4803fe3",
+    "imageId": "sha256:60b2dbe1bdc2afe7e003f554aeebb2acb05e0c1da5bc34f767a30ff6dbf56c69",
+    "sourceSha256": "3a8e2bab9258daa880c9cc7aa8a13092830275e28a6eebb33057a1ea7161f415",
+    "buildId": "20261121T093547Z-0a82b4803fe3"
+  },
+  "pc": {
+    "image": "ls-aegis-web:1.4.0-20261121t053813z-55a1d73ac564",
+    "imageId": "sha256:49b5ebc07c026933fbaf4c7f48fadb77eaabdc5348bdcb35d250b078be01e2ce",
+    "sourceSha256": "3d1832bb218a0d30a46b1a65ca1c53c24ce383d9b20be201bed3c2e65d0b5d11",
+    "buildId": "20261121T053813Z-55a1d73ac564"
+  },
+  "server": {
+    "image": "ls-aegis-server:1.4.0-20261121t092826z-864d33038188",
+    "imageId": "sha256:15c6366834b8c861317cf259dcefe111e52b7bb4a7354485002204782bdeba1b",
+    "sourceSha256": "9c0d285c2cdff1e819707b1ddd72fb553e61e72a4ac850e74ad19df7c8924bd5",
+    "buildId": "20261121T092826Z-864d33038188"
+  }
+}

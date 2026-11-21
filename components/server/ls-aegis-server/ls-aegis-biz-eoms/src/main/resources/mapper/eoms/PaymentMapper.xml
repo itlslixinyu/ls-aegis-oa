@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.eoms.mapper.finance.PaymentMapper">
+    
+    <resultMap type="Payment" id="PaymentResult">
+    	<id     property="id"      column="id"      />
+        <result property="customerId"    column="customer_id"    />
+        <result property="customerNo"    column="customer_no"    />
+        <result property="customerName"    column="customer_name"    />
+        <result property="receivableId"    column="receivable_id"    />
+        <result property="paymentNo"    column="payment_no"    />
+        <result property="batchId"    column="batch_id"    />
+        <result property="receivableNo"    column="receivable_no"    />
+        <result property="amount"    column="amount"    />
+        <result property="paymentMethod"    column="payment_method"    />
+        <result property="paymentTime"    column="payment_time"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createUser"  column="create_user"  />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="tenantId"  column="tenant_id"    />
+        <result property="deptId"    column="dept_id"      />
+        <result property="status" column="status"/>
+        <result property="reversedTime" column="reversed_time"/>
+        <result property="reversedBy" column="reversed_by"/>
+    </resultMap>
+
+    <sql id="selectPaymentVo">
+        select p.id, p.status, p.reversed_time, p.reversed_by, p.customer_id, p.receivable_id, p.payment_no, p.batch_id, p.amount, p.payment_method, p.payment_time,
+               p.create_by, p.create_user, p.create_time, p.update_by, p.update_time, p.remark, p.del_flag,
+               p.tenant_id, p.dept_id,
+               c.unit_code as customer_no,
+               c.unit_name as customer_name,
+               rv.receivable_no as receivable_no
+		from eoms_payment p
+		left join psi_unit c on p.customer_id = c.id and c.deleted = 0
+		left join eoms_receivable rv on p.receivable_id = rv.id
+    </sql>
+
+    <select id="selectPaymentById" parameterType="Long" resultMap="PaymentResult">
+        <include refid="selectPaymentVo"/>
+        where p.id = #{id} and p.del_flag = '0'
+    </select>
+
+    <select id="selectPaymentList" parameterType="Payment" resultMap="PaymentResult">
+        <include refid="selectPaymentVo"/>
+        <where>
+			p.del_flag = '0'
+            <choose><when test="status == 'ALL'"></when><when test="status != null and status != ''">and p.status=#{status}</when><otherwise>and p.status='ACTIVE'</otherwise></choose>
+			<if test="id != null">
+				AND p.id = #{id}
+			</if>
+			<if test="customerId != null">
+				AND p.customer_id = #{customerId}
+			</if>
+			<if test="receivableId != null">
+				AND p.receivable_id = #{receivableId}
+			</if>
+			<if test="customerName != null and customerName != ''">
+				AND c.unit_name like concat('%', #{customerName}, '%')
+			</if>
+			<if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+				and p.create_time &gt;= #{params.beginTime}
+			</if>
+			<if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+				and p.create_time &lt; DATE_ADD(DATE(#{params.endTime}), INTERVAL 1 DAY)
+			</if>
+			<include refid="com.ls.aegis.biz.eoms.mapper.EomsDataScopeMapper.dataScopeFilter"/>
+		</where>
+    </select>
+
+    <insert id="insertPayment" parameterType="Payment" useGeneratedKeys="true" keyProperty="id">
+        insert into eoms_payment
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="reversedBy != null">reversed_by,</if>
+            <if test="reversedTime != null">reversed_time,</if>
+            <if test="status != null">status,</if>
+			<if test="customerId != null">customer_id,</if>
+			<if test="receivableId != null">receivable_id,</if>
+			<if test="paymentNo != null and paymentNo != ''">payment_no,</if>
+			<if test="batchId != null and batchId != ''">batch_id,</if>
+			<if test="amount != null">amount,</if>
+			<if test="paymentMethod != null and paymentMethod != ''">payment_method,</if>
+			<if test="paymentTime != null">payment_time,</if>
+			<if test="createBy != null and createBy != ''">create_by,</if>
+			<if test="createUser != null">create_user,</if>
+			<if test="true">create_time,</if>
+			<if test="updateBy != null and updateBy != ''">update_by,</if>
+			<if test="updateTime != null and updateTime != ''">update_time,</if>
+			<if test="remark != null and remark != ''">remark,</if>
+			<if test="delFlag != null and delFlag != ''">del_flag,</if>
+			<if test="tenantId != null">tenant_id,</if>
+			<if test="deptId != null">dept_id,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="reversedBy != null">#{reversedBy},</if>
+            <if test="reversedTime != null">#{reversedTime},</if>
+            <if test="status != null">#{status},</if>
+			<if test="customerId != null">#{customerId},</if>
+			<if test="receivableId != null">#{receivableId},</if>
+			<if test="paymentNo != null and paymentNo != ''">#{paymentNo},</if>
+			<if test="batchId != null and batchId != ''">#{batchId},</if>
+			<if test="amount != null">#{amount},</if>
+			<if test="paymentMethod != null and paymentMethod != ''">#{paymentMethod},</if>
+			<if test="paymentTime != null">#{paymentTime},</if>
+			<if test="createBy != null and createBy != ''">#{createBy},</if>
+			<if test="createUser != null">#{createUser},</if>
+			<if test="true">sysdate(),</if>
+			<if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+			<if test="updateTime != null and updateTime != ''">#{updateTime},</if>
+			<if test="remark != null and remark != ''">#{remark},</if>
+			<if test="delFlag != null and delFlag != ''">#{delFlag,jdbcType=CHAR},</if>
+			<if test="tenantId != null">#{tenantId},</if>
+			<if test="deptId != null">#{deptId},</if>
+        </trim>
+    </insert>
+
+    <update id="updatePayment" parameterType="Payment">
+        update eoms_payment
+        <set>
+            <if test="customerId != null">customer_id = #{customerId},</if>
+            <if test="receivableId != null">receivable_id = #{receivableId},</if>
+            <if test="paymentNo != null and paymentNo != ''">payment_no = #{paymentNo},</if>
+            <if test="batchId != null and batchId != ''">batch_id = #{batchId},</if>
+            <if test="amount != null">amount = #{amount},</if>
+            <if test="paymentMethod != null and paymentMethod != ''">payment_method = #{paymentMethod},</if>
+            <if test="paymentTime != null">payment_time = #{paymentTime},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+ 			update_time = sysdate(),
+            <if test="remark != null and remark != ''">remark = #{remark},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <update id="deletePaymentById" parameterType="Long">
+        update eoms_payment set del_flag = '2' where id = #{id}
+    </update>
+
+    <update id="deletePaymentByIds" parameterType="Long">
+        update eoms_payment set del_flag = '2' where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+        	#{id}
+        </foreach>
+    </update>
+
+    <select id="lockPayment" resultMap="PaymentResult">
+        select * from eoms_payment where id=#{id} and del_flag='0' for update
+    </select>
+    <select id="countActiveByReceivable" resultType="int">
+        select count(*) from eoms_payment where receivable_id=#{id} and del_flag='0' and status='ACTIVE'
+    </select>
+    <update id="reversePayment">
+        update eoms_payment set status='REVERSED', reversed_by=#{operator}, reversed_time=CURRENT_TIMESTAMP,
+        update_by=#{operator}, update_time=CURRENT_TIMESTAMP where id=#{id} and del_flag='0' and status='ACTIVE'
+    </update>
+</mapper>

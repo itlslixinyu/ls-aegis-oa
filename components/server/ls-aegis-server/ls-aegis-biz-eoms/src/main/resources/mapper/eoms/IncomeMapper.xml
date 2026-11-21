@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.eoms.mapper.finance.IncomeMapper">
+    
+    <resultMap type="Income" id="IncomeResult">
+    	<id     property="id"      column="id"      />
+        <result property="incomeNo"    column="income_no"    />
+        <result property="repairOrderId"    column="repair_order_id"    />
+        <result property="orderNo"    column="order_no"    />
+        <result property="customerId"    column="customer_id"    />
+        <result property="customerNo"    column="customer_no"    />
+        <result property="customerName"    column="customer_name"    />
+        <result property="amount"    column="amount"    />
+        <result property="incomeType"    column="income_type"    />
+        <result property="incomeDate"    column="income_date"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="paymentId" column="payment_id"/>
+        <result property="reversalOfId" column="reversal_of_id"/>
+    </resultMap>
+
+    <sql id="selectIncomeVo">
+        select i.id, i.payment_id, i.reversal_of_id, i.income_no, i.repair_order_id, i.customer_id, i.amount, i.income_type, i.income_date,
+               i.create_by, i.create_time, i.update_by, i.update_time, i.remark, i.del_flag,
+               c.unit_code as customer_no,
+               c.unit_name as customer_name,
+               o.order_no as order_no
+		from eoms_income i
+		left join psi_unit c on i.customer_id = c.id and c.deleted = 0
+		left join eoms_repair_order o on i.repair_order_id = o.id
+    </sql>
+
+    <select id="selectIncomeById" parameterType="Long" resultMap="IncomeResult">
+        <include refid="selectIncomeVo"/>
+        where i.id = #{id} and i.del_flag = '0'
+    </select>
+
+    <select id="selectIncomeList" parameterType="Income" resultMap="IncomeResult">
+        <include refid="selectIncomeVo"/>
+        <where>
+			i.del_flag = '0'
+            AND o.id IS NOT NULL AND o.del_flag='0' AND o.tenant_id=#{params.incomeTenantId}
+            AND c.id IS NOT NULL AND c.tenant_id=o.tenant_id AND i.customer_id=o.customer_id
+            <if test="id != null">AND i.id=#{id}</if>
+			<if test="incomeNo != null and incomeNo != ''">
+				AND i.income_no = #{incomeNo}
+			</if>
+			<if test="repairOrderId != null">
+				AND i.repair_order_id = #{repairOrderId}
+			</if>
+			<if test="customerId != null">
+				AND i.customer_id = #{customerId}
+			</if>
+			<if test="incomeType != null and incomeType != ''">
+				AND i.income_type = #{incomeType}
+			</if>
+			<if test="customerName != null and customerName != ''">
+				AND c.unit_name like concat('%', #{customerName}, '%')
+			</if>
+			<if test="orderNo != null and orderNo != ''">
+				AND o.order_no = #{orderNo}
+			</if>
+			<if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+				and i.create_time &gt;= #{params.beginTime}
+			</if>
+			<if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+				and i.create_time &lt; DATE_ADD(DATE(#{params.endTime}), INTERVAL 1 DAY)
+			</if>
+            <include refid="com.ls.aegis.biz.eoms.mapper.EomsDataScopeMapper.dataScopeFilter"/>
+		</where>
+    </select>
+
+    <insert id="insertIncome" parameterType="Income" useGeneratedKeys="true" keyProperty="id">
+        insert into eoms_income
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="reversalOfId != null">reversal_of_id,</if>
+            <if test="paymentId != null">payment_id,</if>
+			<if test="incomeNo != null and incomeNo != ''">income_no,</if>
+			<if test="repairOrderId != null">repair_order_id,</if>
+			<if test="customerId != null">customer_id,</if>
+			<if test="amount != null">amount,</if>
+			<if test="incomeType != null and incomeType != ''">income_type,</if>
+			<if test="incomeDate != null">income_date,</if>
+			<if test="createBy != null and createBy != ''">create_by,</if>
+			<if test="true">create_time,</if>
+			<if test="updateBy != null and updateBy != ''">update_by,</if>
+			<if test="updateTime != null and updateTime != ''">update_time,</if>
+			<if test="remark != null and remark != ''">remark,</if>
+			<if test="delFlag != null and delFlag != ''">del_flag,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="reversalOfId != null">#{reversalOfId},</if>
+            <if test="paymentId != null">#{paymentId},</if>
+			<if test="incomeNo != null and incomeNo != ''">#{incomeNo},</if>
+			<if test="repairOrderId != null">#{repairOrderId},</if>
+			<if test="customerId != null">#{customerId},</if>
+			<if test="amount != null">#{amount},</if>
+			<if test="incomeType != null and incomeType != ''">#{incomeType},</if>
+			<if test="incomeDate != null">#{incomeDate},</if>
+			<if test="createBy != null and createBy != ''">#{createBy},</if>
+			<if test="true">CURRENT_TIMESTAMP,</if>
+			<if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+			<if test="updateTime != null and updateTime != ''">#{updateTime},</if>
+			<if test="remark != null and remark != ''">#{remark},</if>
+			<if test="delFlag != null and delFlag != ''">#{delFlag,jdbcType=CHAR},</if>
+        </trim>
+    </insert>
+
+    <update id="updateIncome" parameterType="Income">
+        update eoms_income 
+        <set>
+            <if test="incomeNo != null and incomeNo != ''">income_no = #{incomeNo},</if>
+            <if test="repairOrderId != null">repair_order_id = #{repairOrderId},</if>
+            <if test="customerId != null">customer_id = #{customerId},</if>
+            <if test="amount != null">amount = #{amount},</if>
+            <if test="incomeType != null and incomeType != ''">income_type = #{incomeType},</if>
+            <if test="incomeDate != null">income_date = #{incomeDate},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = CURRENT_TIMESTAMP,
+            <if test="remark != null and remark != ''">remark = #{remark},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <update id="deleteIncomeById" parameterType="Long">
+        update eoms_income set del_flag = '2' where id = #{id}
+    </update>
+
+    <update id="deleteIncomeByIds" parameterType="Long">
+        update eoms_income set del_flag = '2' where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+        	#{id}
+        </foreach>
+    </update>
+
+    <select id="selectOriginalByPaymentId" resultMap="IncomeResult">
+        select * from eoms_income where payment_id=#{paymentId} and reversal_of_id is null and del_flag='0'
+    </select>
+</mapper>

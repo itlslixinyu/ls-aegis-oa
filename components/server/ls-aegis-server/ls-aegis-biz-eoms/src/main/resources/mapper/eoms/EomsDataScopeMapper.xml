@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.eoms.mapper.EomsDataScopeMapper">
+
+    <!--
+      行级数据权限片段。表别名由 EomsDataScopeHelper 写入 params.dsAlias（仅允许白名单别名）。
+      SELF 可选匹配 engineer_id（params.dsIncludeEngineer=true，仅工单）。
+    -->
+    <sql id="dataScopeFilter">
+        <if test="params != null and params.dataScopeFilter != null and params.dataScopeFilter == true and params.dsAlias != null">
+            AND (
+                1 = 0
+                <if test="params.dsDeptScope == 'DEPT'">
+                    OR ${params.dsAlias}.dept_id = #{params.dsDeptId}
+                </if>
+                <if test="params.dsDeptScope == 'DEPT_AND_CHILD'">
+                    OR ${params.dsAlias}.dept_id = #{params.dsDeptId}
+                    OR ${params.dsAlias}.dept_id IN (
+                        SELECT d.id FROM sys_dept d
+                        WHERE find_in_set(#{params.dsDeptId}, d.ancestors)
+                    )
+                </if>
+                <if test="params.dsSelf != null and params.dsSelf == true">
+                    OR ${params.dsAlias}.create_user = #{params.dsUserId}
+                    <if test="params.dsIncludeEngineer != null and params.dsIncludeEngineer == true">
+                        OR ${params.dsAlias}.engineer_id = #{params.dsUserId}
+                    </if>
+                </if>
+                <if test="params.dsCustomRoleIds != null and params.dsCustomRoleIds.size() &gt; 0">
+                    OR ${params.dsAlias}.dept_id IN (
+                        SELECT rd.dept_id FROM sys_role_dept rd
+                        WHERE rd.role_id IN
+                        <foreach collection="params.dsCustomRoleIds" item="rid" open="(" separator="," close=")">
+                            #{rid}
+                        </foreach>
+                    )
+                </if>
+            )
+        </if>
+    </sql>
+
+</mapper>

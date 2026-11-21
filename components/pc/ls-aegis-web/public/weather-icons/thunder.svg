@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
+  <defs>
+    <linearGradient id="thunderCloud" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#78909C"/>
+      <stop offset="100%" stop-color="#455A64"/>
+    </linearGradient>
+    <linearGradient id="bolt" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFF59D"/>
+      <stop offset="100%" stop-color="#FFB300"/>
+    </linearGradient>
+  </defs>
+  <g fill="url(#thunderCloud)">
+    <ellipse cx="24" cy="22" rx="13" ry="9"/>
+    <ellipse cx="36" cy="20" rx="15" ry="11"/>
+    <ellipse cx="46" cy="24" rx="10" ry="7"/>
+    <ellipse cx="18" cy="26" rx="8" ry="6"/>
+  </g>
+  <path fill="url(#bolt)" d="M34 30 L26 44 H33 L30 56 L44 38 H36 L40 30 Z"/>
+</svg>

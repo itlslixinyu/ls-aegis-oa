@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.ls</groupId>
+        <artifactId>ls-aegis-server</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>ls-aegis-mybatis</artifactId>
+    <packaging>jar</packaging>
+    <name>${project.artifactId}</name>
+    <description>MyBatis-Plus 配置、分页、自动填充、逻辑删除、实体/服务基类</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.ls</groupId>
+            <artifactId>ls-aegis-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>top.continew.starter</groupId>
+            <artifactId>continew-starter-extension-datapermission-mp</artifactId>
+        </dependency>
+        <!-- MyBatis-Plus JSQLParser 本地缓存 -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+    </dependencies>
+</project>

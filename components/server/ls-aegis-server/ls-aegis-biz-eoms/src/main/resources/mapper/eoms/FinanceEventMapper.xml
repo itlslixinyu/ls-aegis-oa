@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ls.aegis.biz.eoms.mapper.finance.FinanceEventMapper">
+    <insert id="insertEvent">
+        insert into eoms_finance_event (aggregate_type, aggregate_id, action, related_id, amount, operator, reason, create_time)
+        values (#{type}, #{id}, #{action}, #{relatedId}, #{amount}, #{operator}, #{reason}, CURRENT_TIMESTAMP)
+    </insert>
+</mapper>
